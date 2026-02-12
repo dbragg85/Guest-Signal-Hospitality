@@ -38,19 +38,33 @@ if (contactForm) {
         e.preventDefault();
         
         // Get form data
-        const formData = {
-            name: document.getElementById('name').value,
-            email: document.getElementById('email').value,
-            phone: document.getElementById('phone').value,
-            message: document.getElementById('message').value
-        };
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const phone = document.getElementById('phone').value;
+        const message = document.getElementById('message').value;
         
-        // Here you would typically send the data to a server
-        // For now, we'll show a success message
-        showFormMessage('Thank you! We\'ll contact you within 24 hours to discuss your Guest Intelligence Audit.', 'success');
+        // Create email subject and body
+        const subject = encodeURIComponent('Guest Intelligence Audit Request - ' + name);
+        const body = encodeURIComponent(
+            'Restaurant Name: ' + name + '\n\n' +
+            'Email: ' + email + '\n\n' +
+            'Phone: ' + (phone || 'Not provided') + '\n\n' +
+            'Restaurant Details:\n' + (message || 'No additional details provided')
+        );
         
-        // Reset form
-        contactForm.reset();
+        // Create mailto link
+        const mailtoLink = 'mailto:david@guestsignalhospitality.com?subject=' + subject + '&body=' + body;
+        
+        // Open email client
+        window.location.href = mailtoLink;
+        
+        // Show success message
+        showFormMessage('Thank you! Your email client should open. If it doesn\'t, please email us directly at david@guestsignalhospitality.com', 'success');
+        
+        // Reset form after a short delay
+        setTimeout(function() {
+            contactForm.reset();
+        }, 1000);
     });
 }
 
