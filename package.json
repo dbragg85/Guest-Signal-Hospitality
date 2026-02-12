@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "export": "next build",
-    "deploy:docs": "rm -rf docs && mkdir docs && cp -R out/* docs && touch docs/.nojekyll",
+    "deploy:docs": "rm -rf docs && mkdir docs && cp -R out/* docs && cp public/google491fa39a738c9060.html docs/ 2>/dev/null || true && echo 'guestsignalhospitality.com' > docs/CNAME && touch docs/.nojekyll",
     "start": "next start",
     "lint": "next lint"
   },
