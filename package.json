@@ -1,0 +1,19 @@
+{
+  "name": "guest-signal-hospitality",
+  "version": "1.0.0",
+  "description": "Guest Signal Hospitality - Hospitality Intelligence & Guest Experience Analytics",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "hospitality",
+    "restaurant",
+    "analytics",
+    "guest-experience"
+  ],
+  "author": "Guest Signal Hospitality",
+  "license": "ISC"
+}
+
