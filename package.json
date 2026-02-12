@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "export": "next build",
+    "deploy:docs": "rm -rf docs && mkdir docs && cp -R out/* docs && touch docs/.nojekyll",
     "start": "next start",
     "lint": "next lint"
   },
