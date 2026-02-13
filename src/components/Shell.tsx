@@ -12,12 +12,12 @@ export function Shell({ children }: { children: ReactNode }) {
             <Image
               src="/logo.png"
               alt={brand.name}
-              width={60}
-              height={60}
-              className="h-14 w-auto md:h-16"
+              width={80}
+              height={80}
+              className="h-16 w-auto md:h-20"
               priority
+              style={{ objectFit: 'contain' }}
             />
-            <span className="text-lg md:text-xl font-semibold tracking-tight text-slate-900">{brand.name}</span>
           </Link>
 
           <nav className="hidden gap-6 md:flex">
