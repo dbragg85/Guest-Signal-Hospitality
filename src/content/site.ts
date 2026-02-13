@@ -19,7 +19,6 @@ export const brand = {
 export const nav = [
   { label: "Home", href: "/" },
   { label: "Plans", href: "/services" },
-  { label: "Free Snapshot", href: "/contact" },
   { label: "About", href: "/team" },
   { label: "Newsletter", href: "#newsletter" },
   { label: "Contact", href: "/contact" },
