@@ -12,10 +12,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
-              Know Your Restaurant's Guest Signal.
+              Know Your Restaurant's Guest Signal Score.
             </h1>
             <p className="mt-4 text-lg text-slate-600 md:text-xl">
-              Monitor, improve, and elevate your guest experience with real-time intelligence and professional reputation support.
+              Monitor, Improve, and Elevate Your Guest Experience.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
