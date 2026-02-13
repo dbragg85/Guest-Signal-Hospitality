@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { team } from "@/content/site";
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
@@ -44,44 +42,6 @@ export default function TeamPage() {
         <div className="grid gap-6 md:grid-cols-3">
           {values.map((v, idx) => (
             <Card key={idx} title={v.title} desc={v.desc} />
-          ))}
-        </div>
-      </Section>
-
-      {/* Leadership Team */}
-      <Section title="Meet Our Team" kicker="Leadership">
-        <div className="grid gap-8 md:grid-cols-2">
-          {team.map((t) => (
-            <div key={t.name} className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Photo placeholder */}
-                <div className="flex-shrink-0">
-                  <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
-                    <span className="text-4xl text-slate-500">👤</span>
-                  </div>
-                </div>
-                
-                <div className="flex-1">
-                  <h3 className="text-2xl font-semibold tracking-tight">{t.name}</h3>
-                  <p className="mt-1 text-sm font-medium text-slate-600">{t.title}</p>
-                  <p className="mt-4 text-sm text-slate-700 leading-relaxed">{t.bio}</p>
-                  
-                  {t.linkedin && t.linkedin !== "#" && (
-                    <div className="mt-6">
-                      <Link
-                        href={t.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 hover:text-slate-700 underline underline-offset-4"
-                      >
-                        Connect on LinkedIn
-                        <span>→</span>
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
           ))}
         </div>
       </Section>
