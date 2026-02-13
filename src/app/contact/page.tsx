@@ -1,9 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-export default function ContactPage() {
+function ContactForm() {
   const searchParams = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
 
@@ -105,5 +105,26 @@ export default function ContactPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={
+      <div>
+        <section className="border-b bg-slate-50">
+          <div className="mx-auto max-w-3xl px-4 py-14">
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+              Contact
+            </h1>
+            <p className="mt-3 text-slate-600">
+              Share your restaurant name and link (Google listing if possible). We'll respond with next steps.
+            </p>
+          </div>
+        </section>
+      </div>
+    }>
+      <ContactForm />
+    </Suspense>
   );
 }
