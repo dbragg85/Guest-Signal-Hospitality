@@ -17,21 +17,6 @@ export default function HomePage() {
             <p className="mt-4 text-lg text-slate-600 md:text-xl">
               Monitor, Improve, and Elevate Your Guest Experience.
             </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link
-                href="/contact"
-                className="btn-primary text-center"
-              >
-                Get Your Free Guest Signal Snapshot
-              </Link>
-              <Link
-                href="/services"
-                className="btn-secondary text-center"
-              >
-                View Plans
-              </Link>
-            </div>
           </div>
         </div>
       </section>
