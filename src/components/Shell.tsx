@@ -50,8 +50,10 @@ export function Shell({ children }: { children: ReactNode }) {
               <p>
                 © {new Date().getFullYear()} {brand.name}. All rights reserved.
               </p>
-              <p className="mt-1">
-                {brand.city} • {brand.email}
+              <p className="mt-2 flex items-center gap-2">
+                <span className="font-semibold text-slate-900">{brand.city}</span>
+                <span className="text-slate-400">•</span>
+                <span>{brand.email}</span>
               </p>
             </div>
             <div className="flex items-center gap-4">

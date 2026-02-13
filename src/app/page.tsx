@@ -132,6 +132,31 @@ export default function HomePage() {
         </div>
       </Section>
 
+      {/* Local Trust Signal Section */}
+      <Section>
+        <div className="max-w-4xl mx-auto">
+          <div className="rounded-3xl border-2 border-primary-300 bg-gradient-to-br from-primary-50 via-white to-accent-50 p-8 md:p-12 shadow-lg text-center">
+            <h2 className="text-3xl font-semibold tracking-tight md:text-4xl text-slate-900">
+              Serving Restaurants in Cincinnati and Beyond
+            </h2>
+            <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
+              We're proud to help Cincinnati-area restaurants monitor, improve, and elevate their guest experience. From Over-the-Rhine to Hyde Park, we work with independent operators who are serious about guest satisfaction.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-700">
+              <div className="flex items-center gap-2">
+                <span className="text-primary-600 font-bold">📍</span>
+                <span className="font-semibold">Cincinnati, OH</span>
+              </div>
+              <span className="text-slate-400">•</span>
+              <div className="flex items-center gap-2">
+                <span className="text-primary-600 font-bold">🌎</span>
+                <span>Nationwide Service Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+
       {/* Pricing Plans Section */}
       <Section title="Ongoing Guest Experience Monitoring & Elevation" kicker="Core Plans">
         <p className="text-center text-slate-600 mb-10 max-w-2xl mx-auto">
