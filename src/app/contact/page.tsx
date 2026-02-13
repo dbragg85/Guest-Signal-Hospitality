@@ -6,12 +6,51 @@ import { Suspense, useEffect, useState } from "react";
 function ContactForm() {
   const searchParams = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (searchParams?.get("sent") === "1") {
       setSubmitted(true);
     }
   }, [searchParams]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const business = formData.get("business") as string;
+    const googleUrl = formData.get("googleUrl") as string;
+    const message = formData.get("message") as string;
+
+    // Create email content
+    const emailSubject = `New Contact Form Submission - ${business || "Guest Signal"}`;
+    const emailBody = `
+New Contact Form Submission from Guest Signal Hospitality
+
+Name: ${name}
+Email: ${email}
+Restaurant/Business: ${business}
+Google Listing URL: ${googleUrl || "Not provided"}
+Message: ${message || "No message provided"}
+
+Submitted: ${new Date().toISOString()}
+    `.trim();
+
+    // Create mailto link
+    const mailtoLink = `mailto:audit@guestsignalhospitality.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+    // Open email client
+    window.location.href = mailtoLink;
+    
+    // Show success message after a brief delay
+    setTimeout(() => {
+      setSubmitted(true);
+      setIsSubmitting(false);
+    }, 500);
+  };
 
   if (submitted) {
     return (
@@ -45,8 +84,7 @@ function ContactForm() {
 
           <form
             className="mt-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
-            action="/api/contact"
-            method="post"
+            onSubmit={handleSubmit}
           >
             <div className="grid gap-5">
               <label className="grid gap-2">
@@ -96,9 +134,10 @@ function ContactForm() {
 
               <button
                 type="submit"
-                className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                disabled={isSubmitting}
+                className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Send
+                {isSubmitting ? "Sending..." : "Send"}
               </button>
             </div>
           </form>
