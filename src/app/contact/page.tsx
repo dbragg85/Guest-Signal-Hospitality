@@ -67,10 +67,6 @@ export default function ContactPage() {
               >
                 Send
               </button>
-
-              <p className="text-xs text-slate-500">
-                This demo endpoint logs submissions server-side. Swap it to email (Resend/SendGrid) when ready.
-              </p>
             </div>
           </form>
         </div>

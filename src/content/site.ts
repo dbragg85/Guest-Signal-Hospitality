@@ -11,7 +11,7 @@ export const brand = {
   mission:
     "We turn Google Reviews into clear, actionable insights—SWOT, reputation signals, competitive positioning, and a prioritized action plan that improves guest experience and profitability.",
   phone: "(513) 000-0000",
-  email: "hello@guestsignalhospitality.com",
+  email: "audit@guestsignalhospitality.com",
   city: "Cincinnati, OH",
   instagram: "https://www.instagram.com/guest_signal_hospitality/",
 };
