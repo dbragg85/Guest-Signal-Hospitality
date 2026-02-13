@@ -1,4 +1,37 @@
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
 export default function ContactPage() {
+  const searchParams = useSearchParams();
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (searchParams?.get("sent") === "1") {
+      setSubmitted(true);
+    }
+  }, [searchParams]);
+
+  if (submitted) {
+    return (
+      <div>
+        <section className="border-b bg-slate-50">
+          <div className="mx-auto max-w-3xl px-4 py-20">
+            <div className="rounded-3xl border border-green-200 bg-green-50 p-8 text-center">
+              <h1 className="text-3xl font-semibold tracking-tight md:text-4xl text-green-900">
+                Thank You!
+              </h1>
+              <p className="mt-4 text-lg text-green-700">
+                Your message has been received. We'll respond to you at the email address you provided within 24 hours.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div>
       <section className="border-b bg-slate-50">
