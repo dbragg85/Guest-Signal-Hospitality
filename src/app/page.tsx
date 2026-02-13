@@ -8,7 +8,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="border-b bg-gradient-to-b from-slate-50 to-white">
+      <section className="border-b gradient-primary">
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
@@ -21,13 +21,13 @@ export default function HomePage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/contact"
-                className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 text-center"
+                className="btn-primary text-center"
               >
                 Get Your Free Guest Signal Snapshot
               </Link>
               <Link
                 href="/services"
-                className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 text-center"
+                className="btn-secondary text-center"
               >
                 View Plans
               </Link>

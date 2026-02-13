@@ -1,14 +1,23 @@
 import Link from "next/link";
+import Image from "next/image";
 import { brand, nav } from "@/content/site";
 import { ReactNode } from "react";
 
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-white text-slate-900">
-      <header className="sticky top-0 z-30 border-b bg-white/85 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b bg-white/95 backdrop-blur shadow-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/" className="font-semibold tracking-tight">
-            {brand.name}
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Image
+              src="/logo.png"
+              alt={brand.name}
+              width={40}
+              height={40}
+              className="h-10 w-auto"
+              priority
+            />
+            <span className="font-semibold tracking-tight text-slate-900">{brand.name}</span>
           </Link>
 
           <nav className="hidden gap-6 md:flex">
@@ -25,7 +34,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
           <Link
             href="/contact"
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="btn-primary"
           >
             Get Your Free Snapshot
           </Link>

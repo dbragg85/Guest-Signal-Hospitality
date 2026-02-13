@@ -4,7 +4,29 @@
 
 @layer base {
   body {
-    @apply bg-white text-slate-900;
+    @apply bg-white text-slate-900 antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-slate-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition-colors;
+  }
+  
+  .card {
+    @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm;
+  }
+  
+  .gradient-primary {
+    @apply bg-gradient-to-br from-slate-50 to-white;
   }
 }
 
