@@ -77,6 +77,61 @@ export default function HomePage() {
         </div>
       </Section>
 
+      {/* How It Works Section */}
+      <Section title="How Guest Signal Works" kicker="Process">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                  1
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Analyze Reviews</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                We analyze your guest reviews and sentiment to understand what customers are really saying.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                  2
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Calculate Score</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                We calculate your Guest Signal Score to give you a clear picture of your reputation.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                  3
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Identify Areas</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                We identify strengths and risk areas so you know exactly where to focus your efforts.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                  4
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Provide Tools</h3>
+              </div>
+              <p className="text-sm text-slate-600">
+                We provide intelligence and reputation elevation tools to help you improve continuously.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Section>
+
       {/* Pricing Plans Section */}
       <Section title="Ongoing Guest Experience Monitoring & Elevation" kicker="Core Plans">
         <p className="text-center text-slate-600 mb-10 max-w-2xl mx-auto">
