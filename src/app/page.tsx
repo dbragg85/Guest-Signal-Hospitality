@@ -221,7 +221,7 @@ export default function HomePage() {
         <div className="rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 via-white to-primary-50 p-10 shadow-sm">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-              Get the Guest Signal Intelligence Brief
+              Get The Guest Signal Report
             </h2>
             <p className="mt-4 text-slate-600">
               Monthly insights into guest experience trends and hospitality performance.
