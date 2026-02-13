@@ -39,13 +39,13 @@ export default function HomePage() {
       {/* Free Snapshot Section */}
       <Section>
         <div className="max-w-4xl mx-auto">
-          <div className="rounded-3xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 md:p-12 shadow-lg">
+          <div className="rounded-3xl border-2 border-primary-200 bg-gradient-to-br from-primary-50 via-white to-accent-50 p-8 md:p-12 shadow-lg">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
                 {freeSnapshot.title}
               </h2>
               <div className="mt-4">
-                <span className="text-4xl font-bold text-slate-900">{freeSnapshot.price}</span>
+                <span className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">{freeSnapshot.price}</span>
               </div>
             </div>
 
@@ -65,7 +65,7 @@ export default function HomePage() {
             <div className="text-center">
               <Link
                 href="/contact"
-                className="inline-block rounded-xl bg-slate-900 px-8 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                className="inline-block rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-3 text-sm font-semibold text-white hover:from-primary-700 hover:to-primary-800 shadow-lg transition-all"
               >
                 {freeSnapshot.buttonText}
               </Link>
@@ -95,7 +95,7 @@ export default function HomePage() {
             >
               {plan.badge && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-slate-900 text-white text-xs font-semibold px-4 py-1 rounded-full">
+                  <span className="bg-gradient-to-r from-primary-600 to-accent-500 text-white text-xs font-semibold px-4 py-1 rounded-full shadow-md">
                     {plan.badge}
                   </span>
                 </div>
@@ -121,10 +121,10 @@ export default function HomePage() {
 
               <Link
                 href="/contact"
-                className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold ${
+                className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold transition-all ${
                   plan.popular
-                    ? "bg-slate-900 text-white hover:bg-slate-800"
-                    : "border border-slate-300 text-slate-900 hover:bg-slate-50"
+                    ? "bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 shadow-md"
+                    : "border border-slate-300 text-slate-900 hover:bg-primary-50 hover:border-primary-300"
                 }`}
               >
                 {plan.buttonText}
@@ -136,7 +136,7 @@ export default function HomePage() {
 
       {/* Authority Section */}
       <Section>
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm">
+        <div className="rounded-3xl border border-primary-200 bg-gradient-to-br from-primary-50/50 to-white p-10 shadow-sm">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
               Built for Restaurants That Take Guest Experience Seriously
@@ -153,7 +153,7 @@ export default function HomePage() {
 
       {/* Newsletter Section */}
       <Section id="newsletter">
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-10 shadow-sm">
+        <div className="rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 via-white to-primary-50 p-10 shadow-sm">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
               Get the Guest Signal Intelligence Brief
