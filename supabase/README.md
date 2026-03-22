@@ -33,6 +33,7 @@
 1. Supabase → **SQL Editor** → **New query**.
 2. Open `migrations/001_portal_multitenant.sql` from this repo, copy **all** SQL, paste, **Run**.
 3. If the **trigger on `auth.users`** errors, delete only the `trigger` / `handle_new_user` block and run the rest. You can add profiles manually later (Table Editor → `profiles`).
+4. **Optional — full restaurant list + per-location notes:** open `migrations/002_restaurants_portal_pages.sql`, copy **all** SQL, paste, **Run**. This adds a `portal_intro` column (editable per restaurant) and inserts the remaining venues. After it runs, you can set **Notes for this location** in **Table Editor → restaurants → portal_intro** for each row.
 
 ---
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePortalSession } from "@/contexts/PortalSessionContext";
+import { isPortalRestaurantSlug } from "@/data/portal-restaurants";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -9,6 +10,7 @@ type Restaurant = {
   id: string;
   slug: string;
   name: string;
+  portal_intro: string | null;
 };
 
 type Scorecard = {
@@ -20,7 +22,9 @@ type Scorecard = {
   data: Record<string, unknown> | null;
 };
 
-export function PortalDashboardClient() {
+type Props = { initialSlug?: string };
+
+export function PortalDashboardClient({ initialSlug }: Props) {
   const router = useRouter();
   const { session, loading: authLoading, supabase, configured } =
     usePortalSession();
@@ -57,7 +61,7 @@ export function PortalDashboardClient() {
 
     const { data: rests, error: rErr } = await supabase
       .from("restaurants")
-      .select("id, slug, name")
+      .select("id, slug, name, portal_intro")
       .order("name");
 
     if (rErr) {
@@ -66,15 +70,23 @@ export function PortalDashboardClient() {
       return;
     }
 
-    setRestaurants((rests ?? []) as Restaurant[]);
-    if (rests?.length) {
+    const list = (rests ?? []) as Restaurant[];
+    setRestaurants(list);
+    if (list.length) {
       setSelectedId((prev) => {
-        if (prev && rests.some((r) => r.id === prev)) return prev;
-        return rests[0].id;
+        if (initialSlug) {
+          const bySlug = list.find((r) => r.slug === initialSlug);
+          if (bySlug) return bySlug.id;
+          return null;
+        }
+        if (prev && list.some((r) => r.id === prev)) return prev;
+        return list[0].id;
       });
+    } else {
+      setSelectedId(null);
     }
     setDataLoading(false);
-  }, [supabase, session]);
+  }, [supabase, session, initialSlug]);
 
   useEffect(() => {
     if (!configured || authLoading) return;
@@ -183,25 +195,114 @@ export function PortalDashboardClient() {
             No restaurants linked to this account yet. Ask Guest Signal to add a
             membership or set your profile as super admin in Supabase.
           </p>
+        ) : !dataLoading &&
+          initialSlug &&
+          selectedId === null &&
+          restaurants.length > 0 ? (
+          <div className="mt-10 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-5 text-sm text-amber-950">
+            <p className="font-semibold">This restaurant page isn&apos;t available for your account.</p>
+            <p className="mt-2 text-amber-900/90">
+              The URL may be wrong, or your team hasn&apos;t been granted access yet. Open the main
+              dashboard to pick a restaurant you&apos;re assigned to.
+            </p>
+            <Link
+              href="/portal/dashboard/"
+              className="mt-4 inline-block font-semibold text-amber-900 underline underline-offset-4"
+            >
+              Back to scorecards
+            </Link>
+          </div>
         ) : (
           <>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <label htmlFor="restaurant" className="text-sm font-semibold text-slate-800">
-                Restaurant
-              </label>
-              <select
-                id="restaurant"
-                className="max-w-md rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm"
-                value={selectedId ?? ""}
-                onChange={(e) => setSelectedId(e.target.value)}
-              >
-                {restaurants.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} ({r.slug})
-                  </option>
-                ))}
-              </select>
+            <div className="mt-8 flex flex-col gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <label htmlFor="restaurant" className="text-sm font-semibold text-slate-800">
+                  Restaurant
+                </label>
+                <select
+                  id="restaurant"
+                  className="max-w-md rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm"
+                  value={selectedId ?? ""}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedId(id);
+                    const r = restaurants.find((x) => x.id === id);
+                    if (initialSlug !== undefined && r && isPortalRestaurantSlug(r.slug)) {
+                      router.replace(`/portal/dashboard/${r.slug}/`);
+                    }
+                  }}
+                >
+                  {restaurants.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({r.slug})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedId ? (
+                <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                  {(() => {
+                    const cur = restaurants.find((r) => r.id === selectedId);
+                    if (cur && isPortalRestaurantSlug(cur.slug)) {
+                      return (
+                        <Link
+                          href={`/portal/dashboard/${cur.slug}/`}
+                          className="font-medium text-amber-900 underline-offset-4 hover:underline"
+                        >
+                          Bookmarkable page for this restaurant
+                        </Link>
+                      );
+                    }
+                    return (
+                      <span className="text-slate-500">
+                        Add this venue to the static portal list in the repo to enable a dedicated
+                        URL.
+                      </span>
+                    );
+                  })()}
+                </div>
+              ) : null}
+
+              <div className="rounded-xl border border-stone-200 bg-stone-50/60 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Jump to restaurant page
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  {restaurants
+                    .filter((r) => isPortalRestaurantSlug(r.slug))
+                    .map((r) => (
+                      <li key={r.id}>
+                        <Link
+                          href={`/portal/dashboard/${r.slug}/`}
+                          className={
+                            r.id === selectedId
+                              ? "font-semibold text-amber-900 underline"
+                              : "text-slate-700 underline-offset-4 hover:underline"
+                          }
+                        >
+                          {r.name}
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              </div>
             </div>
+
+            {selectedId ? (
+              (() => {
+                const cur = restaurants.find((r) => r.id === selectedId);
+                if (!cur?.portal_intro) return null;
+                return (
+                  <div className="mt-8 rounded-2xl border border-stone-200 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Notes for this location
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap">{cur.portal_intro}</p>
+                  </div>
+                );
+              })()
+            ) : null}
 
             <div className="mt-10 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
               <table className="min-w-full text-left text-sm">
