@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="190" height="96" viewBox="0 0 190 96" fill="none">
+  <defs>
+    <linearGradient id="goldFill" x1="26" y1="10" x2="152" y2="72" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF6D6"/>
+      <stop offset="0.34" stop-color="#F0D88A"/>
+      <stop offset="0.68" stop-color="#D6A53A"/>
+      <stop offset="1" stop-color="#8D6320"/>
+    </linearGradient>
+    <linearGradient id="goldStroke" x1="18" y1="18" x2="158" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7E8B0"/>
+      <stop offset="0.5" stop-color="#D8A848"/>
+      <stop offset="1" stop-color="#8D6320"/>
+    </linearGradient>
+    <linearGradient id="aquaLine" x1="26" y1="59" x2="154" y2="59" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3AB7D4"/>
+      <stop offset="1" stop-color="#78D4DF"/>
+    </linearGradient>
+    <filter id="softShadow" x="0" y="0" width="190" height="96" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Header-safe icon only: tight crop with clear margin -->
+  <g filter="url(#softShadow)" transform="translate(10,4)">
+    <!-- top signal dot -->
+    <circle cx="85" cy="8" r="6.2" fill="url(#goldFill)"/>
+
+    <!-- dome shell -->
+    <path d="M20 60
+             C24 34, 46 18, 85 18
+             C124 18, 146 34, 150 60
+             L140 60
+             C136 39, 117 28, 85 28
+             C53 28, 34 39, 30 60
+             Z"
+          fill="url(#goldFill)"/>
+
+    <!-- outer rim stroke -->
+    <path d="M18 60
+             C23 30, 48 14, 85 14
+             C122 14, 147 30, 152 60"
+          stroke="url(#goldStroke)" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- inner dark swoosh -->
+    <path d="M31 58
+             C36 42, 47 29, 69 20"
+          stroke="#0A2C69" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- aqua baseline -->
+    <path d="M18 61.2 L152 61.2" stroke="url(#aquaLine)" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- central waveform -->
+    <path d="M47 60
+             L55 60
+             L60 48
+             L66 60
+             L76 60
+             L84 24
+             L93 69
+             L104 32
+             L112 60
+             L123 35
+             L131 60
+             L141 60"
+          stroke="#0A2C69" stroke-width="5.2" stroke-linejoin="round" stroke-linecap="round"/>
+
+    <!-- subtle aqua highlight under waveform -->
+    <path d="M44 66
+             C61 64, 74 64, 86 64
+             C102 64, 120 64, 144 66"
+          stroke="#52C8DB" stroke-width="2.6" stroke-linecap="round" opacity="0.9"/>
+
+    <!-- gold base -->
+    <path d="M10 74
+             C35 69, 61 67, 86 67
+             C111 67, 137 69, 162 74
+             C137 77, 111 78, 86 78
+             C61 78, 35 77, 10 74 Z"
+          fill="url(#goldFill)"/>
+  </g>
+</svg>

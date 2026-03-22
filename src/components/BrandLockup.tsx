@@ -1,23 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/**
- * Raster mark + HTML wordmark. For a replacement asset, prefer a tight-cropped
- * horizontal PNG or SVG (see team notes in repo / design handoff): ~200–280×40–48px
- * @1x, transparent background, no extra canvas padding.
- */
+const HEADER_ICON = "/guest-signal-header-icon.svg";
+
+/** Vector mark + HTML wordmark — icon is readable at small sizes; text carries the name. */
 export function BrandLockup() {
   return (
     <Link
       href="/"
-      className="group flex min-w-0 items-center gap-2 sm:gap-3"
+      className="group flex min-w-0 items-center gap-2.5 sm:gap-3"
     >
       <Image
-        src="/logo.png"
+        src={HEADER_ICON}
         alt=""
-        width={160}
-        height={40}
-        className="h-9 w-auto max-h-9 max-w-[140px] shrink-0 object-left object-contain sm:max-w-[160px]"
+        width={190}
+        height={96}
+        className="h-10 w-auto max-h-10 shrink-0 object-left object-contain sm:h-11 sm:max-h-11"
         priority
       />
       <span className="flex min-w-0 flex-col leading-tight">
@@ -36,11 +34,11 @@ export function BrandLockupFooter() {
   return (
     <div className="flex items-center gap-2.5">
       <Image
-        src="/logo.png"
+        src={HEADER_ICON}
         alt=""
-        width={96}
-        height={40}
-        className="h-7 w-auto max-w-[88px] object-left object-contain opacity-80"
+        width={190}
+        height={96}
+        className="h-8 w-auto max-h-8 shrink-0 object-left object-contain opacity-95"
       />
       <span className="flex flex-col leading-tight">
         <span className="text-sm font-bold tracking-tight text-white">
