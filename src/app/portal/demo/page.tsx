@@ -125,8 +125,8 @@ export default function PortalDemoPage() {
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {[
               { month: "January", score: 82, delta: 2 },
-              { month: "February", score: 84, delta: -1 },
-              { month: "March", score: 82, delta: 1 },
+              { month: "February", score: 84, delta: 2 },
+              { month: "March", score: 82, delta: -2 },
             ].map((m) => (
               <div
                 key={m.month}
