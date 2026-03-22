@@ -1,3 +1,23 @@
+# Deployment notes
+
+## Guest Signal Hospitality — GitHub Pages (this repo)
+
+The live site **guestsignalhospitality.com** uses **GitHub Pages** with **Next.js static export** (`npm run build` → `out/`).
+
+1. **Repository → Settings → Pages**  
+   - **Build and deployment → Source:** choose **GitHub Actions** (not “Deploy from a branch”).  
+   - If Pages was set to publish the **root** or `/docs` folder, the old `index.html` was being served. This repo now deploys only the **`out`** artifact from the workflow.
+
+2. **Workflow:** `.github/workflows/pages.yml` runs on every push to `main` and runs `actions/deploy-pages` with the `out` directory.
+
+3. **Custom domain:** `CNAME` in the repo root should match your domain (e.g. `guestsignalhospitality.com`).
+
+4. **Legacy files:** Old static marketing files were moved to `legacy-static/` so they are not published from the branch root.
+
+5. **Supabase (portal):** Add repository **Variables** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` if you want those values baked into the static build; otherwise the portal shows the configuration hint until you add them.
+
+---
+
 # Deploying Project CARE to projectcare.life
 
 ## Option 1: Netlify (Recommended - Easiest)

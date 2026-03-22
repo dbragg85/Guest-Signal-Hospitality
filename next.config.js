@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Server features (Supabase auth middleware, protected routes) require a Node host
-  // (e.g. Vercel). Static export to GitHub Pages is not compatible with this setup.
+  // Static export for GitHub Pages (guestsignalhospitality.com).
+  // No server middleware — portal auth is enforced in the browser + Supabase RLS.
+  output: "export",
   images: {
     unoptimized: true,
   },

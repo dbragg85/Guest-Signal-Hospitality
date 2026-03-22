@@ -91,9 +91,15 @@ Open [http://localhost:3000/portal/](http://localhost:3000/portal/) → sign in 
 
 ---
 
-## F. Production (Vercel)
+## F. GitHub Pages (this repo)
+
+The marketing site deploys as a **static export**. Server **middleware is not used** on Pages; Supabase **RLS** still protects data. Sign-in and redirects run in the browser.
+
+Optional: set **Actions variables** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` on the repo so the exported JS includes your project (see `DEPLOYMENT.md`).
+
+## G. Production (Vercel — optional)
 
 1. [vercel.com](https://vercel.com) → **Add New** → Import this GitHub repo.
 2. **Environment Variables** → add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same as `.env.local`).
 3. Supabase **URL configuration** → add your Vercel URL to **Site URL** and **Redirect URLs** (`https://…/portal/dashboard/`).
-4. Deploy. GitHub Pages is **not** used for this app anymore (CI only runs `npm run build`).
+4. Deploy if you prefer Vercel over GitHub Pages for the main site (either host is fine for Next + Supabase client).
