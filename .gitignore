@@ -17,3 +17,9 @@
 *.tmp
 *.temp
 
+# Dependencies
+node_modules
+
+# Next.js
+.next/
+out/

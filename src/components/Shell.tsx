@@ -23,7 +23,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <nav className="hidden gap-6 md:flex">
             {nav.map((n) => (
               <Link
-                key={n.href}
+                key={n.label + n.href}
                 href={n.href.startsWith("#") ? `/${n.href}` : n.href}
                 className="text-sm text-slate-700 hover:text-slate-900"
               >
@@ -32,12 +32,18 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
           </nav>
 
-          <Link
-            href="/contact"
-            className="btn-primary"
-          >
-            Get Your Free Snapshot
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/portal"
+              className="text-sm font-medium text-slate-700 hover:text-slate-900 md:hidden"
+            >
+              Portal
+            </Link>
+            <Link href="/contact" className="btn-primary">
+              <span className="hidden sm:inline">Get Your Free Snapshot</span>
+              <span className="sm:hidden">Free Snapshot</span>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -56,7 +62,16 @@ export function Shell({ children }: { children: ReactNode }) {
                 <span>{brand.email}</span>
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <Link
+                href="/portal"
+                className="text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                Client Portal
+              </Link>
+              <span className="text-slate-300" aria-hidden>
+                |
+              </span>
               <a
                 href={brand.instagram}
                 target="_blank"

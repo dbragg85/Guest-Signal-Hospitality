@@ -21,6 +21,7 @@ export const nav = [
   { label: "Plans", href: "/services" },
   { label: "About", href: "/team" },
   { label: "Newsletter", href: "#newsletter" },
+  { label: "Client Portal", href: "/portal" },
   { label: "Contact", href: "/contact" },
 ];
 

@@ -17,6 +17,17 @@ export default function HomePage() {
             <p className="mt-4 text-lg text-slate-600 md:text-xl">
               Monitor, Improve, and Elevate Your Guest Experience.
             </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link href="/contact" className="btn-primary">
+                Get Your Free Snapshot
+              </Link>
+              <Link href="/portal" className="btn-secondary">
+                Client Portal
+              </Link>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              Preview a sample snapshot experience—no login required for the demo.
+            </p>
           </div>
         </div>
       </section>
