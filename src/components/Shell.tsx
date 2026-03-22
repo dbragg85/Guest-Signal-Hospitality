@@ -6,7 +6,7 @@ import { BrandLockup, BrandLockupFooter } from "@/components/BrandLockup";
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-stone-50 text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950 shadow-md">
+      <header className="sticky top-0 z-30 border-b border-stone-200/90 bg-gradient-to-b from-white via-sky-50/35 to-stone-100 shadow-sm backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 sm:px-5 sm:py-2.5">
           {/* Logo + nav grouped so links sit next to the mark—avoids a wide empty band on large screens */}
           <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-8 lg:gap-10">
@@ -19,7 +19,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <Link
                   key={n.label + n.href}
                   href={n.href.startsWith("#") ? `/${n.href}` : n.href}
-                  className="whitespace-nowrap text-sm font-medium text-slate-300 transition-colors hover:text-white"
+                  className="whitespace-nowrap text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
                 >
                   {n.label}
                 </Link>
@@ -30,7 +30,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <Link
               href="/portal"
-              className="text-sm font-semibold text-amber-400/95 transition-colors hover:text-amber-300 md:hidden"
+              className="text-sm font-semibold text-amber-800 transition-colors hover:text-amber-950 md:hidden"
             >
               Portal
             </Link>

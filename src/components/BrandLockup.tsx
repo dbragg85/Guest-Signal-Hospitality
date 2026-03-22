@@ -19,10 +19,10 @@ export function BrandLockup() {
         priority
       />
       <span className="flex min-w-0 flex-col leading-tight">
-        <span className="truncate text-base font-bold tracking-tight text-white sm:text-lg">
+        <span className="truncate text-base font-bold tracking-tight text-slate-900 sm:text-lg">
           Guest Signal
         </span>
-        <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400 sm:text-[11px]">
+        <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-800/95 sm:text-[11px]">
           Hospitality
         </span>
       </span>
