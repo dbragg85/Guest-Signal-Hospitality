@@ -1,58 +1,99 @@
-# Supabase setup (client portal)
+# Supabase + portal — step-by-step
 
-## 1. Create a project
+**I can’t log into Supabase or Vercel for you** (those are your accounts). Follow the checklist below. Locally, run `npm run setup:env` once (creates `.env.local`), then paste your keys.
 
-Create a project at [supabase.com](https://supabase.com). In **Project Settings → API**, copy:
+---
 
-- Project URL → `NEXT_PUBLIC_SUPABASE_URL`
-- `anon` `public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+## A. Supabase project (5 min)
 
-Add them to `.env.local` in the Next.js app root (see `.env.local.example`).
+1. Go to [supabase.com](https://supabase.com) → **New project** → wait until healthy.
+2. **Project Settings → API**, copy:
+   - **Project URL**
+   - **`anon` `public`** key (not the service role key)
+3. In the repo root (this machine):
 
-## 2. Run the SQL migration
-
-Open **SQL Editor** in Supabase, paste the contents of `migrations/001_portal_multitenant.sql`, and run it.
-
-If the `auth.users` trigger fails (permissions vary), skip that block and create profile rows manually when users first sign up, or add profiles from the Table Editor.
-
-## 3. Auth settings
-
-In **Authentication → URL configuration**:
-
-- **Site URL**: your production site (e.g. `https://your-domain.com`)
-- **Redirect URLs**: add `https://your-domain.com/portal/dashboard/` and `http://localhost:3000/portal/dashboard/` for local dev
-
-Enable **Email** provider. Optionally disable public sign-ups and invite users from the dashboard.
-
-## 4. Create users and access
-
-1. **Authentication → Users → Add user**  
-   - e.g. `admin@bocacincinnati.com` with a password, or send a magic link.
-
-2. **Super admin (your main account — can see every restaurant’s scorecard)**  
-   In SQL Editor:
-
-   ```sql
-   update public.profiles
-   set is_super_admin = true
-   where email = 'you@yourcompany.com';
+   ```bash
+   npm run setup:env
    ```
 
-3. **Restaurant-only users (Boca example)**  
-   After the user exists in `auth.users`, link them to Boca:
+   Open `.env.local` and replace the placeholders with the URL and anon key.
 
-   ```sql
-   insert into public.memberships (user_id, restaurant_id, role)
-   select u.id, r.id, 'admin'
-   from auth.users u
-   cross join public.restaurants r
-   where u.email = 'admin@bocacincinnati.com'
-     and r.slug = 'boca'
-   on conflict do nothing;
+4. Verify:
+
+   ```bash
+   npm run check:env
    ```
 
-Super admins do not need a membership row to read all restaurants and scorecards (RLS allows it). Restaurant users only see rows for restaurants they belong to.
+   Should print: `Environment looks configured for local dev.`
 
-## 5. Deploy the Next.js app
+---
 
-This app is **not** a static GitHub Pages export anymore: deploy to **Vercel** (or another Node host), set the same env vars, and connect your Git repo.
+## B. Database tables (SQL)
+
+1. Supabase → **SQL Editor** → **New query**.
+2. Open `migrations/001_portal_multitenant.sql` from this repo, copy **all** SQL, paste, **Run**.
+3. If the **trigger on `auth.users`** errors, delete only the `trigger` / `handle_new_user` block and run the rest. You can add profiles manually later (Table Editor → `profiles`).
+
+---
+
+## C. Auth URLs
+
+**Authentication → URL configuration**
+
+| Setting | Value |
+|--------|--------|
+| **Site URL** | `http://localhost:3000` for dev; your production URL when live |
+| **Redirect URLs** | Add `http://localhost:3000/portal/dashboard/` and your production `https://YOUR_DOMAIN/portal/dashboard/` |
+
+---
+
+## D. Users & permissions
+
+### 1) Boca (or any restaurant-only user)
+
+**Authentication → Users → Add user** → e.g. `admin@bocacincinnati.com` + password (or invite email).
+
+Then **SQL Editor**:
+
+```sql
+insert into public.memberships (user_id, restaurant_id, role)
+select u.id, r.id, 'admin'
+from auth.users u
+cross join public.restaurants r
+where u.email = 'admin@bocacincinnati.com'
+  and r.slug = 'boca'
+on conflict do nothing;
+```
+
+### 2) Your main account (see **every** restaurant scorecard)
+
+After that user exists and has signed in once (so `profiles` has a row), run:
+
+```sql
+update public.profiles
+set is_super_admin = true
+where email = 'YOUR_EMAIL@example.com';
+```
+
+Super admins do **not** need a membership row for each restaurant.
+
+---
+
+## E. Run the app locally
+
+```bash
+npm install
+npm run check:env
+npm run dev
+```
+
+Open [http://localhost:3000/portal/](http://localhost:3000/portal/) → sign in → [http://localhost:3000/portal/dashboard/](http://localhost:3000/portal/dashboard/).
+
+---
+
+## F. Production (Vercel)
+
+1. [vercel.com](https://vercel.com) → **Add New** → Import this GitHub repo.
+2. **Environment Variables** → add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same as `.env.local`).
+3. Supabase **URL configuration** → add your Vercel URL to **Site URL** and **Redirect URLs** (`https://…/portal/dashboard/`).
+4. Deploy. GitHub Pages is **not** used for this app anymore (CI only runs `npm run build`).

@@ -23,3 +23,7 @@ node_modules
 # Next.js
 .next/
 out/
+
+# Secrets (never commit)
+.env.local
+.env*.local
