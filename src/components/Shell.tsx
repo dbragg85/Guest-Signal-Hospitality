@@ -8,22 +8,24 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-stone-50 text-slate-900">
       <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950 shadow-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 sm:px-5 sm:py-2.5">
-          <BrandLockup />
-
-          <nav
-            className="hidden items-center gap-5 md:flex lg:gap-6"
-            aria-label="Primary"
-          >
-            {nav.map((n) => (
-              <Link
-                key={n.label + n.href}
-                href={n.href.startsWith("#") ? `/${n.href}` : n.href}
-                className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
-              >
-                {n.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Logo + nav grouped so links sit next to the mark—avoids a wide empty band on large screens */}
+          <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-8 lg:gap-10">
+            <BrandLockup />
+            <nav
+              className="hidden items-center gap-4 md:flex lg:gap-5"
+              aria-label="Primary"
+            >
+              {nav.map((n) => (
+                <Link
+                  key={n.label + n.href}
+                  href={n.href.startsWith("#") ? `/${n.href}` : n.href}
+                  className="whitespace-nowrap text-sm font-medium text-slate-300 transition-colors hover:text-white"
+                >
+                  {n.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <Link

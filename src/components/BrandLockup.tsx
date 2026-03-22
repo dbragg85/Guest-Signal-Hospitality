@@ -1,26 +1,30 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/** Raster logo (often hard to read at small sizes) + crisp HTML wordmark for legibility. */
+/**
+ * Raster mark + HTML wordmark. For a replacement asset, prefer a tight-cropped
+ * horizontal PNG or SVG (see team notes in repo / design handoff): ~200–280×40–48px
+ * @1x, transparent background, no extra canvas padding.
+ */
 export function BrandLockup() {
   return (
     <Link
       href="/"
-      className="group flex min-w-0 items-center gap-2.5 sm:gap-3"
+      className="group flex min-w-0 items-center gap-2 sm:gap-3"
     >
       <Image
         src="/logo.png"
         alt=""
-        width={120}
-        height={48}
-        className="h-8 w-auto max-w-[100px] shrink-0 object-left object-contain opacity-95 sm:h-9 sm:max-w-[110px]"
+        width={160}
+        height={40}
+        className="h-9 w-auto max-h-9 max-w-[140px] shrink-0 object-left object-contain sm:max-w-[160px]"
         priority
       />
       <span className="flex min-w-0 flex-col leading-tight">
-        <span className="truncate text-[15px] font-bold tracking-tight text-white sm:text-base">
+        <span className="truncate text-base font-bold tracking-tight text-white sm:text-lg">
           Guest Signal
         </span>
-        <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-400/95">
+        <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400 sm:text-[11px]">
           Hospitality
         </span>
       </span>
