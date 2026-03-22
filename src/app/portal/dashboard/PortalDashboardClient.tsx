@@ -1,5 +1,6 @@
 "use client";
 
+import { RestaurantSnapshotTemplate } from "@/components/portal/RestaurantSnapshotTemplate";
 import { usePortalSession } from "@/contexts/PortalSessionContext";
 import { isPortalRestaurantSlug } from "@/data/portal-restaurants";
 import Link from "next/link";
@@ -11,6 +12,13 @@ type Restaurant = {
   slug: string;
   name: string;
   portal_intro: string | null;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  logo_url: string | null;
+  google_rating: number | null;
+  price_level: number | null;
+  competitors: unknown;
 };
 
 type Scorecard = {
@@ -61,7 +69,9 @@ export function PortalDashboardClient({ initialSlug }: Props) {
 
     const { data: rests, error: rErr } = await supabase
       .from("restaurants")
-      .select("id, slug, name, portal_intro")
+      .select(
+        "id, slug, name, portal_intro, address, phone, website, logo_url, google_rating, price_level, competitors"
+      )
       .order("name");
 
     if (rErr) {
@@ -214,34 +224,31 @@ export function PortalDashboardClient({ initialSlug }: Props) {
           </div>
         ) : (
           <>
-            <div className="mt-8 flex flex-col gap-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <label htmlFor="restaurant" className="text-sm font-semibold text-slate-800">
-                  Restaurant
-                </label>
-                <select
-                  id="restaurant"
-                  className="max-w-md rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm"
-                  value={selectedId ?? ""}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setSelectedId(id);
-                    const r = restaurants.find((x) => x.id === id);
-                    if (initialSlug !== undefined && r && isPortalRestaurantSlug(r.slug)) {
-                      router.replace(`/portal/dashboard/${r.slug}/`);
-                    }
-                  }}
-                >
-                  {restaurants.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} ({r.slug})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <label htmlFor="restaurant" className="text-sm font-semibold text-slate-800">
+                Restaurant
+              </label>
+              <select
+                id="restaurant"
+                className="max-w-md rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm"
+                value={selectedId ?? ""}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedId(id);
+                  const r = restaurants.find((x) => x.id === id);
+                  if (initialSlug !== undefined && r && isPortalRestaurantSlug(r.slug)) {
+                    router.replace(`/portal/dashboard/${r.slug}/`);
+                  }
+                }}
+              >
+                {restaurants.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.slug})
+                  </option>
+                ))}
+              </select>
               {selectedId ? (
-                <div className="flex flex-col gap-2 text-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                <div className="text-sm">
                   {(() => {
                     const cur = restaurants.find((r) => r.id === selectedId);
                     if (cur && isPortalRestaurantSlug(cur.slug)) {
@@ -263,90 +270,92 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                   })()}
                 </div>
               ) : null}
-
-              <div className="rounded-xl border border-stone-200 bg-stone-50/60 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  Jump to restaurant page
-                </p>
-                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                  {restaurants
-                    .filter((r) => isPortalRestaurantSlug(r.slug))
-                    .map((r) => (
-                      <li key={r.id}>
-                        <Link
-                          href={`/portal/dashboard/${r.slug}/`}
-                          className={
-                            r.id === selectedId
-                              ? "font-semibold text-amber-900 underline"
-                              : "text-slate-700 underline-offset-4 hover:underline"
-                          }
-                        >
-                          {r.name}
-                        </Link>
-                      </li>
-                    ))}
-                </ul>
-              </div>
             </div>
 
             {selectedId ? (
               (() => {
                 const cur = restaurants.find((r) => r.id === selectedId);
-                if (!cur?.portal_intro) return null;
+                if (!cur) return null;
                 return (
-                  <div className="mt-8 rounded-2xl border border-stone-200 bg-white px-5 py-4 text-sm leading-relaxed text-slate-700 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Notes for this location
-                    </p>
-                    <p className="mt-2 whitespace-pre-wrap">{cur.portal_intro}</p>
-                  </div>
+                  <>
+                    <RestaurantSnapshotTemplate
+                      restaurant={{
+                        name: cur.name,
+                        slug: cur.slug,
+                        portal_intro: cur.portal_intro,
+                        address: cur.address,
+                        phone: cur.phone,
+                        website: cur.website,
+                        logo_url: cur.logo_url,
+                        google_rating: cur.google_rating,
+                        price_level: cur.price_level,
+                        competitors: cur.competitors,
+                      }}
+                      scorecards={scorecards.map((row) => ({
+                        id: row.id,
+                        period: row.period,
+                        score: row.score,
+                        headline: row.headline,
+                        data: row.data,
+                      }))}
+                    />
+
+                    <div className="mt-14">
+                      <h2 className="text-lg font-semibold text-slate-900">
+                        Scorecard history
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-600">
+                        All published periods for this location (source: Supabase{" "}
+                        <code className="rounded bg-stone-100 px-1 text-xs">scorecards</code>).
+                      </p>
+                      <div className="mt-4 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
+                        <table className="min-w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b border-stone-200 bg-stone-50/80">
+                              <th className="px-4 py-3 font-semibold text-slate-900">
+                                Period
+                              </th>
+                              <th className="px-4 py-3 font-semibold text-slate-900">
+                                Score
+                              </th>
+                              <th className="px-4 py-3 font-semibold text-slate-900">
+                                Headline
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {scorecards.length === 0 ? (
+                              <tr>
+                                <td
+                                  className="px-4 py-6 text-slate-600"
+                                  colSpan={3}
+                                >
+                                  No scorecards for this restaurant yet.
+                                </td>
+                              </tr>
+                            ) : (
+                              scorecards.map((row) => (
+                                <tr key={row.id} className="border-b border-stone-100">
+                                  <td className="px-4 py-3 font-medium text-slate-800">
+                                    {row.period}
+                                  </td>
+                                  <td className="px-4 py-3 text-slate-700">
+                                    {row.score ?? "—"}
+                                  </td>
+                                  <td className="px-4 py-3 text-slate-600">
+                                    {row.headline ?? "—"}
+                                  </td>
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
                 );
               })()
             ) : null}
-
-            <div className="mt-10 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
-              <table className="min-w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-stone-200 bg-stone-50/80">
-                    <th className="px-4 py-3 font-semibold text-slate-900">
-                      Period
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-slate-900">
-                      Score
-                    </th>
-                    <th className="px-4 py-3 font-semibold text-slate-900">
-                      Headline
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {scorecards.length === 0 ? (
-                    <tr>
-                      <td
-                        className="px-4 py-6 text-slate-600"
-                        colSpan={3}
-                      >
-                        No scorecards for this restaurant yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    scorecards.map((row) => (
-                      <tr key={row.id} className="border-b border-stone-100">
-                        <td className="px-4 py-3 font-medium text-slate-800">
-                          {row.period}
-                        </td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {row.score ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {row.headline ?? "—"}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
           </>
         )}
       </div>
