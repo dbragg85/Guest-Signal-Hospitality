@@ -9,11 +9,10 @@ interface ButtonProps {
 }
 
 export function Button({ href, children, variant = "primary", className = "" }: ButtonProps) {
-  const baseClasses = "rounded-xl px-5 py-3 text-sm font-semibold text-center transition";
-  
+  const baseClasses = "text-center transition";
   const variantClasses = {
-    primary: "bg-slate-900 text-white hover:bg-slate-800",
-    secondary: "border border-slate-300 text-slate-900 hover:bg-white",
+    primary: "btn-primary",
+    secondary: "btn-secondary",
   };
 
   return (

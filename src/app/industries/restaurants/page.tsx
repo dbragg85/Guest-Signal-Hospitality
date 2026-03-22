@@ -81,7 +81,7 @@ export default function RestaurantsIndustryPage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="border-b bg-gradient-to-b from-slate-50 to-white">
+      <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="grid gap-12 md:grid-cols-2 md:items-center">
             <div>
@@ -101,7 +101,7 @@ export default function RestaurantsIndustryPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/contact"
-                  className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 text-center"
+                  className="btn-primary px-6 py-3 text-center"
                 >
                   Get Your Free Snapshot
                 </Link>

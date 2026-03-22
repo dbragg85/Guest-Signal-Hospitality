@@ -135,7 +135,7 @@ Submitted: ${new Date().toISOString()}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? "Sending..." : "Send"}
               </button>

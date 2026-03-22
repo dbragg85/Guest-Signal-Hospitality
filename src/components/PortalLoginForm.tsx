@@ -32,7 +32,7 @@ export function PortalLoginForm() {
           placeholder="you@restaurant.com"
           value={access}
           onChange={(e) => setAccess(e.target.value)}
-          className="mt-3 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+          className="mt-3 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/25"
         />
       </div>
       <button type="submit" className="btn-primary w-full">

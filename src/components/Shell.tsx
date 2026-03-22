@@ -1,45 +1,38 @@
 import Link from "next/link";
-import Image from "next/image";
 import { brand, nav } from "@/content/site";
 import { ReactNode } from "react";
+import { BrandLockup, BrandLockupFooter } from "@/components/BrandLockup";
 
 export function Shell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="sticky top-0 z-30 border-b bg-white/95 backdrop-blur shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 md:py-6">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image
-              src="/logo.png"
-              alt={brand.name}
-              width={80}
-              height={80}
-              className="h-16 w-auto md:h-20"
-              priority
-              style={{ objectFit: 'contain' }}
-            />
-          </Link>
+    <div className="min-h-screen bg-stone-50 text-slate-900">
+      <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950 shadow-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2 sm:px-5 sm:py-2.5">
+          <BrandLockup />
 
-          <nav className="hidden gap-6 md:flex">
+          <nav
+            className="hidden items-center gap-5 md:flex lg:gap-6"
+            aria-label="Primary"
+          >
             {nav.map((n) => (
               <Link
                 key={n.label + n.href}
                 href={n.href.startsWith("#") ? `/${n.href}` : n.href}
-                className="text-sm text-slate-700 hover:text-slate-900"
+                className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
               >
                 {n.label}
               </Link>
             ))}
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <Link
               href="/portal"
-              className="text-sm font-medium text-slate-700 hover:text-slate-900 md:hidden"
+              className="text-sm font-semibold text-amber-400/95 transition-colors hover:text-amber-300 md:hidden"
             >
               Portal
             </Link>
-            <Link href="/contact" className="btn-primary">
+            <Link href="/contact" className="btn-primary whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm">
               <span className="hidden sm:inline">Get Your Free Snapshot</span>
               <span className="sm:hidden">Free Snapshot</span>
             </Link>
@@ -49,38 +42,41 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <main>{children}</main>
 
-      <footer className="border-t">
-        <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-slate-600">
-              <p>
+      <footer className="border-t border-slate-800 bg-slate-950">
+        <div className="mx-auto max-w-6xl px-4 py-8 sm:px-5">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div>
+              <BrandLockupFooter />
+              <p className="mt-4 text-sm text-slate-400">
                 © {new Date().getFullYear()} {brand.name}. All rights reserved.
               </p>
-              <p className="mt-2 flex items-center gap-2">
-                <span className="font-semibold text-slate-900">{brand.city}</span>
-                <span className="text-slate-400">•</span>
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-400">
+                <span className="font-medium text-slate-200">{brand.city}</span>
+                <span className="text-slate-600" aria-hidden>
+                  •
+                </span>
                 <span>{brand.email}</span>
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <Link
                 href="/portal"
-                className="text-slate-600 hover:text-slate-900 transition-colors"
+                className="font-medium text-slate-400 transition-colors hover:text-amber-400"
               >
                 Client Portal
               </Link>
-              <span className="text-slate-300" aria-hidden>
+              <span className="text-slate-700" aria-hidden>
                 |
               </span>
               <a
                 href={brand.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-slate-600 hover:text-slate-900 transition-colors"
+                className="text-slate-400 transition-colors hover:text-amber-400"
                 aria-label="Follow us on Instagram"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="h-6 w-6"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                   xmlns="http://www.w3.org/2000/svg"

@@ -23,11 +23,11 @@ function Trend({ value }: { value: number }) {
 
 export default function PortalDemoPage() {
   return (
-    <div className="border-b bg-gradient-to-b from-slate-50 to-white">
+    <div className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800/90">
               Guest Signal snapshot
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
@@ -40,14 +40,14 @@ export default function PortalDemoPage() {
           </div>
           <Link
             href="/portal"
-            className="text-sm font-semibold text-primary-700 hover:text-primary-800 hover:underline"
+            className="text-sm font-semibold text-amber-800 hover:text-amber-900 hover:underline"
           >
             ← Back to portal
           </Link>
         </div>
 
         <section className="mt-10" aria-labelledby="quarterly-heading">
-          <div className="rounded-3xl border-2 border-primary-200 bg-white p-6 shadow-lg sm:p-10">
+          <div className="rounded-3xl border-2 border-stone-200 bg-white p-6 shadow-lg sm:p-10">
             <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2
@@ -74,7 +74,7 @@ export default function PortalDemoPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-10 grid gap-4 border-t border-primary-100 pt-8 sm:grid-cols-3">
+            <div className="mt-10 grid gap-4 border-t border-stone-200 pt-8 sm:grid-cols-3">
               {[
                 {
                   label: "Experience Quality",
@@ -94,7 +94,7 @@ export default function PortalDemoPage() {
               ].map((row) => (
                 <div
                   key={row.label}
-                  className="rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50/80 to-white p-4"
+                  className="rounded-2xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-4"
                 >
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     {row.label}
@@ -130,7 +130,7 @@ export default function PortalDemoPage() {
             ].map((m) => (
               <div
                 key={m.month}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
               >
                 <p className="text-sm font-medium text-slate-500">{m.month}</p>
                 <p className="mt-3 text-4xl font-bold text-slate-900">
@@ -193,7 +193,7 @@ export default function PortalDemoPage() {
             ].map((block) => (
               <div
                 key={block.title}
-                className={`rounded-2xl border border-slate-200 border-l-4 bg-white p-6 shadow-sm ${block.border}`}
+                className={`rounded-2xl border border-stone-200 border-l-4 bg-white p-6 shadow-sm ${block.border}`}
               >
                 <h3 className="text-lg font-semibold text-slate-900">
                   {block.title}
@@ -212,7 +212,7 @@ export default function PortalDemoPage() {
         </section>
 
         <section className="mt-12" aria-labelledby="upgrade-heading">
-          <div className="rounded-3xl border-2 border-accent-200 bg-gradient-to-br from-accent-50 via-white to-primary-50 p-8 shadow-lg sm:p-10">
+          <div className="rounded-3xl border-2 border-amber-200/60 bg-gradient-to-br from-amber-50/40 via-white to-stone-50 p-8 shadow-lg sm:p-10">
             <h2
               id="upgrade-heading"
               className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"

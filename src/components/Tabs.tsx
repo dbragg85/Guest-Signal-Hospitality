@@ -33,8 +33,8 @@ export function Tabs<T extends string>({
               className={[
                 "rounded-xl px-4 py-2 text-sm font-semibold border",
                 isActive
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-white text-slate-800 border-slate-200 hover:bg-slate-50",
+                  ? "border-amber-500 bg-amber-500 text-slate-950"
+                  : "border-stone-200 bg-white text-slate-800 hover:bg-stone-50",
               ].join(" ")}
             >
               {i.label}

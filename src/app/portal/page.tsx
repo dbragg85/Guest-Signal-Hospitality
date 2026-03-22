@@ -12,7 +12,7 @@ export default function PortalPage() {
   return (
     <div className="border-b gradient-primary">
       <div className="mx-auto max-w-lg px-4 py-16 sm:px-6 lg:py-24">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-amber-800/90">
           Client portal
         </p>
         <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">

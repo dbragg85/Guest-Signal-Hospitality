@@ -6,7 +6,7 @@ export default function ServicesPage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="border-b bg-gradient-to-b from-slate-50 to-white">
+      <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
@@ -22,7 +22,7 @@ export default function ServicesPage() {
       {/* Free Snapshot Section */}
       <Section>
         <div className="max-w-4xl mx-auto">
-          <div className="rounded-3xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 md:p-12 shadow-lg">
+          <div className="rounded-3xl border-2 border-stone-200 bg-gradient-to-br from-stone-50 to-white p-8 shadow-lg md:p-12">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
                 {freeSnapshot.title}
@@ -48,7 +48,7 @@ export default function ServicesPage() {
             <div className="text-center">
               <Link
                 href="/contact"
-                className="inline-block rounded-xl bg-slate-900 px-8 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                className="btn-primary inline-block px-8 py-3"
               >
                 {freeSnapshot.buttonText}
               </Link>
@@ -72,13 +72,13 @@ export default function ServicesPage() {
               key={plan.name}
               className={`rounded-3xl border-2 p-8 shadow-sm relative ${
                 plan.popular
-                  ? "border-slate-900 bg-gradient-to-br from-slate-50 to-white scale-105"
+                  ? "scale-105 border-slate-900 bg-gradient-to-br from-stone-50 to-white ring-1 ring-amber-500/20"
                   : "border-slate-200 bg-white"
               }`}
             >
               {plan.badge && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-slate-900 text-white text-xs font-semibold px-4 py-1 rounded-full">
+                  <span className="rounded-full bg-gradient-to-r from-slate-800 to-amber-600 px-4 py-1 text-xs font-semibold text-white">
                     {plan.badge}
                   </span>
                 </div>
@@ -106,8 +106,8 @@ export default function ServicesPage() {
                 href="/contact"
                 className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold ${
                   plan.popular
-                    ? "bg-slate-900 text-white hover:bg-slate-800"
-                    : "border border-slate-300 text-slate-900 hover:bg-slate-50"
+                    ? "btn-primary shadow-md"
+                    : "border border-stone-300 text-slate-900 hover:bg-stone-50"
                 }`}
               >
                 {plan.buttonText}

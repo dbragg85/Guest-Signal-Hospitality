@@ -35,13 +35,12 @@ module.exports = {
       },
       fontFamily: {
         sans: [
+          'var(--font-jakarta)',
           'system-ui',
           '-apple-system',
           'BlinkMacSystemFont',
           '"Segoe UI"',
           'Roboto',
-          '"Helvetica Neue"',
-          'Arial',
           'sans-serif',
         ],
       },

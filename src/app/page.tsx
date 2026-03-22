@@ -9,7 +9,7 @@ export default function HomePage() {
     <div>
       {/* Hero Section */}
       <section className="border-b gradient-primary">
-        <div className="mx-auto max-w-6xl px-4 py-20">
+        <div className="mx-auto max-w-6xl px-4 py-14 md:py-16">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
               Know Your Restaurant's Guest Signal Score.
@@ -35,13 +35,13 @@ export default function HomePage() {
       {/* Free Snapshot Section */}
       <Section>
         <div className="max-w-4xl mx-auto">
-          <div className="rounded-3xl border-2 border-primary-200 bg-gradient-to-br from-primary-50 via-white to-accent-50 p-8 md:p-12 shadow-lg">
+          <div className="surface-elevated border-2 p-8 md:p-12">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
                 {freeSnapshot.title}
               </h2>
               <div className="mt-4">
-                <span className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">{freeSnapshot.price}</span>
+                <span className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-amber-700 bg-clip-text text-transparent">{freeSnapshot.price}</span>
               </div>
             </div>
 
@@ -59,10 +59,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-center">
-              <Link
-                href="/contact"
-                className="inline-block rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-3 text-sm font-semibold text-white hover:from-primary-700 hover:to-primary-800 shadow-lg transition-all"
-              >
+              <Link href="/contact" className="btn-primary inline-block px-8 py-3">
                 {freeSnapshot.buttonText}
               </Link>
               <p className="mt-4 text-xs text-slate-500">
@@ -77,9 +74,9 @@ export default function HomePage() {
       <Section title="How Guest Signal Works" kicker="Process">
         <div className="max-w-4xl mx-auto">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 text-lg font-bold text-white">
                   1
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900">Analyze Reviews</h3>
@@ -89,9 +86,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 text-lg font-bold text-white">
                   2
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900">Calculate Score</h3>
@@ -101,9 +98,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 text-lg font-bold text-white">
                   3
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900">Identify Areas</h3>
@@ -113,9 +110,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-6 shadow-sm">
+            <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-800 text-lg font-bold text-white">
                   4
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900">Provide Tools</h3>
@@ -131,7 +128,7 @@ export default function HomePage() {
       {/* Local Trust Signal Section */}
       <Section>
         <div className="max-w-4xl mx-auto">
-          <div className="rounded-3xl border-2 border-primary-300 bg-gradient-to-br from-primary-50 via-white to-accent-50 p-8 md:p-12 shadow-lg text-center">
+          <div className="rounded-3xl border-2 border-amber-200/70 bg-gradient-to-br from-stone-50 via-white to-amber-50/40 p-8 text-center shadow-lg md:p-12">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl text-slate-900">
               Serving Restaurants in Cincinnati and Beyond
             </h2>
@@ -140,12 +137,12 @@ export default function HomePage() {
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-700">
               <div className="flex items-center gap-2">
-                <span className="text-primary-600 font-bold">📍</span>
+                <span className="font-bold text-amber-700">📍</span>
                 <span className="font-semibold">Cincinnati, OH</span>
               </div>
               <span className="text-slate-400">•</span>
               <div className="flex items-center gap-2">
-                <span className="text-primary-600 font-bold">🌎</span>
+                <span className="font-bold text-amber-700">🌎</span>
                 <span>Nationwide Service Available</span>
               </div>
             </div>
@@ -165,13 +162,13 @@ export default function HomePage() {
               key={plan.name}
               className={`rounded-3xl border-2 p-8 shadow-sm relative ${
                 plan.popular
-                  ? "border-slate-900 bg-gradient-to-br from-slate-50 to-white scale-105"
+                  ? "scale-105 border-slate-900 bg-gradient-to-br from-stone-50 to-white ring-1 ring-amber-500/20"
                   : "border-slate-200 bg-white"
               }`}
             >
               {plan.badge && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-gradient-to-r from-primary-600 to-accent-500 text-white text-xs font-semibold px-4 py-1 rounded-full shadow-md">
+                  <span className="rounded-full bg-gradient-to-r from-slate-800 to-amber-600 px-4 py-1 text-xs font-semibold text-white shadow-md">
                     {plan.badge}
                   </span>
                 </div>
@@ -197,10 +194,10 @@ export default function HomePage() {
 
               <Link
                 href="/contact"
-                className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold transition-all ${
+                className={`block w-full rounded-xl px-5 py-3 text-center text-sm font-semibold transition-all ${
                   plan.popular
-                    ? "bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 shadow-md"
-                    : "border border-slate-300 text-slate-900 hover:bg-primary-50 hover:border-primary-300"
+                    ? "btn-primary shadow-md"
+                    : "border border-stone-300 text-slate-900 hover:border-stone-400 hover:bg-stone-50"
                 }`}
               >
                 {plan.buttonText}
@@ -212,7 +209,7 @@ export default function HomePage() {
 
       {/* Authority Section */}
       <Section>
-        <div className="rounded-3xl border border-primary-200 bg-gradient-to-br from-primary-50/50 to-white p-10 shadow-sm">
+        <div className="rounded-3xl border border-stone-200 bg-gradient-to-br from-stone-50/90 to-white p-10 shadow-sm">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
               Built for Restaurants That Take Guest Experience Seriously
@@ -229,7 +226,7 @@ export default function HomePage() {
 
       {/* Newsletter Section */}
       <Section id="newsletter">
-        <div className="rounded-3xl border border-accent-200 bg-gradient-to-br from-accent-50 via-white to-primary-50 p-10 shadow-sm">
+        <div className="rounded-3xl border border-amber-200/60 bg-gradient-to-br from-amber-50/40 via-white to-stone-50 p-10 shadow-sm">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
               Get The Guest Signal Report
@@ -241,13 +238,10 @@ export default function HomePage() {
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+                className="flex-1 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
                 required
               />
-              <button
-                type="submit"
-                className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-              >
+              <button type="submit" className="btn-primary px-6 py-3">
                 Subscribe
               </button>
             </form>

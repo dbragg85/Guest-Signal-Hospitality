@@ -21,7 +21,7 @@ export default function TeamPage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="border-b bg-gradient-to-b from-slate-50 to-white">
+      <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">

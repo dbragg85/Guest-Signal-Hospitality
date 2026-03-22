@@ -43,7 +43,7 @@ export default function CareersPage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="border-b bg-gradient-to-b from-slate-50 to-white">
+      <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
         <div className="mx-auto max-w-6xl px-4 py-20">
           <div className="max-w-3xl">
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
@@ -58,7 +58,7 @@ export default function CareersPage() {
             <div className="mt-8">
               <Link
                 href="/contact"
-                className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 inline-block"
+                className="btn-primary inline-block px-6 py-3"
               >
                 Apply / Introduce Yourself
               </Link>
@@ -92,7 +92,7 @@ export default function CareersPage() {
 
       {/* Growth Message */}
       <Section>
-        <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-10 shadow-sm">
+        <div className="rounded-3xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-10 shadow-sm">
           <h3 className="text-2xl font-semibold tracking-tight">Your Growth Is Our Goal</h3>
           <p className="mt-4 text-slate-600 max-w-2xl">
             We invest in our team members through ongoing training, mentorship opportunities, and clear career paths. Whether you're starting your career in hospitality analytics or looking to grow your expertise, we provide the support and resources you need to succeed.
@@ -124,7 +124,7 @@ export default function CareersPage() {
               <div className="mt-6">
                 <Link
                   href="/contact"
-                  className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 inline-block"
+                  className="btn-primary inline-block px-5 py-2.5"
                 >
                   Apply Now →
                 </Link>
