@@ -28,9 +28,78 @@ type Scorecard = {
   score: number | null;
   headline: string | null;
   data: Record<string, unknown> | null;
+  created_at: string;
 };
 
 type Props = { initialSlug?: string };
+
+const REQUIRED_SNAPSHOT_PERIODS = [
+  "Dec 2025",
+  "Jan 2026",
+  "Feb 2026",
+  "Q1 2026",
+] as const;
+
+const MONTH_INDEX: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+function periodSortOrder(period: string): number {
+  const trimmed = period.trim();
+  const quarter = /^q([1-4])\s+(\d{4})$/i.exec(trimmed);
+  if (quarter) {
+    const q = Number(quarter[1]);
+    const year = Number(quarter[2]);
+    return year * 100 + q * 3;
+  }
+  const month = /^([a-z]+)\s+(\d{4})$/i.exec(trimmed);
+  if (month) {
+    const monthKey = month[1].toLowerCase();
+    const monthNum = MONTH_INDEX[monthKey];
+    const year = Number(month[2]);
+    if (monthNum) return year * 100 + monthNum;
+  }
+  return -1;
+}
+
+function normalizePeriod(period: string): string {
+  return period.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function sortScorecards(rows: Scorecard[]): Scorecard[] {
+  return [...rows].sort((a, b) => {
+    const ao = periodSortOrder(a.period);
+    const bo = periodSortOrder(b.period);
+    if (ao !== bo) return bo - ao;
+    if (a.created_at !== b.created_at) {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+    return b.period.localeCompare(a.period);
+  });
+}
 
 export function PortalDashboardClient({ initialSlug }: Props) {
   const router = useRouter();
@@ -115,15 +184,15 @@ export function PortalDashboardClient({ initialSlug }: Props) {
       }
       const { data, error } = await supabase
         .from("scorecards")
-        .select("id, restaurant_id, period, score, headline, data")
+        .select("id, restaurant_id, period, score, headline, data, created_at")
         .eq("restaurant_id", selectedId)
-        .order("period", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) {
         setLoadError(error.message);
         return;
       }
-      setScorecards((data ?? []) as Scorecard[]);
+      setScorecards(sortScorecards((data ?? []) as Scorecard[]));
     }
     loadScorecards();
   }, [supabase, selectedId]);
@@ -276,6 +345,12 @@ export function PortalDashboardClient({ initialSlug }: Props) {
               (() => {
                 const cur = restaurants.find((r) => r.id === selectedId);
                 if (!cur) return null;
+                const periodsPresent = new Set(
+                  scorecards.map((row) => normalizePeriod(row.period)),
+                );
+                const missingPeriods = REQUIRED_SNAPSHOT_PERIODS.filter(
+                  (period) => !periodsPresent.has(normalizePeriod(period)),
+                );
                 return (
                   <>
                     <RestaurantSnapshotTemplate
@@ -308,6 +383,37 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                         All published periods for this location (source: Supabase{" "}
                         <code className="rounded bg-stone-100 px-1 text-xs">scorecards</code>).
                       </p>
+                      <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50/70 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+                          Required snapshot coverage
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          {REQUIRED_SNAPSHOT_PERIODS.map((period) => {
+                            const present = periodsPresent.has(normalizePeriod(period));
+                            return (
+                              <span
+                                key={period}
+                                className={`rounded-full px-2 py-1 font-semibold ${
+                                  present
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-amber-100 text-amber-900"
+                                }`}
+                              >
+                                {period}: {present ? "ready" : "missing"}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        {missingPeriods.length > 0 ? (
+                          <p className="mt-2 text-xs text-amber-900">
+                            Missing periods: {missingPeriods.join(", ")}
+                          </p>
+                        ) : (
+                          <p className="mt-2 text-xs text-emerald-800">
+                            All required periods are published.
+                          </p>
+                        )}
+                      </div>
                       <div className="mt-4 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
                         <table className="min-w-full text-left text-sm">
                           <thead>
