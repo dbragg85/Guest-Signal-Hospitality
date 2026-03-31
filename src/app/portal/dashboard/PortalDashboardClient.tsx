@@ -69,13 +69,13 @@ const MONTH_INDEX: Record<string, number> = {
 
 function periodSortOrder(period: string): number {
   const trimmed = period.trim();
-  const quarter = /^q([1-4])\s+(\d{4})$/i.exec(trimmed);
+  const quarter = /^q([1-4])[\s-]*(\d{4})$/i.exec(trimmed);
   if (quarter) {
     const q = Number(quarter[1]);
     const year = Number(quarter[2]);
     return year * 100 + q * 3;
   }
-  const month = /^([a-z]+)\s+(\d{4})$/i.exec(trimmed);
+  const month = /^([a-z]+)[,\s-]+(\d{4})$/i.exec(trimmed);
   if (month) {
     const monthKey = month[1].toLowerCase();
     const monthNum = MONTH_INDEX[monthKey];
@@ -87,6 +87,25 @@ function periodSortOrder(period: string): number {
 
 function normalizePeriod(period: string): string {
   return period.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function canonicalPeriodKey(period: string): string | null {
+  const trimmed = period.trim();
+  const quarter = /^q([1-4])[\s-]*(\d{4})$/i.exec(trimmed);
+  if (quarter) {
+    const q = Number(quarter[1]);
+    const year = Number(quarter[2]);
+    return `q:${year}:${q}`;
+  }
+  const month = /^([a-z]+)[,\s-]+(\d{4})$/i.exec(trimmed);
+  if (month) {
+    const monthKey = month[1].toLowerCase();
+    const monthNum = MONTH_INDEX[monthKey];
+    const year = Number(month[2]);
+    if (!monthNum) return null;
+    return `m:${year}:${monthNum}`;
+  }
+  return null;
 }
 
 function sortScorecards(rows: Scorecard[]): Scorecard[] {
@@ -345,11 +364,21 @@ export function PortalDashboardClient({ initialSlug }: Props) {
               (() => {
                 const cur = restaurants.find((r) => r.id === selectedId);
                 if (!cur) return null;
-                const periodsPresent = new Set(
-                  scorecards.map((row) => normalizePeriod(row.period)),
-                );
+                const periodsPresent = new Set<string>();
+                scorecards.forEach((row) => {
+                  const canonical = canonicalPeriodKey(row.period);
+                  if (canonical) {
+                    periodsPresent.add(canonical);
+                  } else {
+                    periodsPresent.add(`raw:${normalizePeriod(row.period)}`);
+                  }
+                });
                 const missingPeriods = REQUIRED_SNAPSHOT_PERIODS.filter(
-                  (period) => !periodsPresent.has(normalizePeriod(period)),
+                  (period) => {
+                    const canonical = canonicalPeriodKey(period);
+                    if (canonical) return !periodsPresent.has(canonical);
+                    return !periodsPresent.has(`raw:${normalizePeriod(period)}`);
+                  },
                 );
                 return (
                   <>
@@ -389,7 +418,10 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
                           {REQUIRED_SNAPSHOT_PERIODS.map((period) => {
-                            const present = periodsPresent.has(normalizePeriod(period));
+                            const canonical = canonicalPeriodKey(period);
+                            const present = canonical
+                              ? periodsPresent.has(canonical)
+                              : periodsPresent.has(`raw:${normalizePeriod(period)}`);
                             return (
                               <span
                                 key={period}
