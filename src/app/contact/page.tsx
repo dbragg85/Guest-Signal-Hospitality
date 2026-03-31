@@ -2,11 +2,15 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { trackEvent } from "@/lib/tracking";
+
+const DEFAULT_CONTACT_ENDPOINT = "https://formsubmit.co/ajax/audit@guestsignalhospitality.com";
 
 function ContactForm() {
   const searchParams = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     if (searchParams?.get("sent") === "1") {
@@ -17,39 +21,53 @@ function ContactForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError("");
 
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const business = formData.get("business") as string;
     const googleUrl = formData.get("googleUrl") as string;
     const message = formData.get("message") as string;
+    const endpoint = process.env.NEXT_PUBLIC_CONTACT_ENDPOINT || DEFAULT_CONTACT_ENDPOINT;
 
-    // Create email content
-    const emailSubject = `New Contact Form Submission - ${business || "Guest Signal"}`;
-    const emailBody = `
-New Contact Form Submission from Guest Signal Hospitality
+    try {
+      const requestBody = new FormData();
+      requestBody.append("name", name);
+      requestBody.append("email", email);
+      requestBody.append("business", business);
+      requestBody.append("googleUrl", googleUrl || "Not provided");
+      requestBody.append("message", message || "No message provided");
+      requestBody.append("_subject", `New Guest Signal contact lead: ${business || name}`);
+      requestBody.append("_template", "table");
+      requestBody.append("_captcha", "false");
 
-Name: ${name}
-Email: ${email}
-Restaurant/Business: ${business}
-Google Listing URL: ${googleUrl || "Not provided"}
-Message: ${message || "No message provided"}
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: requestBody,
+        headers: {
+          Accept: "application/json",
+        },
+      });
 
-Submitted: ${new Date().toISOString()}
-    `.trim();
+      if (!response.ok) {
+        throw new Error(`Contact submit failed: ${response.status}`);
+      }
 
-    // Create mailto link
-    const mailtoLink = `mailto:audit@guestsignalhospitality.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-
-    // Open email client
-    window.location.href = mailtoLink;
-    
-    // Show success message after a brief delay
-    setTimeout(() => {
+      form.reset();
       setSubmitted(true);
+      trackEvent("contact_submit_success", {
+        hasGoogleUrl: Boolean(googleUrl),
+        hasMessage: Boolean(message),
+      });
+    } catch (error) {
+      console.error(error);
+      setSubmitError("Submission failed. Please retry or email audit@guestsignalhospitality.com.");
+      trackEvent("contact_submit_fail");
+    } finally {
       setIsSubmitting(false);
-    }, 500);
+    }
   };
 
   if (submitted) {
@@ -136,9 +154,11 @@ Submitted: ${new Date().toISOString()}
                 type="submit"
                 disabled={isSubmitting}
                 className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+                data-track="contact_submit"
               >
                 {isSubmitting ? "Sending..." : "Send"}
               </button>
+              {submitError ? <p className="text-sm font-medium text-red-700">{submitError}</p> : null}
             </div>
           </form>
         </div>

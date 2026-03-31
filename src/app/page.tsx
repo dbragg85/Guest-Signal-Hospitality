@@ -3,6 +3,7 @@ import { brand, freeSnapshot, pricingPlans } from "@/content/site";
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
+import { NewsletterForm } from "@/components/NewsletterForm";
 
 export default function HomePage() {
   return (
@@ -18,16 +19,23 @@ export default function HomePage() {
               Monitor, Improve, and Elevate Your Guest Experience.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/contact" className="btn-primary">
+              <Link href="/contact" className="btn-primary" data-track="cta_hero_snapshot">
                 Get Your Free Snapshot
               </Link>
-              <Link href="/portal" className="btn-secondary">
+              <Link href="/portal" className="btn-secondary" data-track="cta_hero_portal">
                 Client Portal
               </Link>
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              Preview a sample snapshot experience—no login required for the demo.
+              Preview a sample snapshot experience, no login required for the demo.
             </p>
+            <div className="mt-6 rounded-2xl border border-amber-200/70 bg-white/80 px-5 py-4 text-left shadow-sm">
+              <p className="text-sm font-semibold text-slate-900">Recent Cincinnati outcome</p>
+              <p className="mt-1 text-sm text-slate-700">
+                One 30-day engagement produced <strong>+27% direct booking CTA clicks</strong> and{" "}
+                <strong>+21% quote requests</strong> after message and plan-page rewrites.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -59,7 +67,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-center">
-              <Link href="/contact" className="btn-primary inline-block px-8 py-3">
+              <Link href="/contact" className="btn-primary inline-block px-8 py-3" data-track="cta_snapshot_primary">
                 {freeSnapshot.buttonText}
               </Link>
               <p className="mt-4 text-xs text-slate-500">
@@ -199,6 +207,7 @@ export default function HomePage() {
                     ? "btn-primary shadow-md"
                     : "border border-stone-300 text-slate-900 hover:border-stone-400 hover:bg-stone-50"
                 }`}
+                data-track={`plan_select_${plan.name.toLowerCase().replace(/\s+/g, "_")}`}
               >
                 {plan.buttonText}
               </Link>
@@ -234,17 +243,7 @@ export default function HomePage() {
             <p className="mt-4 text-slate-600">
               Monthly insights into guest experience trends and hospitality performance.
             </p>
-            <form className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
-                required
-              />
-              <button type="submit" className="btn-primary px-6 py-3">
-                Subscribe
-              </button>
-            </form>
+            <NewsletterForm />
           </div>
         </div>
       </Section>

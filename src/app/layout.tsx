@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Shell } from "@/components/Shell";
 import { ReactNode } from "react";
+import { TrackingClickEvents } from "@/components/TrackingClickEvents";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -26,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={jakarta.variable}>
       <body className="font-sans antialiased">
+        <TrackingClickEvents />
         <Shell>{children}</Shell>
       </body>
     </html>

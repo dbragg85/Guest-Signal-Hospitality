@@ -31,15 +31,15 @@ export const pricingPlans = [
     price: "$79",
     period: "month",
     badge: null,
-    description: "Essential guest experience visibility.",
+    description: "Essential visibility with a monthly scorecard and 72-hour alerting.",
     features: [
-      "Monthly Guest Signal Score",
-      "Sentiment trend monitoring",
-      "Google review monitoring",
-      "Risk alerts",
-      "Quarterly Intelligence Report"
+      "Monthly Guest Signal Score with category breakdown",
+      "Sentiment trend monitoring across Google reviews",
+      "Risk alerts delivered within 72 hours",
+      "One-page monthly intelligence digest",
+      "Quarterly owner readout and next-step checklist"
     ],
-    buttonText: "Start Monitoring",
+    buttonText: "Start With Signal Monitor",
     popular: false
   },
   {
@@ -47,16 +47,16 @@ export const pricingPlans = [
     price: "$149",
     period: "month",
     badge: "Most Popular",
-    description: "Active guest experience improvement.",
+    description: "Active improvement with faster reporting and monthly priorities.",
     features: [
       "Everything in Monitor, plus:",
-      "Competitor tracking",
-      "Monthly improvement insights",
-      "Sentiment breakdown by category",
-      "Monthly Growth Summary",
-      "Priority alerts"
+      "Competitor tracking for 3 local peers",
+      "Weekly sentiment breakdown by category",
+      "Monthly improvement roadmap with top 5 priorities",
+      "48-hour priority alerts for rating drops",
+      "Monthly growth summary and owner action list"
     ],
-    buttonText: "Start Growing",
+    buttonText: "Choose Signal Growth",
     popular: true
   },
   {
@@ -64,16 +64,16 @@ export const pricingPlans = [
     price: "$299",
     period: "month",
     badge: "Best Value",
-    description: "Full guest reputation elevation.",
+    description: "Hands-on reputation elevation with weekly guidance and executive support.",
     features: [
       "Everything in Growth, plus:",
-      "Professional review responses",
-      "Weekly reputation monitoring",
-      "Guest recovery response strategy",
-      "Monthly Executive Intelligence Report",
-      "Priority support"
+      "Professional review response drafting (up to 20/month)",
+      "Weekly reputation monitoring and coaching notes",
+      "Guest recovery response playbook with SLA targets",
+      "Monthly executive intelligence report + KPI review",
+      "Priority support with 24-hour response SLA"
     ],
-    buttonText: "Elevate Your Reputation",
+    buttonText: "Request Signal Elevate",
     popular: false
   }
 ];
