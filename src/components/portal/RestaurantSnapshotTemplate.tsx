@@ -45,6 +45,25 @@ function priceLevelLabel(n: number | null | undefined): string {
   return labels[v] ?? "—";
 }
 
+function normalizeWebsiteUrl(website: string | null | undefined): string | null {
+  if (!website) return null;
+  const value = website.trim();
+  if (!value) return null;
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+function logoUrlFromWebsite(website: string | null | undefined): string | null {
+  const normalized = normalizeWebsiteUrl(website);
+  if (!normalized) return null;
+  try {
+    const host = new URL(normalized).hostname.toLowerCase();
+    if (!host) return null;
+    return `https://logo.clearbit.com/${host}`;
+  } catch {
+    return null;
+  }
+}
+
 type Competitor = {
   name: string;
   address?: string;
@@ -325,6 +344,8 @@ export function RestaurantSnapshotTemplate({
       : null;
 
   const competitors = parseCompetitors(restaurant.competitors);
+  const websiteHref = normalizeWebsiteUrl(restaurant.website);
+  const profileLogoUrl = restaurant.logo_url ?? logoUrlFromWebsite(restaurant.website);
 
   const headlineScore = selected?.score ?? null;
   const headlineText =
@@ -342,11 +363,11 @@ export function RestaurantSnapshotTemplate({
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
             <div className="shrink-0">
-              {restaurant.logo_url ? (
+              {profileLogoUrl ? (
                 <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 sm:h-32 sm:w-32">
                   {/* eslint-disable-next-line @next/next/no-img-element -- remote operator logos; avoid domain allowlist */}
                   <img
-                    src={restaurant.logo_url}
+                    src={profileLogoUrl}
                     alt={`${restaurant.name} logo`}
                     className="max-h-full max-w-full object-contain p-2"
                   />
@@ -402,11 +423,7 @@ export function RestaurantSnapshotTemplate({
                     </dt>
                     <dd>
                       <a
-                        href={
-                          restaurant.website.startsWith("http")
-                            ? restaurant.website
-                            : `https://${restaurant.website}`
-                        }
+                        href={websiteHref ?? restaurant.website}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-amber-900 underline-offset-4 hover:underline"
