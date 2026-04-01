@@ -131,6 +131,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [scorecards, setScorecards] = useState<Scorecard[]>([]);
+  const [activeScorecardId, setActiveScorecardId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -199,6 +200,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
     async function loadScorecards() {
       if (!supabase || !selectedId) {
         setScorecards([]);
+        setActiveScorecardId(null);
         return;
       }
       const { data, error } = await supabase
@@ -211,7 +213,12 @@ export function PortalDashboardClient({ initialSlug }: Props) {
         setLoadError(error.message);
         return;
       }
-      setScorecards(sortScorecards((data ?? []) as Scorecard[]));
+      const sorted = sortScorecards((data ?? []) as Scorecard[]);
+      setScorecards(sorted);
+      setActiveScorecardId((prev) => {
+        if (prev && sorted.some((row) => row.id === prev)) return prev;
+        return sorted[0]?.id ?? null;
+      });
     }
     loadScorecards();
   }, [supabase, selectedId]);
@@ -402,6 +409,8 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                         headline: row.headline,
                         data: row.data,
                       }))}
+                      activeScorecardId={activeScorecardId}
+                      onSelectScorecardId={(id) => setActiveScorecardId(id)}
                     />
 
                     <div className="mt-14">
@@ -459,6 +468,9 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                               <th className="px-4 py-3 font-semibold text-slate-900">
                                 Headline
                               </th>
+                              <th className="px-4 py-3 font-semibold text-slate-900">
+                                Action
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -466,14 +478,21 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                               <tr>
                                 <td
                                   className="px-4 py-6 text-slate-600"
-                                  colSpan={3}
+                                  colSpan={4}
                                 >
                                   No scorecards for this restaurant yet.
                                 </td>
                               </tr>
                             ) : (
                               scorecards.map((row) => (
-                                <tr key={row.id} className="border-b border-stone-100">
+                                <tr
+                                  key={row.id}
+                                  className={`border-b border-stone-100 ${
+                                    activeScorecardId === row.id
+                                      ? "bg-amber-50/70"
+                                      : "bg-white"
+                                  }`}
+                                >
                                   <td className="px-4 py-3 font-medium text-slate-800">
                                     {row.period}
                                   </td>
@@ -482,6 +501,21 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                                   </td>
                                   <td className="px-4 py-3 text-slate-600">
                                     {row.headline ?? "—"}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveScorecardId(row.id)}
+                                      className={`rounded-md px-2 py-1 text-xs font-semibold ${
+                                        activeScorecardId === row.id
+                                          ? "bg-amber-200 text-amber-900"
+                                          : "bg-stone-100 text-slate-700 hover:bg-stone-200"
+                                      }`}
+                                    >
+                                      {activeScorecardId === row.id
+                                        ? "Opened"
+                                        : "Open scorecard"}
+                                    </button>
                                   </td>
                                 </tr>
                               ))

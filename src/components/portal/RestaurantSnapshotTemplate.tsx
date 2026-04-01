@@ -21,7 +21,10 @@ export type RestaurantProfile = {
   competitors: unknown;
 };
 
-function Trend({ value }: { value: number }) {
+function Trend({ value }: { value: number | null }) {
+  if (value == null) {
+    return <span className="text-sm text-slate-500">n/a</span>;
+  }
   const up = value >= 0;
   return (
     <span
@@ -96,7 +99,7 @@ const PILLAR_DEF = [
   },
 ] as const;
 
-type MonthlyRow = { month: string; score: number; delta: number };
+type MonthlyRow = { month: string; score: number; delta: number | null };
 type SwotBlock = {
   strengths?: string[];
   weaknesses?: string[];
@@ -104,21 +107,119 @@ type SwotBlock = {
   threats?: string[];
 };
 
+type CategoryScoreRow = { category: string; score: number };
+
 type Props = {
   restaurant: RestaurantProfile;
   scorecards: ScorecardRow[];
+  activeScorecardId?: string | null;
+  onSelectScorecardId?: (id: string) => void;
 };
 
 export function RestaurantSnapshotTemplate({
   restaurant,
   scorecards,
+  activeScorecardId,
+  onSelectScorecardId,
 }: Props) {
-  const latest = scorecards[0] ?? null;
-  const data = latest?.data ?? null;
+  const selected =
+    (activeScorecardId
+      ? scorecards.find((row) => row.id === activeScorecardId)
+      : null) ??
+    scorecards[0] ??
+    null;
+  const data = selected?.data ?? null;
+
+  function parseNumeric(value: unknown): number | null {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string") {
+      const n = Number(value);
+      if (Number.isFinite(n)) return n;
+    }
+    return null;
+  }
+
+  function parseCategoryScoreRows(raw: unknown): CategoryScoreRow[] {
+    const rows: CategoryScoreRow[] = [];
+    if (Array.isArray(raw)) {
+      for (const item of raw) {
+        if (!item || typeof item !== "object") continue;
+        const record = item as Record<string, unknown>;
+        const labelRaw =
+          record.category ?? record.name ?? record.label ?? record.key;
+        const scoreRaw = record.score ?? record.value;
+        if (typeof labelRaw !== "string" || !labelRaw.trim()) continue;
+        const score = parseNumeric(scoreRaw);
+        if (score == null) continue;
+        rows.push({ category: labelRaw, score });
+      }
+      return rows;
+    }
+
+    if (raw && typeof raw === "object") {
+      for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+        const score = parseNumeric(v);
+        if (score == null) continue;
+        rows.push({ category: k, score });
+      }
+      return rows;
+    }
+
+    return rows;
+  }
+
+  function parseMonthlyRows(raw: unknown): MonthlyRow[] | null {
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+    const rows: MonthlyRow[] = [];
+    for (const item of raw) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as Record<string, unknown>;
+      const monthRaw = row.month ?? row.month_label ?? row.label;
+      if (typeof monthRaw !== "string" || !monthRaw.trim()) continue;
+      const score =
+        parseNumeric(row.score ?? row.guest_signal_score ?? row.value) ?? null;
+      if (score == null) continue;
+      const delta = parseNumeric(row.delta ?? row.delta_prior);
+      rows.push({ month: monthRaw, score, delta });
+    }
+    return rows.length ? rows : null;
+  }
+  const categorySources = [
+    data?.category_scores,
+    data?.categories,
+    data?.score_breakdown,
+    data?.breakdown,
+  ];
+  const categoryBreakdown =
+    categorySources
+      .map((source) => parseCategoryScoreRows(source))
+      .find((rows) => rows.length > 0) ?? [];
+
+  const categoryScoreMap = new Map<string, number>(
+    categoryBreakdown.map((row) => [row.category.trim().toLowerCase(), row.score]),
+  );
+
+  function avgFor(keys: string[]): number | null {
+    const values = keys
+      .map((k) => categoryScoreMap.get(k))
+      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    if (values.length === 0) return null;
+    return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+  }
+
+  const fallbackPillarScores: Record<string, number | null> = {
+    experience_quality: avgFor(["food", "atmosphere"]),
+    operational_reliability: avgFor(["speed", "cleanliness", "service"]),
+    emotional_connection: avgFor(["service", "atmosphere"]),
+  };
+
+  function normalizePeriodLabel(input: string): string {
+    return input.trim().toLowerCase().replace(/\s+/g, " ");
+  }
 
   const pillars = PILLAR_DEF.map((p) => {
     const v = data?.[p.key];
-    const score = typeof v === "number" ? v : null;
+    const score = parseNumeric(v) ?? fallbackPillarScores[p.key] ?? null;
     const blurbKey = `${p.key}_blurb`;
     const customBlurb = data?.[blurbKey];
     const blurb =
@@ -128,9 +229,7 @@ export function RestaurantSnapshotTemplate({
     return { ...p, score, blurb };
   });
 
-  const monthly = Array.isArray(data?.monthly)
-    ? (data?.monthly as MonthlyRow[])
-    : null;
+  const monthly = parseMonthlyRows(data?.monthly ?? data?.monthly_trends);
   const swot =
     data?.swot && typeof data.swot === "object"
       ? (data.swot as SwotBlock)
@@ -138,9 +237,9 @@ export function RestaurantSnapshotTemplate({
 
   const competitors = parseCompetitors(restaurant.competitors);
 
-  const headlineScore = latest?.score ?? null;
+  const headlineScore = selected?.score ?? null;
   const headlineText =
-    latest?.headline ??
+    selected?.headline ??
     (headlineScore != null
       ? "Guest Signal snapshot"
       : "Reporting will appear here when the first scorecard is published.");
@@ -263,7 +362,7 @@ export function RestaurantSnapshotTemplate({
                 id="quarterly-heading"
                 className="text-xl font-semibold text-slate-900"
               >
-                {latest?.period ? `${latest.period} snapshot` : "Latest snapshot"}
+                {selected?.period ? `${selected.period} snapshot` : "Latest snapshot"}
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
                 {headlineText}
@@ -278,7 +377,7 @@ export function RestaurantSnapshotTemplate({
               </p>
               <p className="mt-2 text-sm text-slate-600">
                 {headlineScore != null
-                  ? "Based on your latest published scorecard"
+                  ? "Based on the selected published scorecard"
                   : "Add a scorecard row in Supabase to populate this view"}
               </p>
             </div>
@@ -304,6 +403,50 @@ export function RestaurantSnapshotTemplate({
         </div>
       </section>
 
+      {categoryBreakdown.length > 0 ? (
+        <section aria-labelledby="category-breakdown-heading">
+          <h2
+            id="category-breakdown-heading"
+            className="text-2xl font-semibold tracking-tight text-slate-900"
+          >
+            Category score breakdown
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Score components for the selected period.
+          </p>
+          <div className="mt-6 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-stone-200 bg-stone-50/80">
+                  <th className="px-4 py-3 font-semibold text-slate-900">
+                    Category
+                  </th>
+                  <th className="px-4 py-3 font-semibold text-slate-900">
+                    Score
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryBreakdown
+                  .slice()
+                  .sort((a, b) => b.score - a.score)
+                  .map((row) => (
+                    <tr
+                      key={`${row.category}:${row.score}`}
+                      className="border-b border-stone-100"
+                    >
+                      <td className="px-4 py-3 font-medium capitalize text-slate-800">
+                        {row.category.replace(/_/g, " ")}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">{row.score}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
       {monthly && monthly.length > 0 ? (
         <section aria-labelledby="monthly-heading">
           <h2
@@ -318,9 +461,19 @@ export function RestaurantSnapshotTemplate({
           </p>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {monthly.map((m) => (
-              <div
+              <button
                 key={m.month}
-                className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
+                type="button"
+                onClick={() => {
+                  if (!onSelectScorecardId) return;
+                  const target = scorecards.find(
+                    (row) =>
+                      normalizePeriodLabel(row.period) ===
+                      normalizePeriodLabel(m.month),
+                  );
+                  if (target) onSelectScorecardId(target.id);
+                }}
+                className="rounded-2xl border border-stone-200 bg-white p-6 text-left shadow-sm transition hover:border-amber-300 hover:shadow md:cursor-pointer"
               >
                 <p className="text-sm font-medium text-slate-500">{m.month}</p>
                 <p className="mt-3 text-4xl font-bold text-slate-900">
@@ -330,7 +483,16 @@ export function RestaurantSnapshotTemplate({
                   <span>vs. prior month</span>
                   <Trend value={m.delta} />
                 </div>
-              </div>
+                {scorecards.some(
+                  (row) =>
+                    normalizePeriodLabel(row.period) ===
+                    normalizePeriodLabel(m.month),
+                ) ? (
+                  <p className="mt-3 text-xs font-semibold text-amber-800">
+                    Click to open this month&apos;s scorecard
+                  </p>
+                ) : null}
+              </button>
             ))}
           </div>
         </section>
