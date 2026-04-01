@@ -45,6 +45,15 @@ type SnapshotMonthlyTrendRow = {
   sort_order: number | null;
 };
 
+type SnapshotPeriodRow = {
+  id: string;
+  period_label: string | null;
+  created_at: string | null;
+  pillar_experience_quality: number | null;
+  pillar_operational_reliability: number | null;
+  pillar_emotional_connection: number | null;
+};
+
 type Props = { initialSlug?: string };
 
 const MONTH_INDEX: Record<string, number> = {
@@ -142,6 +151,15 @@ function getSnapshotIdFromScorecardData(data: Record<string, unknown> | null): s
   if (!data) return null;
   const raw = data.snapshot_id;
   return typeof raw === "string" && raw.trim() ? raw.trim() : null;
+}
+
+function parseNumeric(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
 }
 
 export function PortalDashboardClient({ initialSlug }: Props) {
@@ -246,7 +264,11 @@ export function PortalDashboardClient({ initialSlug }: Props) {
 
       // Some production scorecards have sparse `data` JSON while category/monthly
       // detail lives in normalized snapshot tables. Hydrate those payloads here.
-      const [{ data: categoryRows, error: categoryErr }, { data: monthlyRows, error: monthlyErr }] =
+      const [
+        { data: categoryRows, error: categoryErr },
+        { data: monthlyRows, error: monthlyErr },
+        { data: snapshotRows, error: snapshotsErr },
+      ] =
         await Promise.all([
           supabase
             .from("snapshot_category_scores")
@@ -256,6 +278,13 @@ export function PortalDashboardClient({ initialSlug }: Props) {
             .from("snapshot_monthly_trends")
             .select("snapshot_id, month_label, guest_signal_score, delta_prior, sort_order")
             .eq("restaurant_id", selectedId),
+          supabase
+            .from("snapshots")
+            .select(
+              "id, period_label, created_at, pillar_experience_quality, pillar_operational_reliability, pillar_emotional_connection"
+            )
+            .eq("restaurant_id", selectedId)
+            .order("created_at", { ascending: false }),
         ]);
 
       if (categoryErr) {
@@ -263,6 +292,9 @@ export function PortalDashboardClient({ initialSlug }: Props) {
       }
       if (monthlyErr) {
         console.warn("snapshot_monthly_trends hydration skipped:", monthlyErr.message);
+      }
+      if (snapshotsErr) {
+        console.warn("snapshots period hydration skipped:", snapshotsErr.message);
       }
 
       const categoryBySnapshot = new Map<string, SnapshotCategoryScoreRow[]>();
@@ -283,15 +315,36 @@ export function PortalDashboardClient({ initialSlug }: Props) {
         }
       });
 
+      const snapshotIdsByPeriod = new Map<string, string[]>();
+      const snapshotById = new Map<string, SnapshotPeriodRow>();
+      ((snapshotRows ?? []) as SnapshotPeriodRow[]).forEach((row) => {
+        if (!row.id || !row.period_label) return;
+        snapshotById.set(row.id, row);
+        const key = normalizePeriodForLookup(row.period_label);
+        const bucket = snapshotIdsByPeriod.get(key) ?? [];
+        bucket.push(row.id);
+        snapshotIdsByPeriod.set(key, bucket);
+      });
+
       const hydrated = base.map((row) => {
         const snapshotId = getSnapshotIdFromScorecardData(row.data);
+        const periodKey = normalizePeriodForLookup(row.period);
+        const periodSnapshotIds = snapshotIdsByPeriod.get(periodKey) ?? [];
+        const candidateSnapshotIds = [
+          ...(snapshotId ? [snapshotId] : []),
+          row.id,
+          ...periodSnapshotIds,
+        ];
+
         const categories =
-          (snapshotId ? categoryBySnapshot.get(snapshotId) : undefined) ??
-          categoryBySnapshot.get(row.id) ??
+          candidateSnapshotIds
+            .map((id) => categoryBySnapshot.get(id))
+            .find((items): items is SnapshotCategoryScoreRow[] => Array.isArray(items) && items.length > 0) ??
           [];
         const monthly =
-          (snapshotId ? monthlyBySnapshot.get(snapshotId) : undefined) ??
-          monthlyBySnapshot.get(row.id) ??
+          candidateSnapshotIds
+            .map((id) => monthlyBySnapshot.get(id))
+            .find((items): items is SnapshotMonthlyTrendRow[] => Array.isArray(items) && items.length > 0) ??
           [];
 
         const parsedCategories = categories
@@ -310,15 +363,62 @@ export function PortalDashboardClient({ initialSlug }: Props) {
             score: Number(item.guest_signal_score),
             delta: item.delta_prior == null ? null : Number(item.delta_prior),
           }));
+        const categoryAverage =
+          parsedCategories.length > 0
+            ? Number(
+                (
+                  parsedCategories.reduce((sum, item) => sum + item.score, 0) /
+                  parsedCategories.length
+                ).toFixed(1),
+              )
+            : null;
 
         const nextData: Record<string, unknown> = {
           ...(row.data ?? {}),
         };
+        const snapshotForPillars =
+          candidateSnapshotIds
+            .map((id) => snapshotById.get(id))
+            .find((item): item is SnapshotPeriodRow => Boolean(item)) ?? null;
+
         if (!nextData.category_scores && parsedCategories.length > 0) {
           nextData.category_scores = parsedCategories;
         }
         if (!nextData.monthly && !nextData.monthly_trends && parsedMonthly.length > 0) {
           nextData.monthly = parsedMonthly;
+        }
+        if (!nextData.total_score_breakdown && (row.score != null || categoryAverage != null)) {
+          nextData.total_score_breakdown = {
+            scorecard_total_score: row.score,
+            category_average: categoryAverage,
+            category_count: parsedCategories.length,
+            variance:
+              row.score != null && categoryAverage != null
+                ? Number((row.score - categoryAverage).toFixed(1))
+                : null,
+            source: "Hydrated from scorecards + snapshot_category_scores",
+          };
+        }
+        if (
+          !Object.prototype.hasOwnProperty.call(nextData, "experience_quality") &&
+          snapshotForPillars
+        ) {
+          const value = parseNumeric(snapshotForPillars.pillar_experience_quality);
+          if (value != null) nextData.experience_quality = value;
+        }
+        if (
+          !Object.prototype.hasOwnProperty.call(nextData, "operational_reliability") &&
+          snapshotForPillars
+        ) {
+          const value = parseNumeric(snapshotForPillars.pillar_operational_reliability);
+          if (value != null) nextData.operational_reliability = value;
+        }
+        if (
+          !Object.prototype.hasOwnProperty.call(nextData, "emotional_connection") &&
+          snapshotForPillars
+        ) {
+          const value = parseNumeric(snapshotForPillars.pillar_emotional_connection);
+          if (value != null) nextData.emotional_connection = value;
         }
         return {
           ...row,

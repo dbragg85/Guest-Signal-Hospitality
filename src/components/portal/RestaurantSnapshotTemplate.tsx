@@ -256,6 +256,30 @@ export function RestaurantSnapshotTemplate({
   const categoryScoreMap = new Map<string, number>(
     categoryBreakdown.map((row) => [row.category.trim().toLowerCase(), row.score]),
   );
+  const breakdownPayload =
+    data?.total_score_breakdown && typeof data.total_score_breakdown === "object"
+      ? (data.total_score_breakdown as Record<string, unknown>)
+      : null;
+  const categoryAverageDerived =
+    categoryBreakdown.length > 0
+      ? Number(
+          (
+            categoryBreakdown.reduce((sum, row) => sum + row.score, 0) /
+            categoryBreakdown.length
+          ).toFixed(1),
+        )
+      : null;
+  const totalScoreForBreakdown =
+    parseNumeric(breakdownPayload?.scorecard_total_score) ?? selected?.score ?? null;
+  const categoryAverageForBreakdown =
+    parseNumeric(breakdownPayload?.category_average) ?? categoryAverageDerived;
+  const categoryCountForBreakdown =
+    parseNumeric(breakdownPayload?.category_count) ?? categoryBreakdown.length;
+  const varianceForBreakdown =
+    parseNumeric(breakdownPayload?.variance) ??
+    (totalScoreForBreakdown != null && categoryAverageForBreakdown != null
+      ? Number((totalScoreForBreakdown - categoryAverageForBreakdown).toFixed(1))
+      : null);
 
   function avgFor(keys: string[]): number | null {
     const values = keys
@@ -547,6 +571,54 @@ export function RestaurantSnapshotTemplate({
                       <td className="px-4 py-3 text-slate-700">{row.score}</td>
                     </tr>
                   ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {totalScoreForBreakdown != null || categoryAverageForBreakdown != null ? (
+        <section aria-labelledby="total-derivation-heading">
+          <h2
+            id="total-derivation-heading"
+            className="text-2xl font-semibold tracking-tight text-slate-900"
+          >
+            Total score derivation
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Published total score comes from the scorecard row, with category
+            scores hydrated from snapshot category metrics.
+          </p>
+          <div className="mt-6 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
+            <table className="min-w-full text-left text-sm">
+              <tbody>
+                <tr className="border-b border-stone-100">
+                  <th className="w-56 px-4 py-3 font-semibold text-slate-900">
+                    Published total score
+                  </th>
+                  <td className="px-4 py-3 text-slate-700">
+                    {totalScoreForBreakdown ?? "—"}
+                  </td>
+                </tr>
+                <tr className="border-b border-stone-100">
+                  <th className="px-4 py-3 font-semibold text-slate-900">
+                    Category average
+                  </th>
+                  <td className="px-4 py-3 text-slate-700">
+                    {categoryAverageForBreakdown ?? "—"}
+                    {categoryCountForBreakdown
+                      ? ` (${Math.round(categoryCountForBreakdown)} categories)`
+                      : ""}
+                  </td>
+                </tr>
+                <tr>
+                  <th className="px-4 py-3 font-semibold text-slate-900">
+                    Variance (total - average)
+                  </th>
+                  <td className="px-4 py-3 text-slate-700">
+                    {varianceForBreakdown == null ? "—" : varianceForBreakdown}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
