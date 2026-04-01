@@ -271,11 +271,15 @@ export function RestaurantSnapshotTemplate({
   };
 
   function normalizePeriodLabel(input: string): string {
-    return input.trim().toLowerCase().replace(/\s+/g, " ");
+    return input
+      .trim()
+      .replace(/\s+snapshot$/i, "")
+      .toLowerCase()
+      .replace(/\s+/g, " ");
   }
 
   function canonicalPeriodLabel(input: string): string | null {
-    const trimmed = input.trim();
+    const trimmed = input.trim().replace(/\s+snapshot$/i, "");
 
     const yyyyMm = /^(\d{4})[-/](\d{1,2})$/.exec(trimmed);
     if (yyyyMm) {

@@ -99,7 +99,13 @@ function normalizePeriod(period: string): string {
 }
 
 function canonicalPeriodKey(period: string): string | null {
-  const trimmed = period.trim();
+  const trimmed = period.trim().replace(/\s+snapshot$/i, "");
+  const yyyyMm = /^(\d{4})[-/](\d{1,2})$/.exec(trimmed);
+  if (yyyyMm) {
+    const year = Number(yyyyMm[1]);
+    const monthNum = Number(yyyyMm[2]);
+    if (monthNum >= 1 && monthNum <= 12) return `m:${year}:${monthNum}`;
+  }
   const quarter = /^q([1-4])[\s-]*(\d{4})$/i.exec(trimmed);
   if (quarter) {
     const q = Number(quarter[1]);
@@ -132,6 +138,12 @@ function sortScorecards(rows: Scorecard[]): Scorecard[] {
 function normalizePeriodForLookup(period: string): string {
   const canonical = canonicalPeriodKey(period);
   return canonical ?? `raw:${normalizePeriod(period)}`;
+}
+
+function getSnapshotIdFromScorecardData(data: Record<string, unknown> | null): string | null {
+  if (!data) return null;
+  const raw = data.snapshot_id;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null;
 }
 
 export function PortalDashboardClient({ initialSlug }: Props) {
@@ -290,12 +302,15 @@ export function PortalDashboardClient({ initialSlug }: Props) {
       });
 
       const hydrated = base.map((row) => {
+        const snapshotId = getSnapshotIdFromScorecardData(row.data);
         const periodKey = normalizePeriodForLookup(row.period);
         const categories =
+          (snapshotId ? categoryBySnapshot.get(snapshotId) : undefined) ??
           categoryBySnapshot.get(row.id) ??
           categoryByPeriod.get(periodKey) ??
           [];
         const monthly =
+          (snapshotId ? monthlyBySnapshot.get(snapshotId) : undefined) ??
           monthlyBySnapshot.get(row.id) ??
           monthlyByPeriod.get(periodKey) ??
           [];
@@ -383,11 +398,6 @@ export function PortalDashboardClient({ initialSlug }: Props) {
               <span className="font-medium text-slate-800">
                 {session.user.email}
               </span>
-              {profile?.is_super_admin ? (
-                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                  Super admin — all restaurants
-                </span>
-              ) : null}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -456,7 +466,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
               >
                 {restaurants.map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.name} ({r.slug})
+                    {r.name}
                   </option>
                 ))}
               </select>
