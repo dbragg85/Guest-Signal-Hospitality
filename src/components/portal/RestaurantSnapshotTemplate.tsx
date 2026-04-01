@@ -58,7 +58,7 @@ function logoUrlFromWebsite(website: string | null | undefined): string | null {
   try {
     const host = new URL(normalized).hostname.toLowerCase();
     if (!host) return null;
-    return `https://logo.clearbit.com/${host}`;
+    return `https://icons.duckduckgo.com/ip3/${host}.ico`;
   } catch {
     return null;
   }

@@ -1,4 +1,4 @@
--- Backfill canonical restaurant websites and deterministic logo URLs.
+-- Backfill canonical restaurant websites and durable logo URLs.
 -- Intentionally leaves google_rating + price_level unchanged (null) until a vetted source is approved.
 
 with website_map(slug, website) as (
@@ -17,15 +17,19 @@ with website_map(slug, website) as (
     ('mazunte-taqueria', 'https://mazuntetaqueria.com'),
     ('the-bakers-table', 'https://www.bakerstablenewport.com'),
     ('the-park-diner', 'https://theparkdiner-northside.com')
+),
+profile_map as (
+  select
+    slug,
+    website,
+    'https://icons.duckduckgo.com/ip3/' ||
+      split_part(regexp_replace(lower(website), '^https?://', ''), '/', 1) ||
+      '.ico' as logo_url
+  from website_map
 )
 update public.restaurants r
 set
   website = m.website,
-  logo_url = coalesce(
-    nullif(trim(r.logo_url), ''),
-    'https://logo.clearbit.com/' ||
-      split_part(regexp_replace(lower(m.website), '^https?://', ''), '/', 1)
-  )
-from website_map m
+  logo_url = m.logo_url
+from profile_map m
 where r.slug = m.slug;
-
