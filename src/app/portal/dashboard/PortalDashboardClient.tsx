@@ -31,6 +31,22 @@ type Scorecard = {
   created_at: string;
 };
 
+type SnapshotCategoryScoreRow = {
+  snapshot_id: string | null;
+  period_label: string | null;
+  category: string | null;
+  score: number | null;
+};
+
+type SnapshotMonthlyTrendRow = {
+  snapshot_id: string | null;
+  period_label: string | null;
+  month_label: string | null;
+  guest_signal_score: number | null;
+  delta_prior: number | null;
+  sort_order: number | null;
+};
+
 type Props = { initialSlug?: string };
 
 const REQUIRED_SNAPSHOT_PERIODS = [
@@ -118,6 +134,11 @@ function sortScorecards(rows: Scorecard[]): Scorecard[] {
     }
     return b.period.localeCompare(a.period);
   });
+}
+
+function normalizePeriodForLookup(period: string): string {
+  const canonical = canonicalPeriodKey(period);
+  return canonical ?? `raw:${normalizePeriod(period)}`;
 }
 
 export function PortalDashboardClient({ initialSlug }: Props) {
@@ -213,11 +234,115 @@ export function PortalDashboardClient({ initialSlug }: Props) {
         setLoadError(error.message);
         return;
       }
-      const sorted = sortScorecards((data ?? []) as Scorecard[]);
-      setScorecards(sorted);
+      const base = sortScorecards((data ?? []) as Scorecard[]);
+      if (base.length === 0) {
+        setScorecards(base);
+        setActiveScorecardId(null);
+        return;
+      }
+
+      // Some production scorecards have sparse `data` JSON while category/monthly
+      // detail lives in normalized snapshot tables. Hydrate those payloads here.
+      const [{ data: categoryRows, error: categoryErr }, { data: monthlyRows, error: monthlyErr }] =
+        await Promise.all([
+          supabase
+            .from("snapshot_category_scores")
+            .select("snapshot_id, period_label, category, score")
+            .eq("restaurant_id", selectedId),
+          supabase
+            .from("snapshot_monthly_trends")
+            .select(
+              "snapshot_id, period_label, month_label, guest_signal_score, delta_prior, sort_order",
+            )
+            .eq("restaurant_id", selectedId),
+        ]);
+
+      if (categoryErr) {
+        console.warn("snapshot_category_scores hydration skipped:", categoryErr.message);
+      }
+      if (monthlyErr) {
+        console.warn("snapshot_monthly_trends hydration skipped:", monthlyErr.message);
+      }
+
+      const categoryBySnapshot = new Map<string, SnapshotCategoryScoreRow[]>();
+      const categoryByPeriod = new Map<string, SnapshotCategoryScoreRow[]>();
+      ((categoryRows ?? []) as SnapshotCategoryScoreRow[]).forEach((row) => {
+        if (row.snapshot_id) {
+          const bucket = categoryBySnapshot.get(row.snapshot_id) ?? [];
+          bucket.push(row);
+          categoryBySnapshot.set(row.snapshot_id, bucket);
+        }
+        if (row.period_label) {
+          const key = normalizePeriodForLookup(row.period_label);
+          const bucket = categoryByPeriod.get(key) ?? [];
+          bucket.push(row);
+          categoryByPeriod.set(key, bucket);
+        }
+      });
+
+      const monthlyBySnapshot = new Map<string, SnapshotMonthlyTrendRow[]>();
+      const monthlyByPeriod = new Map<string, SnapshotMonthlyTrendRow[]>();
+      ((monthlyRows ?? []) as SnapshotMonthlyTrendRow[]).forEach((row) => {
+        if (row.snapshot_id) {
+          const bucket = monthlyBySnapshot.get(row.snapshot_id) ?? [];
+          bucket.push(row);
+          monthlyBySnapshot.set(row.snapshot_id, bucket);
+        }
+        if (row.period_label) {
+          const key = normalizePeriodForLookup(row.period_label);
+          const bucket = monthlyByPeriod.get(key) ?? [];
+          bucket.push(row);
+          monthlyByPeriod.set(key, bucket);
+        }
+      });
+
+      const hydrated = base.map((row) => {
+        const periodKey = normalizePeriodForLookup(row.period);
+        const categories =
+          categoryBySnapshot.get(row.id) ??
+          categoryByPeriod.get(periodKey) ??
+          [];
+        const monthly =
+          monthlyBySnapshot.get(row.id) ??
+          monthlyByPeriod.get(periodKey) ??
+          [];
+
+        const parsedCategories = categories
+          .filter((item) => item.category && item.score != null)
+          .map((item) => ({
+            category: String(item.category),
+            score: Number(item.score),
+          }));
+
+        const parsedMonthly = monthly
+          .slice()
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .filter((item) => item.month_label && item.guest_signal_score != null)
+          .map((item) => ({
+            month: String(item.month_label),
+            score: Number(item.guest_signal_score),
+            delta: item.delta_prior == null ? null : Number(item.delta_prior),
+          }));
+
+        const nextData: Record<string, unknown> = {
+          ...(row.data ?? {}),
+        };
+        if (!nextData.category_scores && parsedCategories.length > 0) {
+          nextData.category_scores = parsedCategories;
+        }
+        if (!nextData.monthly && !nextData.monthly_trends && parsedMonthly.length > 0) {
+          nextData.monthly = parsedMonthly;
+        }
+        return {
+          ...row,
+          data: nextData,
+        };
+      });
+
+      setScorecards(hydrated);
       setActiveScorecardId((prev) => {
-        if (prev && sorted.some((row) => row.id === prev)) return prev;
-        return sorted[0]?.id ?? null;
+        if (prev && hydrated.some((row) => row.id === prev)) return prev;
+        return hydrated[0]?.id ?? null;
       });
     }
     loadScorecards();
