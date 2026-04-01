@@ -250,6 +250,106 @@ body {
     flex-wrap: wrap;
 }
 
+/* Newsletter entrypoint */
+.newsletter-cta {
+    padding: 70px 20px;
+    background: linear-gradient(135deg, rgba(0, 180, 216, 0.08), rgba(212, 175, 55, 0.1));
+}
+
+.newsletter-cta-card {
+    background: var(--white);
+    border: 1px solid rgba(10, 31, 46, 0.12);
+    border-radius: 20px;
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    box-shadow: 0 12px 30px rgba(10, 31, 46, 0.08);
+}
+
+.newsletter-cta-title {
+    font-size: 34px;
+    line-height: 1.2;
+    color: var(--dark-blue);
+    margin-bottom: 10px;
+}
+
+.newsletter-cta-text {
+    font-size: 17px;
+    color: var(--gray);
+    max-width: 700px;
+}
+
+/* Newsletter page */
+.newsletter-page {
+    padding: 140px 20px 90px;
+    background: #f8fafc;
+}
+
+.newsletter-hero {
+    padding: 32px;
+    background: var(--white);
+    border: 1px solid rgba(10, 31, 46, 0.12);
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(10, 31, 46, 0.06);
+    margin-bottom: 24px;
+}
+
+.newsletter-meta {
+    font-size: 13px;
+    color: var(--gray);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.newsletter-hero h1 {
+    font-size: 44px;
+    line-height: 1.15;
+    color: var(--dark-blue);
+    margin-bottom: 14px;
+}
+
+.newsletter-intro {
+    font-size: 18px;
+    color: var(--gray);
+    max-width: 820px;
+}
+
+.newsletter-actions {
+    margin-top: 22px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.newsletter-section {
+    margin-bottom: 20px;
+    padding: 28px 30px;
+    background: var(--white);
+    border: 1px solid rgba(10, 31, 46, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(10, 31, 46, 0.05);
+}
+
+.newsletter-section h2 {
+    margin-bottom: 10px;
+}
+
+.newsletter-section h3 {
+    margin-top: 18px;
+    margin-bottom: 8px;
+}
+
+.newsletter-section ul {
+    margin-left: 20px;
+}
+
+.newsletter-section a {
+    color: #075f78;
+}
+
 .stat {
     display: flex;
     flex-direction: column;
@@ -1338,4 +1438,3 @@ body {
         width: 100%;
     }
 }
-

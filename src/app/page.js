@@ -217,6 +217,25 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="newsletter-cta">
+        <div className="container">
+          <div className="newsletter-cta-card">
+            <div>
+              <h2 className="newsletter-cta-title">Read The Guest Signal Report</h2>
+              <p className="newsletter-cta-text">
+                Access our latest 10-15 minute newsletter with national, regional, and
+                Greater Cincinnati restaurant insights.
+              </p>
+            </div>
+            <div className="newsletter-cta-actions">
+              <Link href="/newsletter" className="btn btn-primary">
+                View Newsletter Page
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Contact Section */}
       <section id="contact" className="contact">
         <div className="container">

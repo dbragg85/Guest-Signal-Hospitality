@@ -76,6 +76,7 @@ export default function Navigation() {
             <li><a href="#services">Services</a></li>
             <li><a href="#audit">Audit</a></li>
             <li><a href="#contact">Contact</a></li>
+            <li><Link href="/newsletter">Newsletter</Link></li>
             <li><Link href="/about">About</Link></li>
           </ul>
           <button className="cta-button-nav" onClick={handleGetStarted}>Get Started</button>
@@ -84,4 +85,3 @@ export default function Navigation() {
     </nav>
   )
 }
-

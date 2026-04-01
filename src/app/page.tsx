@@ -243,6 +243,11 @@ export default function HomePage() {
             <p className="mt-4 text-slate-600">
               Monthly insights into guest experience trends and hospitality performance.
             </p>
+            <div className="mt-6">
+              <Link href="/newsletter" className="btn-secondary inline-block">
+                View Newsletter Page
+              </Link>
+            </div>
             <NewsletterForm />
           </div>
         </div>
