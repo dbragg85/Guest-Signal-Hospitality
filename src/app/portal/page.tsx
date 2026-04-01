@@ -20,11 +20,8 @@ export default function PortalPage() {
           Access Your Guest Signal Snapshot
         </h1>
         <p className="mt-4 text-slate-600 leading-relaxed">
-          Sign in with the email your operator invited (e.g.{" "}
-          <span className="font-medium text-slate-800">
-            admin@bocacincinnati.com
-          </span>
-          ). Super admin accounts can open any restaurant&apos;s scorecard.
+          Sign in with the email address your operator invited. Super admin
+          accounts can view scorecards for every restaurant.
         </p>
         <Suspense
           fallback={

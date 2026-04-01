@@ -49,13 +49,6 @@ type SnapshotMonthlyTrendRow = {
 
 type Props = { initialSlug?: string };
 
-const REQUIRED_SNAPSHOT_PERIODS = [
-  "Dec 2025",
-  "Jan 2026",
-  "Feb 2026",
-  "Q1 2026",
-] as const;
-
 const MONTH_INDEX: Record<string, number> = {
   jan: 1,
   january: 1,
@@ -496,22 +489,6 @@ export function PortalDashboardClient({ initialSlug }: Props) {
               (() => {
                 const cur = restaurants.find((r) => r.id === selectedId);
                 if (!cur) return null;
-                const periodsPresent = new Set<string>();
-                scorecards.forEach((row) => {
-                  const canonical = canonicalPeriodKey(row.period);
-                  if (canonical) {
-                    periodsPresent.add(canonical);
-                  } else {
-                    periodsPresent.add(`raw:${normalizePeriod(row.period)}`);
-                  }
-                });
-                const missingPeriods = REQUIRED_SNAPSHOT_PERIODS.filter(
-                  (period) => {
-                    const canonical = canonicalPeriodKey(period);
-                    if (canonical) return !periodsPresent.has(canonical);
-                    return !periodsPresent.has(`raw:${normalizePeriod(period)}`);
-                  },
-                );
                 return (
                   <>
                     <RestaurantSnapshotTemplate
@@ -543,43 +520,8 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                         Scorecard history
                       </h2>
                       <p className="mt-1 text-sm text-slate-600">
-                        All published periods for this location (source: Supabase{" "}
-                        <code className="rounded bg-stone-100 px-1 text-xs">scorecards</code>).
+                        All published periods for this location.
                       </p>
-                      <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50/70 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
-                          Required snapshot coverage
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                          {REQUIRED_SNAPSHOT_PERIODS.map((period) => {
-                            const canonical = canonicalPeriodKey(period);
-                            const present = canonical
-                              ? periodsPresent.has(canonical)
-                              : periodsPresent.has(`raw:${normalizePeriod(period)}`);
-                            return (
-                              <span
-                                key={period}
-                                className={`rounded-full px-2 py-1 font-semibold ${
-                                  present
-                                    ? "bg-emerald-100 text-emerald-800"
-                                    : "bg-amber-100 text-amber-900"
-                                }`}
-                              >
-                                {period}: {present ? "ready" : "missing"}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        {missingPeriods.length > 0 ? (
-                          <p className="mt-2 text-xs text-amber-900">
-                            Missing periods: {missingPeriods.join(", ")}
-                          </p>
-                        ) : (
-                          <p className="mt-2 text-xs text-emerald-800">
-                            All required periods are published.
-                          </p>
-                        )}
-                      </div>
                       <div className="mt-4 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
                         <table className="min-w-full text-left text-sm">
                           <thead>
