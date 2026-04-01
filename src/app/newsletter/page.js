@@ -20,6 +20,11 @@ export default function NewsletterPage() {
               repeat demand are the ones with clear positioning, a retention process, and fast
               response to guest signals.
             </p>
+            <div className="newsletter-highlights">
+              <p className="newsletter-highlight">National + regional signal synthesis</p>
+              <p className="newsletter-highlight">Greater Cincinnati operator focus</p>
+              <p className="newsletter-highlight">Practical action list for owners</p>
+            </div>
             <div className="newsletter-actions">
               <a
                 className="btn btn-primary"
@@ -46,26 +51,34 @@ export default function NewsletterPage() {
 
           <section className="newsletter-section">
             <h2>What We Are Seeing Right Now</h2>
-            <h3>National signal</h3>
-            <p>
-              The National Restaurant Association&apos;s 2026 Restaurant Performance Index updates
-              show improving demand conditions while guests remain selective on value.
-            </p>
-            <h3>Regional signal</h3>
-            <p>
-              Great Lakes and Midwest award cycles continue expanding visibility pressure for
-              independent concepts.
-            </p>
-            <h3>Greater Cincinnati signal</h3>
-            <p>
-              Cincinnati dining attention remains elevated through local event and media cycles,
-              and conversion discipline still separates operators.
-            </p>
+            <div className="newsletter-signal-grid">
+              <article className="newsletter-signal-card">
+                <h3>National signal</h3>
+                <p>
+                  The National Restaurant Association&apos;s 2026 Restaurant Performance Index
+                  updates show improving demand conditions while guests remain selective on value.
+                </p>
+              </article>
+              <article className="newsletter-signal-card">
+                <h3>Regional signal</h3>
+                <p>
+                  Great Lakes and Midwest award cycles continue expanding visibility pressure for
+                  independent concepts.
+                </p>
+              </article>
+              <article className="newsletter-signal-card">
+                <h3>Greater Cincinnati signal</h3>
+                <p>
+                  Cincinnati dining attention remains elevated through local event and media
+                  cycles, and conversion discipline still separates operators.
+                </p>
+              </article>
+            </div>
           </section>
 
           <section className="newsletter-section">
             <h2>Operator Implications</h2>
-            <ul>
+            <ul className="newsletter-checklist">
               <li>Capture demand in the first visit through measurable list growth and follow-up.</li>
               <li>Clarify your signature so guests can explain your concept in one sentence.</li>
               <li>Translate review signals into one owner action list every week.</li>
@@ -78,7 +91,7 @@ export default function NewsletterPage() {
 
           <section className="newsletter-section">
             <h2>Sources</h2>
-            <ul>
+            <ul className="newsletter-sources">
               <li>
                 <a href="https://restaurant.org/research-and-media/research/economists-notebook/">
                   National Restaurant Association, Economist&apos;s Notebook
