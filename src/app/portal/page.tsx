@@ -20,8 +20,7 @@ export default function PortalPage() {
           Access Your Guest Signal Snapshot
         </h1>
         <p className="mt-4 text-slate-600 leading-relaxed">
-          Sign in with the email address your operator invited. Super admin
-          accounts can view scorecards for every restaurant.
+          Sign in with the email address your operator invited.
         </p>
         <Suspense
           fallback={
