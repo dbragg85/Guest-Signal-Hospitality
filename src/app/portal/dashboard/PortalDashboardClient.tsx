@@ -33,14 +33,12 @@ type Scorecard = {
 
 type SnapshotCategoryScoreRow = {
   snapshot_id: string | null;
-  period_label: string | null;
   category: string | null;
   score: number | null;
 };
 
 type SnapshotMonthlyTrendRow = {
   snapshot_id: string | null;
-  period_label: string | null;
   month_label: string | null;
   guest_signal_score: number | null;
   delta_prior: number | null;
@@ -252,13 +250,11 @@ export function PortalDashboardClient({ initialSlug }: Props) {
         await Promise.all([
           supabase
             .from("snapshot_category_scores")
-            .select("snapshot_id, period_label, category, score")
+            .select("snapshot_id, category, score")
             .eq("restaurant_id", selectedId),
           supabase
             .from("snapshot_monthly_trends")
-            .select(
-              "snapshot_id, period_label, month_label, guest_signal_score, delta_prior, sort_order",
-            )
+            .select("snapshot_id, month_label, guest_signal_score, delta_prior, sort_order")
             .eq("restaurant_id", selectedId),
         ]);
 
@@ -270,49 +266,32 @@ export function PortalDashboardClient({ initialSlug }: Props) {
       }
 
       const categoryBySnapshot = new Map<string, SnapshotCategoryScoreRow[]>();
-      const categoryByPeriod = new Map<string, SnapshotCategoryScoreRow[]>();
       ((categoryRows ?? []) as SnapshotCategoryScoreRow[]).forEach((row) => {
         if (row.snapshot_id) {
           const bucket = categoryBySnapshot.get(row.snapshot_id) ?? [];
           bucket.push(row);
           categoryBySnapshot.set(row.snapshot_id, bucket);
         }
-        if (row.period_label) {
-          const key = normalizePeriodForLookup(row.period_label);
-          const bucket = categoryByPeriod.get(key) ?? [];
-          bucket.push(row);
-          categoryByPeriod.set(key, bucket);
-        }
       });
 
       const monthlyBySnapshot = new Map<string, SnapshotMonthlyTrendRow[]>();
-      const monthlyByPeriod = new Map<string, SnapshotMonthlyTrendRow[]>();
       ((monthlyRows ?? []) as SnapshotMonthlyTrendRow[]).forEach((row) => {
         if (row.snapshot_id) {
           const bucket = monthlyBySnapshot.get(row.snapshot_id) ?? [];
           bucket.push(row);
           monthlyBySnapshot.set(row.snapshot_id, bucket);
         }
-        if (row.period_label) {
-          const key = normalizePeriodForLookup(row.period_label);
-          const bucket = monthlyByPeriod.get(key) ?? [];
-          bucket.push(row);
-          monthlyByPeriod.set(key, bucket);
-        }
       });
 
       const hydrated = base.map((row) => {
         const snapshotId = getSnapshotIdFromScorecardData(row.data);
-        const periodKey = normalizePeriodForLookup(row.period);
         const categories =
           (snapshotId ? categoryBySnapshot.get(snapshotId) : undefined) ??
           categoryBySnapshot.get(row.id) ??
-          categoryByPeriod.get(periodKey) ??
           [];
         const monthly =
           (snapshotId ? monthlyBySnapshot.get(snapshotId) : undefined) ??
           monthlyBySnapshot.get(row.id) ??
-          monthlyByPeriod.get(periodKey) ??
           [];
 
         const parsedCategories = categories
