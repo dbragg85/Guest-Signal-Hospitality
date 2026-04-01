@@ -116,6 +116,33 @@ type Props = {
   onSelectScorecardId?: (id: string) => void;
 };
 
+const MONTH_INDEX: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
 export function RestaurantSnapshotTemplate({
   restaurant,
   scorecards,
@@ -184,11 +211,23 @@ export function RestaurantSnapshotTemplate({
     }
     return rows.length ? rows : null;
   }
+
+  const gradeCategorySource: Record<string, unknown> = {
+    food: data?.food_grade,
+    service: data?.service_grade,
+    speed: data?.speed_grade,
+    consistency: data?.consistency_grade,
+    momentum: data?.momentum_grade,
+    atmosphere: data?.atmosphere_grade,
+    cleanliness: data?.cleanliness_grade,
+  };
+
   const categorySources = [
     data?.category_scores,
     data?.categories,
     data?.score_breakdown,
     data?.breakdown,
+    gradeCategorySource,
   ];
   const categoryBreakdown =
     categorySources
@@ -208,13 +247,59 @@ export function RestaurantSnapshotTemplate({
   }
 
   const fallbackPillarScores: Record<string, number | null> = {
-    experience_quality: avgFor(["food", "atmosphere"]),
-    operational_reliability: avgFor(["speed", "cleanliness", "service"]),
-    emotional_connection: avgFor(["service", "atmosphere"]),
+    experience_quality: avgFor([
+      "experience_quality",
+      "food",
+      "service",
+      "atmosphere",
+      "hospitality",
+    ]),
+    operational_reliability: avgFor([
+      "operational_reliability",
+      "speed",
+      "consistency",
+      "cleanliness",
+      "operations",
+    ]),
+    emotional_connection: avgFor([
+      "emotional_connection",
+      "momentum",
+      "service",
+      "atmosphere",
+      "sentiment",
+    ]),
   };
 
   function normalizePeriodLabel(input: string): string {
     return input.trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  function canonicalPeriodLabel(input: string): string | null {
+    const trimmed = input.trim();
+
+    const yyyyMm = /^(\d{4})[-/](\d{1,2})$/.exec(trimmed);
+    if (yyyyMm) {
+      const year = Number(yyyyMm[1]);
+      const month = Number(yyyyMm[2]);
+      if (month >= 1 && month <= 12) return `m:${year}:${month}`;
+    }
+
+    const quarter = /^q([1-4])[\s-]*(\d{4})$/i.exec(trimmed);
+    if (quarter) {
+      const q = Number(quarter[1]);
+      const year = Number(quarter[2]);
+      return `q:${year}:${q}`;
+    }
+
+    const month = /^([a-z]+)[,\s-]+(\d{4})$/i.exec(trimmed);
+    if (month) {
+      const monthKey = month[1].toLowerCase();
+      const monthNum = MONTH_INDEX[monthKey];
+      const year = Number(month[2]);
+      if (monthNum) return `m:${year}:${monthNum}`;
+    }
+
+    return null;
   }
 
   const pillars = PILLAR_DEF.map((p) => {
@@ -466,10 +551,18 @@ export function RestaurantSnapshotTemplate({
                 type="button"
                 onClick={() => {
                   if (!onSelectScorecardId) return;
+                  const monthCanonical = canonicalPeriodLabel(m.month);
                   const target = scorecards.find(
-                    (row) =>
-                      normalizePeriodLabel(row.period) ===
-                      normalizePeriodLabel(m.month),
+                    (row) => {
+                      const rowCanonical = canonicalPeriodLabel(row.period);
+                      if (monthCanonical && rowCanonical) {
+                        return rowCanonical === monthCanonical;
+                      }
+                      return (
+                        normalizePeriodLabel(row.period) ===
+                        normalizePeriodLabel(m.month)
+                      );
+                    },
                   );
                   if (target) onSelectScorecardId(target.id);
                 }}
@@ -483,11 +576,17 @@ export function RestaurantSnapshotTemplate({
                   <span>vs. prior month</span>
                   <Trend value={m.delta} />
                 </div>
-                {scorecards.some(
-                  (row) =>
+                {scorecards.some((row) => {
+                  const monthCanonical = canonicalPeriodLabel(m.month);
+                  const rowCanonical = canonicalPeriodLabel(row.period);
+                  if (monthCanonical && rowCanonical) {
+                    return rowCanonical === monthCanonical;
+                  }
+                  return (
                     normalizePeriodLabel(row.period) ===
-                    normalizePeriodLabel(m.month),
-                ) ? (
+                    normalizePeriodLabel(m.month)
+                  );
+                }) ? (
                   <p className="mt-3 text-xs font-semibold text-amber-800">
                     Click to open this month&apos;s scorecard
                   </p>
