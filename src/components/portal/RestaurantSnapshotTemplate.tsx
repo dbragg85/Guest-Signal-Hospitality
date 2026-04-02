@@ -18,6 +18,8 @@ export type RestaurantProfile = {
   logo_url: string | null;
   google_rating: number | null;
   price_level: number | null;
+  /** When set in Supabase, shown as the price tier instead of deriving from `price_level` alone. */
+  price_level_label: string | null;
   competitors: unknown;
 };
 
@@ -43,6 +45,16 @@ function priceLevelLabel(n: number | null | undefined): string {
   const v = Math.max(0, Math.min(4, Math.round(Number(n))));
   const labels = ["N/A", "$", "$$", "$$$", "$$$$"];
   return labels[v] ?? "—";
+}
+
+/** Prefer explicit DB label; otherwise map Google-style 0–4 to $…$ display. */
+function formatPriceTier(
+  label: string | null | undefined,
+  level: number | null | undefined,
+): string {
+  const t = typeof label === "string" ? label.trim() : "";
+  if (t) return t;
+  return priceLevelLabel(level);
 }
 
 function normalizeWebsiteUrl(website: string | null | undefined): string | null {
@@ -75,6 +87,8 @@ type Competitor = {
   yelp_review_count?: number;
   yelp_url?: string;
   price_level?: number;
+  /** Optional per-competitor label in JSON; wins over numeric price_level mapping. */
+  price_level_label?: string;
   distance_miles?: number;
 };
 
@@ -112,6 +126,7 @@ function parseCompetitors(raw: unknown): Competitor[] {
       yelp_review_count: parseOptionalNumber(o.yelp_review_count),
       yelp_url: parseOptionalString(o.yelp_url),
       price_level: parseOptionalNumber(o.price_level),
+      price_level_label: parseOptionalString(o.price_level_label),
       distance_miles: parseOptionalNumber(o.distance_miles),
     });
   }
@@ -607,7 +622,7 @@ export function RestaurantSnapshotTemplate({
                   <span>
                     Price tier:{" "}
                     <strong className="text-slate-800">
-                      {priceLevelLabel(restaurant.price_level)}
+                      {formatPriceTier(restaurant.price_level_label, restaurant.price_level)}
                     </strong>
                   </span>
                 </div>
@@ -976,8 +991,10 @@ export function RestaurantSnapshotTemplate({
             ,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">google_url</code>
             ,{" "}
+            <code className="rounded bg-stone-100 px-1 text-xs">price_level_label</code>{" "}
+            (text) or{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">price_level</code>{" "}
-            0–4,{" "}
+            (0–4),{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">
               distance_miles
             </code>
@@ -1040,7 +1057,7 @@ export function RestaurantSnapshotTemplate({
                       )}
                     </td>
                     <td className="px-4 py-3 text-slate-700">
-                      {priceLevelLabel(c.price_level)}
+                      {formatPriceTier(c.price_level_label, c.price_level)}
                     </td>
                     <td className="px-4 py-3 text-slate-700">
                       {c.distance_miles != null
