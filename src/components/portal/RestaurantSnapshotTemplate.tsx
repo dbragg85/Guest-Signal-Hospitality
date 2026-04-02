@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { guestSignalHeadlineFromDisplayPillars } from "@/lib/guest-signal-display-score";
+import {
+  guestSignalHeadlineFromDisplayPillars,
+  guestSignalHeadlineFromScorecardData,
+} from "@/lib/guest-signal-display-score";
 
 export type ScorecardRow = {
   id: string;
@@ -232,7 +235,13 @@ const PILLAR_CATEGORY_KEYS: Record<string, string[]> = {
   ],
 };
 
-type MonthlyRow = { month: string; score: number; delta: number | null };
+type MonthlyRow = {
+  month: string;
+  score: number;
+  delta: number | null;
+  /** Set when the row is built from a scorecard list (stable React key). */
+  scorecardId?: string;
+};
 type SwotBlock = {
   strengths?: string[];
   weaknesses?: string[];
@@ -275,6 +284,58 @@ const MONTH_INDEX: Record<string, number> = {
   dec: 12,
   december: 12,
 };
+
+/** Chronological order for period labels (oldest first) for delta chains. */
+function periodSortOrderAscending(period: string): number {
+  const trimmed = period.trim().replace(/\s+snapshot$/i, "");
+  const yyyyMm = /^(\d{4})[-/](\d{1,2})$/.exec(trimmed);
+  if (yyyyMm) {
+    const year = Number(yyyyMm[1]);
+    const monthNum = Number(yyyyMm[2]);
+    if (monthNum >= 1 && monthNum <= 12) return year * 100 + monthNum;
+  }
+  const quarter = /^q([1-4])[\s-]*(\d{4})$/i.exec(trimmed);
+  if (quarter) {
+    const q = Number(quarter[1]);
+    const year = Number(quarter[2]);
+    return year * 100 + q * 3;
+  }
+  const month = /^([a-z]+)[,\s-]+(\d{4})$/i.exec(trimmed);
+  if (month) {
+    const monthKey = month[1].toLowerCase();
+    const monthNum = MONTH_INDEX[monthKey];
+    const year = Number(month[2]);
+    if (monthNum) return year * 100 + monthNum;
+  }
+  return 999999;
+}
+
+/** When scorecard JSON has no `monthly` array, build tiles from all loaded scorecards. */
+function monthlyBreakdownFromScorecards(cards: ScorecardRow[]): MonthlyRow[] {
+  const sorted = [...cards].sort((a, b) => {
+    const ao = periodSortOrderAscending(a.period);
+    const bo = periodSortOrderAscending(b.period);
+    if (ao !== bo) return ao - bo;
+    return a.period.localeCompare(b.period);
+  });
+  const out: MonthlyRow[] = [];
+  let prevScore: number | null = null;
+  for (const c of sorted) {
+    const d =
+      c.data && typeof c.data === "object" ? (c.data as Record<string, unknown>) : null;
+    const derived = guestSignalHeadlineFromScorecardData(d);
+    const score = derived ?? c.score;
+    if (score == null) continue;
+    out.push({
+      month: c.period,
+      score,
+      delta: prevScore == null ? null : score - prevScore,
+      scorecardId: c.id,
+    });
+    prevScore = score;
+  }
+  return out;
+}
 
 export function RestaurantSnapshotTemplate({
   restaurant,
@@ -526,7 +587,14 @@ export function RestaurantSnapshotTemplate({
     return { ...p, score, blurb };
   });
 
-  const monthly = parseMonthlyRows(data?.monthly ?? data?.monthly_trends);
+  const monthlyFromPayload = parseMonthlyRows(data?.monthly ?? data?.monthly_trends);
+  const monthlyFromScorecards = monthlyBreakdownFromScorecards(scorecards);
+  const monthly = monthlyFromPayload?.length
+    ? monthlyFromPayload
+    : monthlyFromScorecards.length > 0
+      ? monthlyFromScorecards
+      : null;
+  const monthlySourceIsPayload = Boolean(monthlyFromPayload?.length);
   const totalReviews =
     parseNumeric(data?.total_reviews_analyzed) ??
     parseNumeric(data?.total_reviews) ??
@@ -858,16 +926,21 @@ export function RestaurantSnapshotTemplate({
             Monthly score breakdown
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Directional view between quarters when month-level data is included in
-            reporting.
+            {monthlySourceIsPayload
+              ? "Directional view when month-level rows are included in the scorecard JSON."
+              : "Each tile is a published scorecard period for this restaurant. Change vs prior uses the same headline logic as the hero score, in chronological order."}
           </p>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {monthly.map((m) => (
               <button
-                key={m.month}
+                key={m.scorecardId ?? m.month}
                 type="button"
                 onClick={() => {
                   if (!onSelectScorecardId) return;
+                  if (m.scorecardId) {
+                    onSelectScorecardId(m.scorecardId);
+                    return;
+                  }
                   const monthCanonical = canonicalPeriodLabel(m.month);
                   const target = scorecards.find(
                     (row) => {
@@ -890,22 +963,23 @@ export function RestaurantSnapshotTemplate({
                   {m.score}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                  <span>vs. prior month</span>
+                  <span>vs. prior period</span>
                   <Trend value={m.delta} />
                 </div>
-                {scorecards.some((row) => {
-                  const monthCanonical = canonicalPeriodLabel(m.month);
-                  const rowCanonical = canonicalPeriodLabel(row.period);
-                  if (monthCanonical && rowCanonical) {
-                    return rowCanonical === monthCanonical;
-                  }
-                  return (
-                    normalizePeriodLabel(row.period) ===
-                    normalizePeriodLabel(m.month)
-                  );
-                }) ? (
+                {(m.scorecardId ||
+                  scorecards.some((row) => {
+                    const monthCanonical = canonicalPeriodLabel(m.month);
+                    const rowCanonical = canonicalPeriodLabel(row.period);
+                    if (monthCanonical && rowCanonical) {
+                      return rowCanonical === monthCanonical;
+                    }
+                    return (
+                      normalizePeriodLabel(row.period) ===
+                      normalizePeriodLabel(m.month)
+                    );
+                  })) ? (
                   <p className="mt-3 text-xs font-semibold text-amber-800">
-                    Click to open this month&apos;s scorecard
+                    Click to open this period&apos;s scorecard
                   </p>
                 ) : null}
               </button>
@@ -921,10 +995,11 @@ export function RestaurantSnapshotTemplate({
             Monthly score breakdown
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            When your scorecard&apos;s JSON includes a{" "}
-            <code className="rounded bg-stone-200 px-1 text-xs">monthly</code>{" "}
-            array, month-over-month tiles will render here (same layout as the
-            sales demo).
+            {scorecards.length === 0
+              ? "Publish at least one scorecard to see period tiles here, or add a "
+              : "No periods with a numeric score yet. You can also add a "}
+            <code className="rounded bg-stone-200 px-1 text-xs">monthly</code> array
+            to scorecard JSON for curated month rows (same layout as the sales demo).
           </p>
         </section>
       )}
