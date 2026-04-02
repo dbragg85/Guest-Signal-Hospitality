@@ -1,8 +1,11 @@
+import ArchiveSelector from '@/components/newsletter/ArchiveSelector'
+
 export const metadata = {
   title: 'Guest Signal Report | Issue 02',
   description:
     'Guest Signal Report Issue 02 with national, regional, and Greater Cincinnati restaurant intelligence.',
 }
+
 export default function NewsletterPage() {
 
   return (
@@ -20,25 +23,7 @@ export default function NewsletterPage() {
                   Select an issue, then open it in doc, markdown, or plain text format.
                 </p>
               </div>
-              <div className="flex w-full max-w-md gap-2">
-                <label className="sr-only" htmlFor="issue">
-                  Newsletter issue
-                </label>
-                <select
-                  id="issue"
-                  name="issue"
-                  defaultValue="issue-02"
-                  className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-amber-500 focus:outline-none"
-                >
-                  <option value="issue-02">Issue 02 (April 1, 2026)</option>
-                  <option value="issue-01" disabled>
-                    Issue 01 (Archive pending upload)
-                  </option>
-                </select>
-                <a className="btn-primary shrink-0 px-4 py-2.5 text-center" href="#issue-02-files">
-                  Open
-                </a>
-              </div>
+              <ArchiveSelector />
             </div>
           </section>
 
@@ -87,9 +72,6 @@ export default function NewsletterPage() {
                       Read Plain Text
                     </a>
                 </div>
-                <div className="mt-3 rounded-lg border border-amber-400/60 bg-amber-200/10 px-4 py-3 text-sm text-amber-100">
-                  Issue 01 is listed in the selector and will be enabled once archive files are uploaded.
-                </div>
               </div>
 
               <aside className="self-end rounded-xl border border-slate-700 bg-slate-900/70 p-4">
@@ -116,6 +98,39 @@ export default function NewsletterPage() {
                   </article>
                 </div>
               </aside>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-stone-300 bg-white p-6 shadow-sm">
+            <div id="issue-01-files">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-800">
+                Archive issue
+              </p>
+              <h2 className="mt-2">Issue 01 (March 25, 2026)</h2>
+              <p>
+                First published issue in the Guest Signal Report series, focused on signal-to-system
+                execution for independent restaurants.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <a
+                  className="btn-primary text-center"
+                  href="/newsletters/issue-01/GUESIGNAL_Newsletter_2026-03-25_Issue-01.doc"
+                >
+                  Download .doc
+                </a>
+                <a
+                  className="btn-secondary border-stone-400 bg-white text-slate-900"
+                  href="/newsletters/issue-01/GUESIGNAL_Newsletter_2026-03-25_Issue-01.md"
+                >
+                  Read Markdown
+                </a>
+                <a
+                  className="btn-secondary border-stone-400 bg-white text-slate-900"
+                  href="/newsletters/issue-01/GUESIGNAL_Newsletter_2026-03-25_Issue-01.txt"
+                >
+                  Read Plain Text
+                </a>
+              </div>
             </div>
           </section>
 
