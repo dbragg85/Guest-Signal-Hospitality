@@ -2,20 +2,72 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 
+// Guest Signal Hospitality rubric (board): score only mentioned categories; scale
+// 95 / 85 / 70 / 50 / 30. Pillars: Experience (Food+Service), Operational (Speed+Cleanliness),
+// Emotional (Atmosphere+Return intent). Weights below match the issued rubric percents.
 const CATEGORY_KEYWORDS = {
-  food: ["food", "meal", "dish", "menu", "taste", "flavor", "drink", "cocktail", "beer", "wine"],
-  service: ["service", "server", "staff", "host", "manager", "waiter", "waitress"],
-  speed: ["fast", "slow", "wait", "quick", "timely", "late", "delay"],
-  cleanliness: ["clean", "dirty", "hygiene", "sanitary", "bathroom", "restroom"],
-  atmosphere: ["atmosphere", "ambience", "vibe", "music", "noise", "decor"],
+  food: [
+    "food",
+    "meal",
+    "dish",
+    "menu",
+    "taste",
+    "flavor",
+    "drink",
+    "cocktail",
+    "beer",
+    "wine",
+    "delicious",
+    "tasty",
+    "yummy",
+    "overcooked",
+    "undercooked",
+    "portion",
+    "plating",
+  ],
+  service: [
+    "service",
+    "server",
+    "staff",
+    "host",
+    "manager",
+    "waiter",
+    "waitress",
+    "friendly",
+    "rude",
+    "helpful",
+    "hospitality",
+  ],
+  speed: ["fast", "slow", "wait", "quick", "timely", "late", "delay", "minutes", "long wait", "rush"],
+  cleanliness: ["clean", "dirty", "hygiene", "sanitary", "bathroom", "restroom", "messy", "spotless"],
+  atmosphere: [
+    "atmosphere",
+    "ambience",
+    "ambiance",
+    "vibe",
+    "music",
+    "noise",
+    "decor",
+    "noisy",
+    "quiet",
+    "crowded",
+    "patio",
+  ],
 };
 
-const PILLAR_CATEGORY_MAP = {
-  experience_quality: ["service", "food", "atmosphere"],
-  service_hospitality: ["service"],
-  food_beverage: ["food"],
-  operational_reliability: ["speed", "cleanliness"],
-  emotional_connection: ["atmosphere", "service"],
+const RETURN_INTENT_HINTS =
+  /\b(return|be back|come back|go back|never again|not coming back|will be back|revisit|recommend|second time|visit again)\b/i;
+
+const RUBRIC_SUBWEIGHTS = {
+  experience_quality: { food: 27 / 45, service: 18 / 45 },
+  operational_reliability: { speed: 15 / 30, cleanliness: 15 / 30 },
+  emotional_connection: { atmosphere: 15 / 25, return_intent: 10 / 25 },
+};
+
+const RUBRIC_PILLAR_WEIGHTS = {
+  experience_quality: 0.45,
+  operational_reliability: 0.3,
+  emotional_connection: 0.25,
 };
 
 function getEnv(name, { required = false, fallback = undefined } = {}) {
@@ -52,15 +104,128 @@ function normalizeText(input) {
   return String(input ?? "").toLowerCase();
 }
 
-function detectCategories(text) {
+function detectMentionedCategories(text) {
   const normalized = normalizeText(text);
-  const out = [];
+  const out = new Set();
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     if (keywords.some((keyword) => normalized.includes(keyword))) {
-      out.push(category);
+      out.add(category);
     }
   }
+  if (RETURN_INTENT_HINTS.test(String(text ?? ""))) {
+    out.add("return_intent");
+  }
   return out;
+}
+
+function starToRubricScore(rating) {
+  const r = rating == null ? NaN : Math.round(Number(rating));
+  if (!Number.isFinite(r)) return 70;
+  if (r >= 5) return 95;
+  if (r === 4) return 85;
+  if (r === 3) return 70;
+  if (r === 2) return 50;
+  return 30;
+}
+
+function returnIntentDelta(text) {
+  const t = String(text ?? "");
+  if (/(never again|won't be back|will not return|not coming back)/i.test(t)) return -2;
+  if (/(probably won't|wouldn't rush back|not worth a return)/i.test(t)) return -1;
+  if (/(definitely (be back|return)|can't wait to (go back|return)|will be back)/i.test(t)) return 2;
+  if (/(would (come|go) again|would return|visit again)/i.test(t)) return 1;
+  return 0;
+}
+
+function scoreReturnIntent(text, rating) {
+  if (!RETURN_INTENT_HINTS.test(String(text ?? ""))) return null;
+  const d = returnIntentDelta(text);
+  if (d === 2) return 95;
+  if (d === 1) return 85;
+  if (d === -2) return 30;
+  if (d === -1) return 50;
+  return starToRubricScore(rating);
+}
+
+function weightedPillarFromMerged(merged, weights) {
+  let num = 0;
+  let den = 0;
+  for (const [cat, w] of Object.entries(weights)) {
+    const row = merged.get(cat);
+    if (row && row.mentions > 0) {
+      num += row.score * w;
+      den += w;
+    }
+  }
+  if (!den) return null;
+  return Math.round(num / den);
+}
+
+function overallGuestSignalFromPillars(pillars) {
+  let num = 0;
+  let den = 0;
+  for (const [key, w] of Object.entries(RUBRIC_PILLAR_WEIGHTS)) {
+    const v = pillars[key];
+    if (v != null) {
+      num += v * w;
+      den += w;
+    }
+  }
+  if (!den) return null;
+  return Math.round(num / den);
+}
+
+function singleCategoryScore(map, cat) {
+  const row = map.get(cat);
+  if (!row || !row.mentions) return null;
+  return row.score;
+}
+
+function computeRubricCategoryScores(reviews) {
+  const sums = new Map();
+  for (const review of reviews) {
+    const text = review.review_text ?? "";
+    const rating = review.rating;
+    const mentioned = detectMentionedCategories(text);
+    for (const cat of mentioned) {
+      let score;
+      if (cat === "return_intent") {
+        score = scoreReturnIntent(text, rating);
+        if (score == null) continue;
+      } else {
+        score = starToRubricScore(rating);
+      }
+      const cur = sums.get(cat) ?? { sum: 0, count: 0 };
+      cur.sum += score;
+      cur.count += 1;
+      sums.set(cat, cur);
+    }
+  }
+  const result = new Map();
+  for (const [cat, { sum, count }] of sums.entries()) {
+    if (!count) continue;
+    result.set(cat, { score: Math.round(sum / count), mentions: count });
+  }
+  return result;
+}
+
+function rubricReviewPreviewRows(reviews, limit = 8) {
+  return reviews.slice(0, limit).map((review) => {
+    const mentioned = [...detectMentionedCategories(review.review_text ?? "")];
+    const row = {
+      review_id: String(review.external_review_id ?? "").slice(0, 12),
+      rating: review.rating ?? "",
+      mentioned: mentioned.join(",") || "(none)",
+    };
+    for (const cat of mentioned) {
+      if (cat === "return_intent") {
+        row.return_intent = scoreReturnIntent(review.review_text ?? "", review.rating) ?? "";
+      } else {
+        row[cat] = starToRubricScore(review.rating);
+      }
+    }
+    return row;
+  });
 }
 
 function parseRating(raw) {
@@ -106,46 +271,6 @@ function firstNonNull(input, paths) {
     if (value != null) return value;
   }
   return null;
-}
-
-function sentimentBucket(rating) {
-  if (rating == null) return "neutral";
-  if (rating >= 4) return "positive";
-  if (rating <= 2) return "negative";
-  return "neutral";
-}
-
-function computeCategoryScores(reviews) {
-  const stats = new Map();
-
-  for (const review of reviews) {
-    const categories = detectCategories(review.review_text);
-    if (!categories.length) continue;
-    const bucket = sentimentBucket(review.rating);
-    for (const category of categories) {
-      const current = stats.get(category) ?? { mentions: 0, positive: 0, neutral: 0, negative: 0 };
-      current.mentions += 1;
-      current[bucket] += 1;
-      stats.set(category, current);
-    }
-  }
-
-  const result = new Map();
-  for (const [category, row] of stats.entries()) {
-    if (!row.mentions) continue;
-    const score = Math.round(((row.positive + 0.5 * row.neutral) / row.mentions) * 100);
-    result.set(category, { score, mentions: row.mentions });
-  }
-  return result;
-}
-
-function weightedAverage(entries) {
-  const valid = entries.filter((row) => row && Number.isFinite(row.score) && Number.isFinite(row.mentions) && row.mentions > 0);
-  if (!valid.length) return null;
-  const totalMentions = valid.reduce((sum, row) => sum + row.mentions, 0);
-  if (!totalMentions) return null;
-  const weightedScore = valid.reduce((sum, row) => sum + row.score * row.mentions, 0);
-  return Math.round(weightedScore / totalMentions);
 }
 
 function confidenceLevelFromReviewCount(totalReviews) {
@@ -416,7 +541,7 @@ async function main() {
       if (insertError) throw insertError;
     }
 
-    const yelpScores = computeCategoryScores(periodReviews);
+    const yelpScores = computeRubricCategoryScores(periodReviews);
 
     const { data: existingSnapshot, error: snapshotFetchError } = await supabase
       .from("snapshots")
@@ -475,16 +600,16 @@ async function main() {
     const totalReviews = googleCount + yelpCount;
     const confidenceLevel = confidenceLevelFromReviewCount(totalReviews);
 
-    const overallScore = weightedAverage([...merged.values()]);
+    const pillarScores = {
+      experience_quality: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.experience_quality),
+      operational_reliability: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.operational_reliability),
+      emotional_connection: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.emotional_connection),
+    };
+
+    const overallScore = overallGuestSignalFromPillars(pillarScores);
     const existingOverallScore = parseNumber(existingSnapshot?.guest_signal_score);
     const effectiveOverallScore = overallScore ?? existingOverallScore;
     const canPersistSnapshot = effectiveOverallScore != null;
-
-    const pillarScores = {};
-    for (const [pillar, categories] of Object.entries(PILLAR_CATEGORY_MAP)) {
-      const rows = categories.map((category) => merged.get(category)).filter(Boolean);
-      pillarScores[pillar] = weightedAverage(rows);
-    }
 
     const categoryScoresPayload = [...merged.entries()].map(([category, row]) => ({
       category,
@@ -493,10 +618,16 @@ async function main() {
     }));
 
     const scorecardData = {
+      review_scoring_model: "guest_signal_rubric_v1",
       category_scores: categoryScoresPayload,
       total_reviews_analyzed: totalReviews,
       google_reviews_analyzed: googleCount,
       yelp_reviews_analyzed: yelpCount,
+      experience_quality: pillarScores.experience_quality,
+      service_hospitality: singleCategoryScore(merged, "service"),
+      food_beverage: singleCategoryScore(merged, "food"),
+      operational_reliability: pillarScores.operational_reliability,
+      emotional_connection: pillarScores.emotional_connection,
       total_score_breakdown: {
         scorecard_total_score: overallScore,
         category_average:
@@ -505,13 +636,18 @@ async function main() {
             : null,
         category_count: categoryScoresPayload.length,
         variance: null,
-        source: "Weighted by category mentions across Google + Yelp",
+        source:
+          "Guest Signal rubric v1 — mentioned categories only; star-mapped 95/85/70/50/30; pillar weights per board spec",
       },
       ...pillarScores,
     };
 
     if (dryRun) {
       console.log(`[${restaurant.slug}] DRY_RUN`);
+      if (periodReviews.length) {
+        console.log(`[${restaurant.slug}] Per-review rubric preview (first rows):`);
+        console.table(rubricReviewPreviewRows(periodReviews));
+      }
       console.log(JSON.stringify({
         snapshotId,
         overallScore: effectiveOverallScore,
