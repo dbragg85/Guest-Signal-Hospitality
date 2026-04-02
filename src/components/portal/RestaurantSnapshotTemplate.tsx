@@ -539,6 +539,14 @@ export function RestaurantSnapshotTemplate({
     parseNumeric(data?.yelp_reviews_analyzed) ??
     parseNumeric(data?.yelp_review_count) ??
     parseNumeric(data?.yelp_reviews);
+  const confidenceRaw = data?.confidence_level;
+  const confidenceLevel =
+    typeof confidenceRaw === "string"
+      ? (() => {
+          const t = confidenceRaw.trim().toLowerCase();
+          return t === "low" || t === "medium" || t === "high" ? t : null;
+        })()
+      : null;
   const swot =
     data?.swot && typeof data.swot === "object"
       ? (data.swot as SwotBlock)
@@ -710,7 +718,10 @@ export function RestaurantSnapshotTemplate({
               </div>
             ))}
           </div>
-          {totalReviews != null || googleReviews != null || yelpReviews != null ? (
+          {totalReviews != null ||
+          googleReviews != null ||
+          yelpReviews != null ||
+          confidenceLevel != null ? (
             <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50/70 p-4 text-sm text-slate-700">
               <p className="font-semibold text-slate-900">Review source coverage</p>
               <div className="mt-2 flex flex-wrap gap-4">
@@ -729,7 +740,18 @@ export function RestaurantSnapshotTemplate({
                     Yelp: <strong>{Math.round(yelpReviews)}</strong>
                   </span>
                 ) : null}
+                {confidenceLevel != null ? (
+                  <span>
+                    Sample confidence:{" "}
+                    <strong className="capitalize">{confidenceLevel}</strong>
+                  </span>
+                ) : null}
               </div>
+              {confidenceLevel != null ? (
+                <p className="mt-2 text-xs text-slate-600">
+                  Derived from total reviews in the snapshot window (high ≥50, medium ≥20, else low).
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>

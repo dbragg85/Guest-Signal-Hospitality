@@ -478,6 +478,14 @@ export function PortalDashboardClient({ initialSlug }: Props) {
           const yelp = parseNumeric(snapshotForPillars.yelp_reviews_analyzed);
           if (yelp != null) nextData.yelp_reviews_analyzed = yelp;
         }
+        if (
+          !Object.prototype.hasOwnProperty.call(nextData, "confidence_level") &&
+          snapshotForPillars &&
+          typeof snapshotForPillars.confidence_level === "string" &&
+          snapshotForPillars.confidence_level.trim()
+        ) {
+          nextData.confidence_level = snapshotForPillars.confidence_level.trim().toLowerCase();
+        }
         return {
           ...row,
           data: nextData,
