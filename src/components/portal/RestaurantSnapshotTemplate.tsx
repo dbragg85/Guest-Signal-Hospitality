@@ -107,6 +107,18 @@ const PILLAR_DEF = [
       "Service pacing and hospitality tone—how guests describe the feel of the visit.",
   },
   {
+    key: "service_hospitality",
+    label: "Service & Hospitality",
+    blurb:
+      "Staff attentiveness, warmth, and recovery when issues occur during service.",
+  },
+  {
+    key: "food_beverage",
+    label: "Food & Beverage",
+    blurb:
+      "Food quality, beverage execution, and consistency of menu-driven expectations.",
+  },
+  {
     key: "operational_reliability",
     label: "Operational Reliability",
     blurb: "Wait times, order accuracy, and consistency under pressure.",
@@ -126,7 +138,7 @@ type SwotBlock = {
   threats?: string[];
 };
 
-type CategoryScoreRow = { category: string; score: number };
+type CategoryScoreRow = { category: string; score: number; mentions: number | null };
 
 type Props = {
   restaurant: RestaurantProfile;
@@ -197,7 +209,10 @@ export function RestaurantSnapshotTemplate({
         if (typeof labelRaw !== "string" || !labelRaw.trim()) continue;
         const score = parseNumeric(scoreRaw);
         if (score == null) continue;
-        rows.push({ category: labelRaw, score });
+        const mentions = parseNumeric(
+          record.mentions ?? record.mention_count ?? record.count ?? record.review_count,
+        );
+        rows.push({ category: labelRaw, score, mentions });
       }
       return rows;
     }
@@ -206,7 +221,7 @@ export function RestaurantSnapshotTemplate({
       for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
         const score = parseNumeric(v);
         if (score == null) continue;
-        rows.push({ category: k, score });
+        rows.push({ category: k, score, mentions: null });
       }
       return rows;
     }
@@ -253,8 +268,11 @@ export function RestaurantSnapshotTemplate({
       .map((source) => parseCategoryScoreRows(source))
       .find((rows) => rows.length > 0) ?? [];
 
-  const categoryScoreMap = new Map<string, number>(
-    categoryBreakdown.map((row) => [row.category.trim().toLowerCase(), row.score]),
+  const categoryScoreMap = new Map<string, { score: number; mentions: number | null }>(
+    categoryBreakdown.map((row) => [
+      row.category.trim().toLowerCase(),
+      { score: row.score, mentions: row.mentions },
+    ]),
   );
   const breakdownPayload =
     data?.total_score_breakdown && typeof data.total_score_breakdown === "object"
@@ -282,11 +300,30 @@ export function RestaurantSnapshotTemplate({
       : null);
 
   function avgFor(keys: string[]): number | null {
-    const values = keys
-      .map((k) => categoryScoreMap.get(k))
-      .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
-    if (values.length === 0) return null;
-    return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+    const weighted = keys.flatMap((k) => {
+      const value = categoryScoreMap.get(k);
+      if (!value || !Number.isFinite(value.score)) return [];
+      return [value];
+    });
+    if (weighted.length === 0) return null;
+
+    const mentionWeighted = weighted.filter(
+      (v) => v.mentions != null && Number.isFinite(v.mentions) && v.mentions > 0,
+    );
+    if (mentionWeighted.length > 0) {
+      const totalMentions = mentionWeighted.reduce((sum, v) => sum + (v.mentions ?? 0), 0);
+      if (totalMentions > 0) {
+        const totalScore = mentionWeighted.reduce(
+          (sum, v) => sum + v.score * (v.mentions ?? 0),
+          0,
+        );
+        return Math.round(totalScore / totalMentions);
+      }
+    }
+
+    return Math.round(
+      weighted.reduce((sum, v) => sum + v.score, 0) / weighted.length,
+    );
   }
 
   const fallbackPillarScores: Record<string, number | null> = {
@@ -296,6 +333,20 @@ export function RestaurantSnapshotTemplate({
       "service",
       "atmosphere",
       "hospitality",
+    ]),
+    service_hospitality: avgFor([
+      "service_hospitality",
+      "service",
+      "hospitality",
+      "staff",
+      "friendliness",
+    ]),
+    food_beverage: avgFor([
+      "food_beverage",
+      "food",
+      "menu",
+      "drinks",
+      "beverage",
     ]),
     operational_reliability: avgFor([
       "operational_reliability",
@@ -350,7 +401,11 @@ export function RestaurantSnapshotTemplate({
   }
 
   const pillars = PILLAR_DEF.map((p) => {
-    const v = data?.[p.key];
+    const v =
+      data?.[p.key] ??
+      data?.[`pillar_${p.key}`] ??
+      (p.key === "service_hospitality" ? data?.service : null) ??
+      (p.key === "food_beverage" ? data?.food : null);
     const score = parseNumeric(v) ?? fallbackPillarScores[p.key] ?? null;
     const blurbKey = `${p.key}_blurb`;
     const customBlurb = data?.[blurbKey];
@@ -362,6 +417,18 @@ export function RestaurantSnapshotTemplate({
   });
 
   const monthly = parseMonthlyRows(data?.monthly ?? data?.monthly_trends);
+  const totalReviews =
+    parseNumeric(data?.total_reviews_analyzed) ??
+    parseNumeric(data?.total_reviews) ??
+    parseNumeric(data?.review_count);
+  const googleReviews =
+    parseNumeric(data?.google_reviews_analyzed) ??
+    parseNumeric(data?.google_review_count) ??
+    parseNumeric(data?.google_reviews);
+  const yelpReviews =
+    parseNumeric(data?.yelp_reviews_analyzed) ??
+    parseNumeric(data?.yelp_review_count) ??
+    parseNumeric(data?.yelp_reviews);
   const swot =
     data?.swot && typeof data.swot === "object"
       ? (data.swot as SwotBlock)
@@ -512,7 +579,7 @@ export function RestaurantSnapshotTemplate({
               </p>
             </div>
           </div>
-          <div className="mt-10 grid gap-4 border-t border-stone-200 pt-8 sm:grid-cols-3">
+          <div className="mt-10 grid gap-4 border-t border-stone-200 pt-8 sm:grid-cols-2 lg:grid-cols-5">
             {pillars.map((row) => (
               <div
                 key={row.key}
@@ -530,6 +597,28 @@ export function RestaurantSnapshotTemplate({
               </div>
             ))}
           </div>
+          {totalReviews != null || googleReviews != null || yelpReviews != null ? (
+            <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50/70 p-4 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Review source coverage</p>
+              <div className="mt-2 flex flex-wrap gap-4">
+                {totalReviews != null ? (
+                  <span>
+                    Total analyzed: <strong>{Math.round(totalReviews)}</strong>
+                  </span>
+                ) : null}
+                {googleReviews != null ? (
+                  <span>
+                    Google: <strong>{Math.round(googleReviews)}</strong>
+                  </span>
+                ) : null}
+                {yelpReviews != null ? (
+                  <span>
+                    Yelp: <strong>{Math.round(yelpReviews)}</strong>
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </div>
       </section>
 

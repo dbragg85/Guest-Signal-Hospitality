@@ -74,12 +74,22 @@ export default function PortalDemoPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-10 grid gap-4 border-t border-stone-200 pt-8 sm:grid-cols-3">
+            <div className="mt-10 grid gap-4 border-t border-stone-200 pt-8 sm:grid-cols-2 lg:grid-cols-5">
               {[
                 {
                   label: "Experience Quality",
                   score: 86,
-                  blurb: "Service pacing and hospitality tone land consistently positive.",
+                  blurb: "Cross-category guest perception using mention-weighted signals.",
+                },
+                {
+                  label: "Service & Hospitality",
+                  score: 88,
+                  blurb: "Staff warmth and issue recovery trends remain a standout.",
+                },
+                {
+                  label: "Food & Beverage",
+                  score: 84,
+                  blurb: "Menu quality is strong with mild consistency variance at peak.",
                 },
                 {
                   label: "Operational Reliability",
@@ -107,6 +117,17 @@ export default function PortalDemoPage() {
                   </p>
                 </div>
               ))}
+            </div>
+            <div className="mt-6 rounded-2xl border border-stone-200 bg-stone-50/70 p-4 text-sm text-slate-700">
+              <p className="font-semibold text-slate-900">Scoring methodology status</p>
+              <p className="mt-2">
+                Pillar and total scores use mention-weighted averaging. Categories with zero mentions are excluded
+                from averages (not treated as zero).
+              </p>
+              <p className="mt-1">
+                Source coverage shown in production scorecards: <strong>Total</strong>, <strong>Google</strong>,
+                and <strong>Yelp</strong> analyzed reviews.
+              </p>
             </div>
           </div>
         </section>

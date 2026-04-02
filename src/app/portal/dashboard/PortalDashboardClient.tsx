@@ -35,6 +35,7 @@ type SnapshotCategoryScoreRow = {
   snapshot_id: string | null;
   category: string | null;
   score: number | null;
+  mentions: number | null;
 };
 
 type SnapshotMonthlyTrendRow = {
@@ -49,9 +50,7 @@ type SnapshotPeriodRow = {
   id: string;
   period_label: string | null;
   created_at: string | null;
-  pillar_experience_quality: number | null;
-  pillar_operational_reliability: number | null;
-  pillar_emotional_connection: number | null;
+  [key: string]: unknown;
 };
 
 type Props = { initialSlug?: string };
@@ -161,6 +160,50 @@ function parseNumeric(value: unknown): number | null {
   }
   return null;
 }
+
+const PILLAR_FIELD_ALIASES: Array<{ dataKey: string; snapshotFields: string[] }> = [
+  {
+    dataKey: "experience_quality",
+    snapshotFields: [
+      "pillar_experience_quality",
+      "experience_quality",
+      "experience_score",
+    ],
+  },
+  {
+    dataKey: "service_hospitality",
+    snapshotFields: [
+      "pillar_service_hospitality",
+      "service_hospitality",
+      "service_score",
+      "hospitality_score",
+    ],
+  },
+  {
+    dataKey: "food_beverage",
+    snapshotFields: [
+      "pillar_food_beverage",
+      "food_beverage",
+      "food_score",
+    ],
+  },
+  {
+    dataKey: "operational_reliability",
+    snapshotFields: [
+      "pillar_operational_reliability",
+      "operational_reliability",
+      "operations_score",
+    ],
+  },
+  {
+    dataKey: "emotional_connection",
+    snapshotFields: [
+      "pillar_emotional_connection",
+      "emotional_connection",
+      "sentiment_score",
+    ],
+  },
+];
 
 export function PortalDashboardClient({ initialSlug }: Props) {
   const router = useRouter();
@@ -272,7 +315,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
         await Promise.all([
           supabase
             .from("snapshot_category_scores")
-            .select("snapshot_id, category, score")
+            .select("snapshot_id, category, score, mentions")
             .eq("restaurant_id", selectedId),
           supabase
             .from("snapshot_monthly_trends")
@@ -280,9 +323,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
             .eq("restaurant_id", selectedId),
           supabase
             .from("snapshots")
-            .select(
-              "id, period_label, created_at, pillar_experience_quality, pillar_operational_reliability, pillar_emotional_connection"
-            )
+            .select("*")
             .eq("restaurant_id", selectedId)
             .order("created_at", { ascending: false }),
         ]);
@@ -352,6 +393,10 @@ export function PortalDashboardClient({ initialSlug }: Props) {
           .map((item) => ({
             category: String(item.category),
             score: Number(item.score),
+            mentions:
+              item.mentions == null || Number.isNaN(Number(item.mentions))
+                ? null
+                : Number(item.mentions),
           }));
 
         const parsedMonthly = monthly
@@ -399,26 +444,38 @@ export function PortalDashboardClient({ initialSlug }: Props) {
             source: "Hydrated from scorecards + snapshot_category_scores",
           };
         }
+        PILLAR_FIELD_ALIASES.forEach(({ dataKey, snapshotFields }) => {
+          if (Object.prototype.hasOwnProperty.call(nextData, dataKey) || !snapshotForPillars) {
+            return;
+          }
+          const value =
+            snapshotFields
+              .map((field) => parseNumeric(snapshotForPillars[field]))
+              .find((v): v is number => v != null) ?? null;
+          if (value != null) nextData[dataKey] = value;
+        });
         if (
-          !Object.prototype.hasOwnProperty.call(nextData, "experience_quality") &&
+          !Object.prototype.hasOwnProperty.call(nextData, "total_reviews_analyzed") &&
           snapshotForPillars
         ) {
-          const value = parseNumeric(snapshotForPillars.pillar_experience_quality);
-          if (value != null) nextData.experience_quality = value;
+          const total =
+            parseNumeric(snapshotForPillars.total_reviews_analyzed) ??
+            parseNumeric(snapshotForPillars.total_reviews);
+          if (total != null) nextData.total_reviews_analyzed = total;
         }
         if (
-          !Object.prototype.hasOwnProperty.call(nextData, "operational_reliability") &&
+          !Object.prototype.hasOwnProperty.call(nextData, "google_reviews_analyzed") &&
           snapshotForPillars
         ) {
-          const value = parseNumeric(snapshotForPillars.pillar_operational_reliability);
-          if (value != null) nextData.operational_reliability = value;
+          const google = parseNumeric(snapshotForPillars.google_reviews_analyzed);
+          if (google != null) nextData.google_reviews_analyzed = google;
         }
         if (
-          !Object.prototype.hasOwnProperty.call(nextData, "emotional_connection") &&
+          !Object.prototype.hasOwnProperty.call(nextData, "yelp_reviews_analyzed") &&
           snapshotForPillars
         ) {
-          const value = parseNumeric(snapshotForPillars.pillar_emotional_connection);
-          if (value != null) nextData.emotional_connection = value;
+          const yelp = parseNumeric(snapshotForPillars.yelp_reviews_analyzed);
+          if (yelp != null) nextData.yelp_reviews_analyzed = yelp;
         }
         return {
           ...row,

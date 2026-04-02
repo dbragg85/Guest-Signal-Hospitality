@@ -10,7 +10,8 @@
     "export": "next build",
     "setup:env": "node scripts/setup-env.mjs",
     "check:env": "node scripts/check-env.mjs",
-    "sync:github-vars": "node scripts/sync-github-actions-vars.mjs"
+    "sync:github-vars": "node scripts/sync-github-actions-vars.mjs",
+    "pipeline:yelp:monthly": "node scripts/run-monthly-yelp-pipeline.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -31,4 +32,3 @@
     "typescript": "^5.2.2"
   }
 }
-

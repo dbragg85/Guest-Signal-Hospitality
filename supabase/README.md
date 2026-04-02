@@ -35,6 +35,11 @@
 3. If the **trigger on `auth.users`** errors, delete only the `trigger` / `handle_new_user` block and run the rest. You can add profiles manually later (Table Editor → `profiles`).
 4. **Optional — full restaurant list + per-location notes:** open `migrations/002_restaurants_portal_pages.sql`, copy **all** SQL, paste, **Run**. This adds a `portal_intro` column (editable per restaurant) and inserts the remaining venues. After it runs, you can set **Notes for this location** in **Table Editor → restaurants → portal_intro** for each row.
 5. **Portal profile + competitors:** open `migrations/003_restaurant_directory.sql`, copy **all** SQL, paste, **Run**. This adds address, phone, website, logo URL, ratings, price tier, and a `competitors` JSON array. Fill rows in **Table Editor** (or SQL). Competitors are **curated** in the database; automated Google Places search requires a separate API-backed service.
+6. **Yelp source pipeline support:** open `migrations/006_yelp_source_pipeline_support.sql`, copy **all** SQL, paste, **Run**. This adds:
+   - `restaurants.yelp_url` for per-location Yelp source URLs
+   - source counters (`google_reviews_analyzed`, `yelp_reviews_analyzed`) on `snapshots`
+   - mention counts on `snapshot_category_scores`
+   - `review_observations` table for raw review records
 
 ---
 
@@ -105,3 +110,39 @@ Optional: set **Actions variables** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_
 2. **Environment Variables** → add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (same as `.env.local`).
 3. Supabase **URL configuration** → add your Vercel URL to **Site URL** and **Redirect URLs** (`https://…/portal/dashboard/`).
 4. Deploy if you prefer Vercel over GitHub Pages for the main site (either host is fine for Next + Supabase client).
+
+---
+
+## H. Monthly Yelp ingestion pipeline
+
+The repo now includes a monthly runner:
+
+```bash
+npm run pipeline:yelp:monthly
+```
+
+Required env vars:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `APIFY_TOKEN`
+- `APIFY_YELP_ACTOR_ID`
+
+Optional env vars:
+
+- `PERIOD_START` and `PERIOD_END` (`YYYY-MM-DD`) and/or `PERIOD_LABEL` (`Mar 2026`)
+- `RESTAURANT_SLUGS` (comma-separated subset)
+- `MAX_REVIEWS_PER_LOCATION` (default `250`)
+- `APIFY_YELP_INPUT_TEMPLATE_JSON` (JSON template with `{{YELP_URL}}` placeholder)
+- `DRY_RUN=1` for a no-write preview
+
+Behavior:
+
+- pulls Yelp reviews from Apify per restaurant `yelp_url`
+- filters reviews to the target month window
+- stores raw reviews in `review_observations`
+- recomputes category scores using mention-weighting (prevents missing-category zeros from diluting scores)
+- updates `snapshots`, `snapshot_category_scores`, and `scorecards.data` with:
+  - overall Guest Signal score
+  - 5 pillar scores
+  - source coverage (`google_reviews_analyzed`, `yelp_reviews_analyzed`, `total_reviews_analyzed`)
