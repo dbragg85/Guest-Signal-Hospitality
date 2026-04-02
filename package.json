@@ -11,7 +11,8 @@
     "setup:env": "node scripts/setup-env.mjs",
     "check:env": "node scripts/check-env.mjs",
     "sync:github-vars": "node scripts/sync-github-actions-vars.mjs",
-    "pipeline:yelp:monthly": "node scripts/run-monthly-yelp-pipeline.mjs"
+    "pipeline:yelp:monthly": "node scripts/run-monthly-yelp-pipeline.mjs",
+    "build:profile-seed": "node scripts/build-google-profile-seed.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

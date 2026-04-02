@@ -67,10 +67,31 @@ function logoUrlFromWebsite(website: string | null | undefined): string | null {
 type Competitor = {
   name: string;
   address?: string;
+  cuisine_style?: string;
   google_rating?: number;
+  google_review_count?: number;
+  google_url?: string;
+  yelp_rating?: number;
+  yelp_review_count?: number;
+  yelp_url?: string;
   price_level?: number;
   distance_miles?: number;
 };
+
+function parseOptionalNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseOptionalString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
 
 function parseCompetitors(raw: unknown): Competitor[] {
   if (!Array.isArray(raw)) return [];
@@ -82,12 +103,16 @@ function parseCompetitors(raw: unknown): Competitor[] {
     if (!name.trim()) continue;
     rows.push({
       name,
-      address: typeof o.address === "string" ? o.address : undefined,
-      google_rating:
-        typeof o.google_rating === "number" ? o.google_rating : undefined,
-      price_level: typeof o.price_level === "number" ? o.price_level : undefined,
-      distance_miles:
-        typeof o.distance_miles === "number" ? o.distance_miles : undefined,
+      address: parseOptionalString(o.address),
+      cuisine_style: parseOptionalString(o.cuisine_style),
+      google_rating: parseOptionalNumber(o.google_rating),
+      google_review_count: parseOptionalNumber(o.google_review_count),
+      google_url: parseOptionalString(o.google_url),
+      yelp_rating: parseOptionalNumber(o.yelp_rating),
+      yelp_review_count: parseOptionalNumber(o.yelp_review_count),
+      yelp_url: parseOptionalString(o.yelp_url),
+      price_level: parseOptionalNumber(o.price_level),
+      distance_miles: parseOptionalNumber(o.distance_miles),
     });
   }
   return rows
@@ -920,10 +945,8 @@ export function RestaurantSnapshotTemplate({
           Comparable competitors (~20 mi)
         </h2>
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Top five peer venues with similar price tier and Google ratings,
-          within roughly twenty miles—<strong>curated and stored in Supabase</strong>{" "}
-          for each location. Live Google Places discovery needs a secure backend
-          and API billing; we can add that when you&apos;re ready.
+          Google-first peer venues for each location, including price tier,
+          cuisine style, distance, and Google review evidence.
         </p>
         {competitors.length === 0 ? (
           <p className="mt-6 rounded-2xl border border-stone-200 bg-white px-4 py-6 text-sm text-slate-600 shadow-sm">
@@ -933,8 +956,18 @@ export function RestaurantSnapshotTemplate({
             <code className="rounded bg-stone-100 px-1 text-xs">name</code>,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">address</code>,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">
+              cuisine_style
+            </code>
+            ,{" "}
+            <code className="rounded bg-stone-100 px-1 text-xs">
               google_rating
             </code>
+            ,{" "}
+            <code className="rounded bg-stone-100 px-1 text-xs">
+              google_review_count
+            </code>
+            ,{" "}
+            <code className="rounded bg-stone-100 px-1 text-xs">google_url</code>
             ,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">price_level</code>{" "}
             0–4,{" "}
@@ -952,10 +985,10 @@ export function RestaurantSnapshotTemplate({
                     Competitor
                   </th>
                   <th className="px-4 py-3 font-semibold text-slate-900">
-                    Address
+                    Cuisine
                   </th>
                   <th className="px-4 py-3 font-semibold text-slate-900">
-                    Google
+                    Google reviews
                   </th>
                   <th className="px-4 py-3 font-semibold text-slate-900">
                     Price
@@ -972,12 +1005,32 @@ export function RestaurantSnapshotTemplate({
                       {c.name}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {c.address ?? "—"}
+                      {c.cuisine_style ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-slate-700">
-                      {c.google_rating != null
-                        ? c.google_rating.toFixed(1)
-                        : "—"}
+                      {c.google_rating != null ? (
+                        <>
+                          {c.google_rating.toFixed(1)}
+                          {c.google_review_count != null
+                            ? ` (${Math.round(c.google_review_count)} reviews)`
+                            : ""}
+                          {c.google_url ? (
+                            <>
+                              {" "}
+                              <a
+                                href={c.google_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-blue-700 underline decoration-stone-300 underline-offset-2 hover:decoration-blue-500"
+                              >
+                                Source
+                              </a>
+                            </>
+                          ) : null}
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="px-4 py-3 text-slate-700">
                       {priceLevelLabel(c.price_level)}

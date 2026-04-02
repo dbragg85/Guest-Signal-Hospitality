@@ -14,6 +14,6 @@ alter table public.restaurants
 -- price_level uses Google’s 0–4 scale when present (optional; validated in app).
 
 -- Curated peers (typically top 5 within ~20 mi, similar price + ratings). JSON array:
--- [{"name":"","address":"","google_rating":4.3,"price_level":2,"distance_miles":4.1}, ...]
+-- [{"name":"","cuisine_style":"","google_rating":4.3,"google_review_count":1234,"google_url":"https://...","price_level":2,"distance_miles":4.1}, ...]
 alter table public.restaurants
   add column if not exists competitors jsonb not null default '[]'::jsonb;
