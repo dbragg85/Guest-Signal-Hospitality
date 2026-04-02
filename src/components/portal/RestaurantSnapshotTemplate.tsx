@@ -130,6 +130,44 @@ const PILLAR_DEF = [
   },
 ] as const;
 
+const PILLAR_CATEGORY_KEYS: Record<string, string[]> = {
+  experience_quality: [
+    "experience_quality",
+    "food",
+    "service",
+    "atmosphere",
+    "hospitality",
+  ],
+  service_hospitality: [
+    "service_hospitality",
+    "service",
+    "hospitality",
+    "staff",
+    "friendliness",
+  ],
+  food_beverage: [
+    "food_beverage",
+    "food",
+    "menu",
+    "drinks",
+    "beverage",
+  ],
+  operational_reliability: [
+    "operational_reliability",
+    "speed",
+    "consistency",
+    "cleanliness",
+    "operations",
+  ],
+  emotional_connection: [
+    "emotional_connection",
+    "momentum",
+    "service",
+    "atmosphere",
+    "sentiment",
+  ],
+};
+
 type MonthlyRow = { month: string; score: number; delta: number | null };
 type SwotBlock = {
   strengths?: string[];
@@ -310,6 +348,9 @@ export function RestaurantSnapshotTemplate({
     const mentionWeighted = weighted.filter(
       (v) => v.mentions != null && Number.isFinite(v.mentions) && v.mentions > 0,
     );
+    const hasMentionMetadata = weighted.some(
+      (v) => v.mentions != null && Number.isFinite(v.mentions),
+    );
     if (mentionWeighted.length > 0) {
       const totalMentions = mentionWeighted.reduce((sum, v) => sum + (v.mentions ?? 0), 0);
       if (totalMentions > 0) {
@@ -321,48 +362,35 @@ export function RestaurantSnapshotTemplate({
       }
     }
 
+    // If mention metadata exists but no category has >0 mentions, treat as no-data.
+    if (hasMentionMetadata) return null;
+
     return Math.round(
       weighted.reduce((sum, v) => sum + v.score, 0) / weighted.length,
     );
   }
 
   const fallbackPillarScores: Record<string, number | null> = {
-    experience_quality: avgFor([
-      "experience_quality",
-      "food",
-      "service",
-      "atmosphere",
-      "hospitality",
-    ]),
-    service_hospitality: avgFor([
-      "service_hospitality",
-      "service",
-      "hospitality",
-      "staff",
-      "friendliness",
-    ]),
-    food_beverage: avgFor([
-      "food_beverage",
-      "food",
-      "menu",
-      "drinks",
-      "beverage",
-    ]),
-    operational_reliability: avgFor([
-      "operational_reliability",
-      "speed",
-      "consistency",
-      "cleanliness",
-      "operations",
-    ]),
-    emotional_connection: avgFor([
-      "emotional_connection",
-      "momentum",
-      "service",
-      "atmosphere",
-      "sentiment",
-    ]),
+    experience_quality: avgFor(PILLAR_CATEGORY_KEYS.experience_quality),
+    service_hospitality: avgFor(PILLAR_CATEGORY_KEYS.service_hospitality),
+    food_beverage: avgFor(PILLAR_CATEGORY_KEYS.food_beverage),
+    operational_reliability: avgFor(PILLAR_CATEGORY_KEYS.operational_reliability),
+    emotional_connection: avgFor(PILLAR_CATEGORY_KEYS.emotional_connection),
   };
+
+  function pillarMentionStats(keys: string[]): { hasMentionMetadata: boolean; totalMentions: number } {
+    let hasMentionMetadata = false;
+    let totalMentions = 0;
+    for (const key of keys) {
+      const value = categoryScoreMap.get(key);
+      if (!value) continue;
+      if (value.mentions != null && Number.isFinite(value.mentions)) {
+        hasMentionMetadata = true;
+        if (value.mentions > 0) totalMentions += value.mentions;
+      }
+    }
+    return { hasMentionMetadata, totalMentions };
+  }
 
   function normalizePeriodLabel(input: string): string {
     return input
@@ -406,11 +434,22 @@ export function RestaurantSnapshotTemplate({
       data?.[`pillar_${p.key}`] ??
       (p.key === "service_hospitality" ? data?.service : null) ??
       (p.key === "food_beverage" ? data?.food : null);
-    const score = parseNumeric(v) ?? fallbackPillarScores[p.key] ?? null;
+    const explicitScore = parseNumeric(v);
+    let score = explicitScore ?? fallbackPillarScores[p.key] ?? null;
+    const mentionStats = pillarMentionStats(PILLAR_CATEGORY_KEYS[p.key] ?? []);
+    if (
+      mentionStats.hasMentionMetadata &&
+      mentionStats.totalMentions === 0 &&
+      (explicitScore == null || explicitScore === 0)
+    ) {
+      score = null;
+    }
     const blurbKey = `${p.key}_blurb`;
     const customBlurb = data?.[blurbKey];
     const blurb =
-      typeof customBlurb === "string" && customBlurb.trim()
+      score == null
+        ? "Insufficient mention volume in this period to score this pillar yet."
+        : typeof customBlurb === "string" && customBlurb.trim()
         ? customBlurb
         : p.blurb;
     return { ...p, score, blurb };
