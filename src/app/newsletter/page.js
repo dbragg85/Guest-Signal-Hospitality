@@ -1,95 +1,131 @@
-import Image from 'next/image'
-
 export const metadata = {
   title: 'Guest Signal Report | Issue 02',
   description:
     'Guest Signal Report Issue 02 with national, regional, and Greater Cincinnati restaurant intelligence.',
 }
-
 export default function NewsletterPage() {
+
   return (
     <>
-      <main className="newsletter-page">
-        <div className="container">
-          <section className="newsletter-hero">
-            <div className="newsletter-hero-grid">
-              <div className="newsletter-hero-main">
-                <div className="newsletter-brand" aria-label="Guest Signal brand lockup">
-                  <Image
-                    src="/guest-signal-header-icon.svg"
-                    alt="Guest Signal Hospitality"
-                    width={190}
-                    height={96}
-                    className="newsletter-brand-logo"
-                    priority
-                  />
-                  <p className="newsletter-meta">
-                    Published April 1, 2026 | Issue 02 | 10-15 minute read
-                  </p>
-                </div>
-                <h1>Guest Signal Report</h1>
-                <p className="newsletter-dek">
+      <main className="bg-gradient-to-b from-stone-100 via-white to-stone-100 pb-20 pt-12">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 sm:px-6">
+          <section className="rounded-2xl border border-stone-300 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-800">
+                  Newsletter archive
+                </p>
+                <h2 className="mt-2 text-2xl font-bold text-slate-900">Guest Signal Report</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Select an issue, then open it in doc, markdown, or plain text format.
+                </p>
+              </div>
+              <div className="flex w-full max-w-md gap-2">
+                <label className="sr-only" htmlFor="issue">
+                  Newsletter issue
+                </label>
+                <select
+                  id="issue"
+                  name="issue"
+                  defaultValue="issue-02"
+                  className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="issue-02">Issue 02 (April 1, 2026)</option>
+                  <option value="issue-01" disabled>
+                    Issue 01 (Archive pending upload)
+                  </option>
+                </select>
+                <a className="btn-primary shrink-0 px-4 py-2.5 text-center" href="#issue-02-files">
+                  Open
+                </a>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-white shadow-xl sm:p-8">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(250px,1fr)]">
+              <div className="max-w-3xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
+                  Published April 1, 2026 | Issue 02 | 10-15 minute read
+                </p>
+                <h1 className="mt-3 text-balance text-4xl font-bold leading-tight text-white sm:text-5xl">
+                  Guest Signal Report
+                </h1>
+                <p className="mt-4 text-base leading-7 text-slate-200 sm:text-lg">
                   Cincinnati dining demand is active, but attention does not equal retention. This
                   report connects national and regional movement to practical operating moves local
                   owners can implement immediately.
                 </p>
-                <ul className="newsletter-benefits" aria-label="Issue highlights">
-                  <li>National + regional demand intelligence</li>
-                  <li>Greater Cincinnati conversion pressure</li>
-                  <li>Action plan for the next 90 days</li>
+                <ul className="mt-5 grid gap-2 text-sm text-slate-100 sm:grid-cols-2">
+                  <li className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2">
+                    National + regional demand intelligence
+                  </li>
+                  <li className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2">
+                    Greater Cincinnati conversion pressure
+                  </li>
+                  <li className="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 sm:col-span-2">
+                    Action plan for the next 90 days
+                  </li>
                 </ul>
-                <div className="newsletter-actions">
-                  <a
-                    className="btn btn-primary"
-                    href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.doc"
-                  >
-                    Download .doc
-                  </a>
-                  <a
-                    className="btn btn-secondary"
-                    href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.md"
-                  >
-                    Read Markdown
-                  </a>
-                  <a
-                    className="btn btn-secondary"
-                    href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.txt"
-                  >
-                    Read Plain Text
-                  </a>
+                <div className="mt-6 flex flex-wrap gap-2" id="issue-02-files">
+                    <a
+                      className="btn-primary text-center"
+                      href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.doc"
+                    >
+                      Download .doc
+                    </a>
+                    <a
+                      className="btn-secondary border-slate-500 bg-slate-900/70 text-white"
+                      href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.md"
+                    >
+                      Read Markdown
+                    </a>
+                    <a
+                      className="btn-secondary border-slate-500 bg-slate-900/70 text-white"
+                      href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.txt"
+                    >
+                      Read Plain Text
+                    </a>
+                </div>
+                <div className="mt-3 rounded-lg border border-amber-400/60 bg-amber-200/10 px-4 py-3 text-sm text-amber-100">
+                  Issue 01 is listed in the selector and will be enabled once archive files are uploaded.
                 </div>
               </div>
 
-              <aside className="newsletter-hero-aside" aria-label="Operator snapshot">
-                <p className="newsletter-foot-label">Operator snapshot</p>
-                <div className="newsletter-kpis">
-                  <article className="newsletter-kpi-card">
-                    <p className="newsletter-kpi-label">Demand Pulse</p>
-                    <p className="newsletter-kpi-value">Up</p>
-                    <p className="newsletter-kpi-note">Traffic visibility remains elevated</p>
+              <aside className="self-end rounded-xl border border-slate-700 bg-slate-900/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                  Operator snapshot
+                </p>
+                <div className="mt-3 grid gap-2">
+                  <article className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-300">Demand Pulse</p>
+                    <p className="mt-1 text-xl font-semibold text-white">Up</p>
+                    <p className="text-xs text-slate-300">Traffic visibility remains elevated</p>
                   </article>
-                  <article className="newsletter-kpi-card">
-                    <p className="newsletter-kpi-label">Core Risk</p>
-                    <p className="newsletter-kpi-value">Retention</p>
-                    <p className="newsletter-kpi-note">First visits still leak without follow-up</p>
+                  <article className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-300">Core Risk</p>
+                    <p className="mt-1 text-xl font-semibold text-white">Retention</p>
+                    <p className="text-xs text-slate-300">First visits still leak without follow-up</p>
                   </article>
-                  <article className="newsletter-kpi-card">
-                    <p className="newsletter-kpi-label">Owner Priority</p>
-                    <p className="newsletter-kpi-value">System</p>
-                    <p className="newsletter-kpi-note">Track list growth + weekly signal review</p>
+                  <article className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-[0.14em] text-slate-300">
+                      Owner Priority
+                    </p>
+                    <p className="mt-1 text-xl font-semibold text-white">System</p>
+                    <p className="text-xs text-slate-300">Track list growth + weekly signal review</p>
                   </article>
                 </div>
               </aside>
             </div>
           </section>
 
-          <section className="newsletter-section">
+          <section className="rounded-2xl border border-stone-300 bg-white p-6 shadow-sm">
             <h2>The Core Problem</h2>
             <p>
               <strong>Strong food. Weak system.</strong> Restaurant Week and local press can
               generate a spike, but without a conversion and follow-up system, demand fades fast.
             </p>
-            <div className="newsletter-callout">
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
               <h3>What this means</h3>
               <p>
                 Visibility wins your first look. Retention wins your quarter. Operators with a
@@ -99,24 +135,24 @@ export default function NewsletterPage() {
             </div>
           </section>
 
-          <section className="newsletter-section">
+          <section className="rounded-2xl border border-stone-300 bg-white p-6 shadow-sm">
             <h2>What We Are Seeing Right Now</h2>
-            <div className="newsletter-signal-grid">
-              <article className="newsletter-signal-card">
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
                 <h3>National signal</h3>
                 <p>
                   The National Restaurant Association&apos;s 2026 Restaurant Performance Index
                   updates show improving demand conditions while guests remain selective on value.
                 </p>
               </article>
-              <article className="newsletter-signal-card">
+              <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
                 <h3>Regional signal</h3>
                 <p>
                   Great Lakes and Midwest award cycles continue expanding visibility pressure for
                   independent concepts.
                 </p>
               </article>
-              <article className="newsletter-signal-card">
+              <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
                 <h3>Greater Cincinnati signal</h3>
                 <p>
                   Cincinnati dining attention remains elevated through local event and media
@@ -126,55 +162,55 @@ export default function NewsletterPage() {
             </div>
           </section>
 
-          <section className="newsletter-section">
+          <section className="rounded-2xl border border-stone-300 bg-white p-6 shadow-sm">
             <h2>Operator Implications</h2>
-            <div className="newsletter-operator-grid">
-              <article className="newsletter-operator-card">
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
                 <h3>1) Capture the first visit</h3>
                 <p>Track list growth daily and launch a 24-hour post-visit follow-up message.</p>
               </article>
-              <article className="newsletter-operator-card">
+              <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
                 <h3>2) Sharpen your signature</h3>
                 <p>
                   Make your concept easy to repeat in one sentence so guests can market you for
                   free.
                 </p>
               </article>
-              <article className="newsletter-operator-card">
+              <article className="rounded-xl border border-stone-200 bg-stone-50 p-4">
                 <h3>3) Run a weekly signal review</h3>
                 <p>
                   Convert reviews and local demand cues into one owner task list every Monday.
                 </p>
               </article>
             </div>
-            <p className="newsletter-aha">
+            <p className="mt-4 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-slate-800">
               <strong>Aha moment:</strong> Restaurant Week does not create demand. It exposes which
               restaurants already have a system.
             </p>
           </section>
 
-          <section className="newsletter-section">
+          <section className="rounded-2xl border border-stone-300 bg-white p-6 shadow-sm">
             <h2>90-Day Action Sequence</h2>
-            <ol className="newsletter-timeline">
+            <ol className="mt-3 list-decimal space-y-2 pl-5">
               <li>
-                <span className="newsletter-week">Days 1-14</span>
+                <span className="font-semibold text-slate-900">Days 1-14: </span>
                 Implement one offer capture point and one automated guest follow-up message.
               </li>
               <li>
-                <span className="newsletter-week">Days 15-45</span>
+                <span className="font-semibold text-slate-900">Days 15-45: </span>
                 Refine menu and service messaging around your strongest repeat-visit triggers.
               </li>
               <li>
-                <span className="newsletter-week">Days 46-90</span>
+                <span className="font-semibold text-slate-900">Days 46-90: </span>
                 Publish owner scorecards each week: list growth, repeat visit rate, and top review
                 friction points.
               </li>
             </ol>
           </section>
 
-          <section className="newsletter-section">
+          <section className="rounded-2xl border border-stone-300 bg-white p-6 shadow-sm">
             <h2>Sources</h2>
-            <ul className="newsletter-sources">
+            <ul className="mt-3 list-disc space-y-2 pl-5">
               <li>
                 <a href="https://restaurant.org/research-and-media/research/economists-notebook/">
                   National Restaurant Association, Economist&apos;s Notebook
