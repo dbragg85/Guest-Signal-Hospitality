@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { guestSignalHeadlineFromDisplayPillars } from "@/lib/guest-signal-display-score";
 
 export type ScorecardRow = {
   id: string;
@@ -547,7 +548,8 @@ export function RestaurantSnapshotTemplate({
   const websiteHref = normalizeWebsiteUrl(restaurant.website);
   const profileLogoUrl = restaurant.logo_url ?? logoUrlFromWebsite(restaurant.website);
 
-  const headlineScore = selected?.score ?? null;
+  const headlineScore =
+    guestSignalHeadlineFromDisplayPillars(pillars) ?? selected?.score ?? null;
   const headlineText =
     selected?.headline ??
     (headlineScore != null

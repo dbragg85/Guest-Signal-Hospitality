@@ -166,18 +166,18 @@ function categoryScoreFromSentiments(totalSentiment, reviewCount) {
   return Math.round(50 + ratio * 50);
 }
 
-function weightedSubtotal(scoresByCategory) {
+/** Mention-only categories; renormalize weights over scored categories (no neutral 50s for silence). */
+function weightedGuestSignalRenormalized(scoresByCategory) {
   let sum = 0;
+  let wSum = 0;
   for (const key of GSS_CATEGORY_KEYS) {
     const s = scoresByCategory[key];
     if (s == null) continue;
     sum += s * GSS_CATEGORY_WEIGHTS[key];
+    wSum += GSS_CATEGORY_WEIGHTS[key];
   }
-  return sum;
-}
-
-function normalizedGuestSignal(weightedSum) {
-  return Math.round(weightedSum / 0.9);
+  if (!wSum) return null;
+  return Math.round(sum / wSum);
 }
 
 function trendModifier(delta) {
@@ -310,21 +310,30 @@ async function main() {
     }
 
     const sentimentTotals = Object.fromEntries(GSS_CATEGORY_KEYS.map((k) => [k, 0]));
+    const mentionCounts = Object.fromEntries(GSS_CATEGORY_KEYS.map((k) => [k, 0]));
     for (const rev of reviews) {
       for (const cat of GSS_CATEGORY_KEYS) {
         if (mentionsCategory(rev.review_text, cat)) {
           sentimentTotals[cat] += starToSentiment(rev.rating);
+          mentionCounts[cat] += 1;
         }
       }
     }
 
     const categoryScores = {};
     for (const cat of GSS_CATEGORY_KEYS) {
-      categoryScores[cat] = categoryScoreFromSentiments(sentimentTotals[cat], n);
+      const mc = mentionCounts[cat];
+      categoryScores[cat] =
+        mc > 0 ? categoryScoreFromSentiments(sentimentTotals[cat], mc) : null;
     }
 
-    const wSum = weightedSubtotal(categoryScores);
-    const gssBase = normalizedGuestSignal(wSum);
+    const gssBase = weightedGuestSignalRenormalized(categoryScores);
+    if (gssBase == null) {
+      console.warn(
+        `[${restaurant.slug}] No category keyword mentions in this window; skipping GSS write.`,
+      );
+      continue;
+    }
 
     let prevBase = null;
     if (prevPeriod) {
@@ -376,21 +385,38 @@ async function main() {
     }
 
     for (const cat of GSS_CATEGORY_KEYS) {
-      mergedByCategory.set(cat, { score: categoryScores[cat], mentions: n });
+      const s = categoryScores[cat];
+      const mc = mentionCounts[cat];
+      if (s != null && mc > 0) {
+        mergedByCategory.set(cat, { score: s, mentions: mc });
+      }
     }
 
-    const mergedRows = [...mergedByCategory.entries()].map(([category, row]) => ({
-      snapshot_id: snapshotId,
-      category,
-      score: row.score,
-      mentions: row.mentions,
-    }));
+    const mergedRows = [...mergedByCategory.entries()]
+      .filter(([, row]) => row.score != null && Number.isFinite(Number(row.score)))
+      .map(([category, row]) => ({
+        snapshot_id: snapshotId,
+        category,
+        score: row.score,
+        mentions: row.mentions,
+      }));
 
-    const categoryScoresPayload = GSS_CATEGORY_KEYS.map((cat) => ({
-      category: cat,
-      score: categoryScores[cat],
-      mentions: n,
-    }));
+    const categoryScoresPayload = GSS_CATEGORY_KEYS.filter((cat) => categoryScores[cat] != null).map(
+      (cat) => ({
+        category: cat,
+        score: categoryScores[cat],
+        mentions: mentionCounts[cat],
+      }),
+    );
+
+    let weightedNumerator = 0;
+    let weightedDenominator = 0;
+    for (const key of GSS_CATEGORY_KEYS) {
+      const s = categoryScores[key];
+      if (s == null) continue;
+      weightedNumerator += s * GSS_CATEGORY_WEIGHTS[key];
+      weightedDenominator += GSS_CATEGORY_WEIGHTS[key];
+    }
 
     const scorecardData = {
       review_scoring_model: "guest_signal_google_gss_v1",
@@ -415,11 +441,12 @@ async function main() {
       pillar_emotional_connection: pillars.emotional_connection,
       total_score_breakdown: {
         scorecard_total_score: gssFinal,
-        weighted_subtotal_pre_normalize: Number(wSum.toFixed(4)),
+        weighted_category_numerator: Number(weightedNumerator.toFixed(4)),
+        weighted_category_weight_sum: Number(weightedDenominator.toFixed(4)),
         source:
           reviewSources.length === 1 && reviewSources[0] === "google"
-            ? "Guest Signal Score™ Google methodology (board): sentiment ratio → category score → ÷0.9 normalize → trend"
-            : `Guest Signal Score™ methodology on sources [${reviewSources.join(",")}] (board math); prefer pure google when available`,
+            ? "Guest Signal Score™ Google methodology (board): per-category sentiment ÷(2×mention count); weighted mean over mentioned categories only; trend vs prior"
+            : `Guest Signal Score™ methodology on sources [${reviewSources.join(",")}] (board math); mentioned categories only; prefer pure google when available`,
       },
     };
 

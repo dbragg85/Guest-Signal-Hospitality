@@ -3,6 +3,7 @@
 import { RestaurantSnapshotTemplate } from "@/components/portal/RestaurantSnapshotTemplate";
 import { usePortalSession } from "@/contexts/PortalSessionContext";
 import { isPortalRestaurantSlug } from "@/data/portal-restaurants";
+import { guestSignalHeadlineFromScorecardData } from "@/lib/guest-signal-display-score";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -710,7 +711,9 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                                     {row.period}
                                   </td>
                                   <td className="px-4 py-3 text-slate-700">
-                                    {row.score ?? "—"}
+                                    {guestSignalHeadlineFromScorecardData(row.data) ??
+                                      row.score ??
+                                      "—"}
                                   </td>
                                   <td className="px-4 py-3 text-slate-600">
                                     {row.headline ?? "—"}
