@@ -12,6 +12,7 @@
     "check:env": "node scripts/check-env.mjs",
     "sync:github-vars": "node scripts/sync-github-actions-vars.mjs",
     "pipeline:yelp:monthly": "node scripts/run-monthly-yelp-pipeline.mjs",
+    "pipeline:google:gss": "node scripts/run-google-gss-monthly.mjs",
     "build:profile-seed": "node scripts/build-google-profile-seed.mjs"
   },
   "dependencies": {

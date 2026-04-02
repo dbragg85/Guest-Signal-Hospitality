@@ -174,6 +174,25 @@ PERIOD_END="2026-03-31" \
 APIFY_MOCK_DATASET_FILE="scripts/fixtures/yelp-mock-reviews.json" \
 npm run pipeline:yelp:monthly
 ```
+
+---
+
+## Guest Signal Score™ — Google (`review_observations`)
+
+Runs the **Google-only** monthly methodology from the board prompt (sentiment scale, category ratios, ÷0.9 normalization, trend modifier vs prior month).
+
+```bash
+npm run pipeline:google:gss
+```
+
+**Prerequisite:** rows in `public.review_observations` with `source = 'google'` for each restaurant in the window (your own Google review ingest).
+
+**Required env:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+
+**Optional:** `PERIOD_START`, `PERIOD_END` (`YYYY-MM-DD`), `PERIOD_LABEL` (e.g. `Mar 2026`), `RESTAURANT_SLUGS`, `DRY_RUN=1`
+
+Writes `snapshots`, `snapshot_category_scores` (food/service/cleanliness/speed/atmosphere), and `scorecards` with `gss_google_base`, trend fields, and final published score.
+
 ## I. Ratings Source-Of-Truth + QA checklist
 
 ### Approved source-of-truth
