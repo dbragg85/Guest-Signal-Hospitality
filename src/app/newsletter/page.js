@@ -1,4 +1,5 @@
 import Navigation from '../../components/Navigation'
+import Image from 'next/image'
 
 export const metadata = {
   title: 'Guest Signal Report | Issue 02',
@@ -13,57 +14,74 @@ export default function NewsletterPage() {
       <main className="newsletter-page">
         <div className="container">
           <section className="newsletter-hero">
-            <p className="newsletter-meta">Published April 1, 2026 | Issue 02 | 10-15 minute read</p>
-            <h1>Guest Signal Report</h1>
-            <p className="newsletter-dek">
-              Cincinnati dining demand is active, but attention does not equal retention. This
-              report connects national and regional movement to practical operating moves local
-              owners can implement immediately.
-            </p>
-            <div className="newsletter-highlights" aria-label="Issue highlights">
-              <p className="newsletter-highlight">National + regional demand intelligence</p>
-              <p className="newsletter-highlight">Greater Cincinnati conversion pressure</p>
-              <p className="newsletter-highlight">Action plan for the next 90 days</p>
-            </div>
-            <div className="newsletter-actions">
-              <a
-                className="btn btn-primary"
-                href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.doc"
-              >
-                Download .doc
-              </a>
-              <a
-                className="btn btn-secondary"
-                href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.md"
-              >
-                Read Markdown
-              </a>
-              <a
-                className="btn btn-secondary"
-                href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.txt"
-              >
-                Read Plain Text
-              </a>
-            </div>
-            <div className="newsletter-hero-foot">
-              <p className="newsletter-foot-label">Operator snapshot</p>
-              <div className="newsletter-kpis">
-                <article className="newsletter-kpi-card">
-                  <p className="newsletter-kpi-label">Demand Pulse</p>
-                  <p className="newsletter-kpi-value">Up</p>
-                  <p className="newsletter-kpi-note">Traffic visibility remains elevated</p>
-                </article>
-                <article className="newsletter-kpi-card">
-                  <p className="newsletter-kpi-label">Core Risk</p>
-                  <p className="newsletter-kpi-value">Retention</p>
-                  <p className="newsletter-kpi-note">First visits still leak without follow-up</p>
-                </article>
-                <article className="newsletter-kpi-card">
-                  <p className="newsletter-kpi-label">Owner Priority</p>
-                  <p className="newsletter-kpi-value">System</p>
-                  <p className="newsletter-kpi-note">Track list growth + weekly signal review</p>
-                </article>
+            <div className="newsletter-hero-grid">
+              <div className="newsletter-hero-main">
+                <div className="newsletter-brand" aria-label="Guest Signal brand lockup">
+                  <Image
+                    src="/guest-signal-header-icon.svg"
+                    alt="Guest Signal Hospitality"
+                    width={190}
+                    height={96}
+                    className="newsletter-brand-logo"
+                    priority
+                  />
+                  <p className="newsletter-meta">
+                    Published April 1, 2026 | Issue 02 | 10-15 minute read
+                  </p>
+                </div>
+                <h1>Guest Signal Report</h1>
+                <p className="newsletter-dek">
+                  Cincinnati dining demand is active, but attention does not equal retention. This
+                  report connects national and regional movement to practical operating moves local
+                  owners can implement immediately.
+                </p>
+                <ul className="newsletter-benefits" aria-label="Issue highlights">
+                  <li>National + regional demand intelligence</li>
+                  <li>Greater Cincinnati conversion pressure</li>
+                  <li>Action plan for the next 90 days</li>
+                </ul>
+                <div className="newsletter-actions">
+                  <a
+                    className="btn btn-primary"
+                    href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.doc"
+                  >
+                    Download .doc
+                  </a>
+                  <a
+                    className="btn btn-secondary"
+                    href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.md"
+                  >
+                    Read Markdown
+                  </a>
+                  <a
+                    className="btn btn-secondary"
+                    href="/newsletters/issue-02/GUESIGNAL_Newsletter_2026-04-01_Issue-02.txt"
+                  >
+                    Read Plain Text
+                  </a>
+                </div>
               </div>
+
+              <aside className="newsletter-hero-aside" aria-label="Operator snapshot">
+                <p className="newsletter-foot-label">Operator snapshot</p>
+                <div className="newsletter-kpis">
+                  <article className="newsletter-kpi-card">
+                    <p className="newsletter-kpi-label">Demand Pulse</p>
+                    <p className="newsletter-kpi-value">Up</p>
+                    <p className="newsletter-kpi-note">Traffic visibility remains elevated</p>
+                  </article>
+                  <article className="newsletter-kpi-card">
+                    <p className="newsletter-kpi-label">Core Risk</p>
+                    <p className="newsletter-kpi-value">Retention</p>
+                    <p className="newsletter-kpi-note">First visits still leak without follow-up</p>
+                  </article>
+                  <article className="newsletter-kpi-card">
+                    <p className="newsletter-kpi-label">Owner Priority</p>
+                    <p className="newsletter-kpi-value">System</p>
+                    <p className="newsletter-kpi-note">Track list growth + weekly signal review</p>
+                  </article>
+                </div>
+              </aside>
             </div>
           </section>
 
