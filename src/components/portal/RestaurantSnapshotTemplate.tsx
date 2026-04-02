@@ -548,8 +548,8 @@ export function RestaurantSnapshotTemplate({
   const websiteHref = normalizeWebsiteUrl(restaurant.website);
   const profileLogoUrl = restaurant.logo_url ?? logoUrlFromWebsite(restaurant.website);
 
-  const headlineScore =
-    guestSignalHeadlineFromDisplayPillars(pillars) ?? selected?.score ?? null;
+  const headlineFromPillars = guestSignalHeadlineFromDisplayPillars(pillars);
+  const headlineScore = headlineFromPillars ?? selected?.score ?? null;
   const headlineText =
     selected?.headline ??
     (headlineScore != null
@@ -683,9 +683,11 @@ export function RestaurantSnapshotTemplate({
               <p className="text-6xl font-bold tracking-tight text-slate-900 sm:text-7xl">
                 {headlineScore ?? "—"}
               </p>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 max-w-sm text-sm text-slate-600">
                 {headlineScore != null
-                  ? "Based on the selected published scorecard"
+                  ? headlineFromPillars != null
+                    ? "From pillar tiles: weighted 45% / 30% / 25% on Experience, Operational & Emotional when that produces a score (missing pillars excluded); otherwise a simple average of whichever of the five tiles have scores."
+                    : "Stored total from the selected scorecard row"
                   : "Add a scorecard row in Supabase to populate this view"}
               </p>
             </div>

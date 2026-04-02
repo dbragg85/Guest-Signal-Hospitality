@@ -1,3 +1,12 @@
+/**
+ * Portal headline Guest Signal Score — how `guestSignalHeadlineFromDisplayPillars` works:
+ * 1. **Primary:** weighted mean of the **three** board meta-pillars (45% / 30% / 25%),
+ *    using only pillars that have a numeric score; weights are renormalized over that set.
+ *    Keys: experience_quality, operational_reliability, emotional_connection.
+ * 2. **Fallback:** if step 1 yields nothing, **simple arithmetic mean** of every **five**
+ *    pillar tiles that have a score (Service & Hospitality, Food & Beverage, etc.).
+ * 3. Callers may then fall back to the stored `scorecards.score` if both are null.
+ */
 /** Board rubric: top-level pillar weights (sum = 1.0). */
 export const RUBRIC_PILLAR_WEIGHTS: Record<string, number> = {
   experience_quality: 0.45,
@@ -42,6 +51,7 @@ export function guestSignalHeadlineFromScorecardData(data: unknown): number | nu
   return guestSignalFromRubricPillarScores(scores);
 }
 
+/** @see module docstring — tries 3-pillar weighted rubric first, then mean of scored tiles among five. */
 export function guestSignalHeadlineFromDisplayPillars(
   pillars: ReadonlyArray<{ key: string; score: number | null }>,
 ): number | null {
