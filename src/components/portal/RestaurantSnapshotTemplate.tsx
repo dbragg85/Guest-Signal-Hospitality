@@ -462,11 +462,18 @@ export function RestaurantSnapshotTemplate({
     const explicitScore = parseNumeric(v);
     let score = explicitScore ?? fallbackPillarScores[p.key] ?? null;
     const mentionStats = pillarMentionStats(PILLAR_CATEGORY_KEYS[p.key] ?? []);
+    const missingMentionEvidence =
+      !mentionStats.hasMentionMetadata || mentionStats.totalMentions === 0;
     if (
       mentionStats.hasMentionMetadata &&
       mentionStats.totalMentions === 0 &&
       (explicitScore == null || explicitScore === 0)
     ) {
+      score = null;
+    }
+    // Legacy rows can carry default 0 pillar values without category mention evidence.
+    // Treat those as insufficient data so UI state matches the no-score cards.
+    if (explicitScore === 0 && missingMentionEvidence) {
       score = null;
     }
     const blurbKey = `${p.key}_blurb`;
