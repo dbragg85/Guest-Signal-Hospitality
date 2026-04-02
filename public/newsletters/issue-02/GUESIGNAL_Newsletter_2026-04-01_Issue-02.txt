@@ -40,4 +40,4 @@ Cincinnati's dining scene remains active through local events and media attentio
 2. James Beard Foundation Awards coverage:
    https://www.jamesbeard.org/awards
 3. Cincinnati local restaurant reporting:
-   https://www.citybeat.com/cincinnati
+   https://www.citybeat.com/food-drink/

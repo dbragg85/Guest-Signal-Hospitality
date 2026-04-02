@@ -168,7 +168,7 @@ export default function NewsletterPage() {
                 <a href="https://www.jamesbeard.org/awards">James Beard Foundation Awards</a>
               </li>
               <li>
-                <a href="https://www.citybeat.com/cincinnati">Cincinnati local restaurant reporting</a>
+                <a href="https://www.citybeat.com/food-drink/">Cincinnati local restaurant reporting</a>
               </li>
             </ul>
           </section>
