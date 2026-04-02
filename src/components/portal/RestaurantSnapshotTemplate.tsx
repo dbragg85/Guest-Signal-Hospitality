@@ -17,9 +17,8 @@ export type RestaurantProfile = {
   website: string | null;
   logo_url: string | null;
   google_rating: number | null;
-  price_level: number | null;
-  /** When set in Supabase, shown as the price tier instead of deriving from `price_level` alone. */
-  price_level_label: string | null;
+  /** Google Places 0–4, or plain-text tier (e.g. `$`, `$$`) when the column is `text`. */
+  price_level: string | number | null;
   competitors: unknown;
 };
 
@@ -47,14 +46,26 @@ function priceLevelLabel(n: number | null | undefined): string {
   return labels[v] ?? "—";
 }
 
-/** Prefer explicit DB label; otherwise map Google-style 0–4 to $…$ display. */
-function formatPriceTier(
-  label: string | null | undefined,
-  level: number | null | undefined,
+/**
+ * `raw` from DB: numeric 0–4, numeric string `"2"`, or display text (`$$`).
+ * `labelOverride`: optional explicit string from JSON (`price_level_label`).
+ */
+function displayPriceTier(
+  raw: string | number | null | undefined,
+  labelOverride?: string | null,
 ): string {
-  const t = typeof label === "string" ? label.trim() : "";
-  if (t) return t;
-  return priceLevelLabel(level);
+  const o = typeof labelOverride === "string" ? labelOverride.trim() : "";
+  if (o) return o;
+  if (raw == null) return "—";
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t) return "—";
+    const n = Number(t);
+    if (Number.isFinite(n) && String(n) === t) return priceLevelLabel(n);
+    return t;
+  }
+  if (typeof raw === "number" && Number.isFinite(raw)) return priceLevelLabel(raw);
+  return "—";
 }
 
 function normalizeWebsiteUrl(website: string | null | undefined): string | null {
@@ -86,8 +97,8 @@ type Competitor = {
   yelp_rating?: number;
   yelp_review_count?: number;
   yelp_url?: string;
-  price_level?: number;
-  /** Optional per-competitor label in JSON; wins over numeric price_level mapping. */
+  price_level?: number | string;
+  /** Optional; wins over `price_level` when set. */
   price_level_label?: string;
   distance_miles?: number;
 };
@@ -105,6 +116,18 @@ function parseOptionalString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed || undefined;
+}
+
+function parsePriceLevelValue(raw: unknown): number | string | undefined {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t) return undefined;
+    const n = Number(t);
+    if (Number.isFinite(n) && String(n) === t) return n;
+    return t;
+  }
+  return undefined;
 }
 
 function parseCompetitors(raw: unknown): Competitor[] {
@@ -125,7 +148,7 @@ function parseCompetitors(raw: unknown): Competitor[] {
       yelp_rating: parseOptionalNumber(o.yelp_rating),
       yelp_review_count: parseOptionalNumber(o.yelp_review_count),
       yelp_url: parseOptionalString(o.yelp_url),
-      price_level: parseOptionalNumber(o.price_level),
+      price_level: parsePriceLevelValue(o.price_level),
       price_level_label: parseOptionalString(o.price_level_label),
       distance_miles: parseOptionalNumber(o.distance_miles),
     });
@@ -622,7 +645,7 @@ export function RestaurantSnapshotTemplate({
                   <span>
                     Price tier:{" "}
                     <strong className="text-slate-800">
-                      {formatPriceTier(restaurant.price_level_label, restaurant.price_level)}
+                      {displayPriceTier(restaurant.price_level)}
                     </strong>
                   </span>
                 </div>
@@ -991,10 +1014,10 @@ export function RestaurantSnapshotTemplate({
             ,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">google_url</code>
             ,{" "}
-            <code className="rounded bg-stone-100 px-1 text-xs">price_level_label</code>{" "}
-            (text) or{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">price_level</code>{" "}
-            (0–4),{" "}
+            (0–4 number, or text like <code className="rounded bg-stone-100 px-1 text-xs">$$</code>
+            ), optional{" "}
+            <code className="rounded bg-stone-100 px-1 text-xs">price_level_label</code>,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">
               distance_miles
             </code>
@@ -1057,7 +1080,7 @@ export function RestaurantSnapshotTemplate({
                       )}
                     </td>
                     <td className="px-4 py-3 text-slate-700">
-                      {formatPriceTier(c.price_level_label, c.price_level)}
+                      {displayPriceTier(c.price_level, c.price_level_label)}
                     </td>
                     <td className="px-4 py-3 text-slate-700">
                       {c.distance_miles != null
