@@ -1,4 +1,3 @@
-import Navigation from '../../components/Navigation'
 import Image from 'next/image'
 
 export const metadata = {
@@ -10,7 +9,6 @@ export const metadata = {
 export default function NewsletterPage() {
   return (
     <>
-      <Navigation />
       <main className="newsletter-page">
         <div className="container">
           <section className="newsletter-hero">
