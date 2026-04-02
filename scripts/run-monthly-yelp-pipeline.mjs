@@ -619,6 +619,7 @@ async function main() {
 
     const scorecardData = {
       review_scoring_model: "guest_signal_rubric_v1",
+      confidence_level: confidenceLevel,
       category_scores: categoryScoresPayload,
       total_reviews_analyzed: totalReviews,
       google_reviews_analyzed: googleCount,

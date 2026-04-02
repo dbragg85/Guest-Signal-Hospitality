@@ -418,8 +418,11 @@ async function main() {
       weightedDenominator += GSS_CATEGORY_WEIGHTS[key];
     }
 
+    const confidenceLevel = n >= 50 ? "high" : n >= 20 ? "medium" : "low";
+
     const scorecardData = {
       review_scoring_model: "guest_signal_google_gss_v1",
+      confidence_level: confidenceLevel,
       gss_review_sources_used: reviewSources,
       gss_google_base: gssBase,
       gss_google_trend_delta_vs_prior: prevBase == null ? null : Number(delta.toFixed(2)),
@@ -454,8 +457,6 @@ async function main() {
       console.log(`[${restaurant.slug}] DRY_RUN`, JSON.stringify({ gssBase, trend, gssFinal, categoryScores, pillars }, null, 2));
       continue;
     }
-
-    const confidenceLevel = n >= 50 ? "high" : n >= 20 ? "medium" : "low";
 
     if (!existingSnapshot) {
       const { error: insErr } = await supabase.from("snapshots").insert({
