@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
  * Guest Signal Score™ — Google monthly methodology (board spec).
- * Uses review_observations where source = 'google' within PERIOD_START..PERIOD_END.
+ * Uses review_observations within PERIOD_START..PERIOD_END (default source: google only).
+ * Optional GSS_REVIEW_SOURCES=google,yelp when Google rows are empty but Yelp text exists.
  *
  * Sentiment per category per review: only when category is mentioned in text; else 0.
  * Star rating maps to Strong +2 … Strong −2 for mentioned categories.
  *
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PERIOD_START, PERIOD_END (YYYY-MM-DD),
- *      PERIOD_LABEL (e.g. Mar 2026), optional RESTAURANT_SLUGS, DRY_RUN=1
+ *      PERIOD_LABEL (e.g. Mar 2026), optional RESTAURANT_SLUGS, GSS_REVIEW_SOURCES, DRY_RUN=1
  */
 import { createClient } from "@supabase/supabase-js";
 
@@ -243,6 +244,20 @@ async function main() {
       .filter(Boolean),
   );
 
+  const reviewSources = getEnv("GSS_REVIEW_SOURCES", { fallback: "google" })
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const allowedSources = new Set(["google", "yelp"]);
+  for (const s of reviewSources) {
+    if (!allowedSources.has(s)) {
+      throw new Error(`GSS_REVIEW_SOURCES: unknown source "${s}" (allowed: google, yelp)`);
+    }
+  }
+  if (!reviewSources.length) {
+    throw new Error("GSS_REVIEW_SOURCES must list at least one of: google, yelp");
+  }
+
   const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -257,20 +272,23 @@ async function main() {
 
   const prevPeriod = previousMonthLabel(periodLabel);
 
-  console.log(`Google GSS pipeline — ${periodLabel} (${periodStartIso} → ${periodEndIso}), prior period: ${prevPeriod ?? "n/a"}`);
+  console.log(
+    `Google GSS pipeline — ${periodLabel} (${periodStartIso} → ${periodEndIso}), sources=[${reviewSources.join(",")}], prior period: ${prevPeriod ?? "n/a"}`,
+  );
 
   for (const restaurant of candidates) {
     const { data: rows, error: oErr } = await supabase
       .from("review_observations")
-      .select("review_text, rating, review_date, external_review_id")
+      .select("source, review_text, rating, review_date, external_review_id")
       .eq("restaurant_id", restaurant.id)
-      .eq("source", "google")
+      .in("source", reviewSources)
       .gte("review_date", periodStartIso)
       .lte("review_date", periodEndIso)
       .order("review_date", { ascending: false });
 
     if (oErr) throw oErr;
     const reviews = (rows ?? []).map((r) => ({
+      source: String(r.source ?? ""),
       review_text: r.review_text,
       rating: parseRating(r.rating),
       review_date: r.review_date,
@@ -278,10 +296,16 @@ async function main() {
     }));
 
     const n = reviews.length;
-    console.log(`\n[${restaurant.slug}] ${n} Google reviews in window`);
+    const googleInWindow = reviews.filter((r) => r.source === "google").length;
+    const yelpInWindow = reviews.filter((r) => r.source === "yelp").length;
+    console.log(
+      `\n[${restaurant.slug}] ${n} reviews in window (google=${googleInWindow}, yelp=${yelpInWindow})`,
+    );
 
     if (!n) {
-      console.warn(`[${restaurant.slug}] No Google reviews in review_observations for this window; skipping.`);
+      console.warn(
+        `[${restaurant.slug}] No review_observations rows for sources [${reviewSources.join(",")}] in this window; skipping.`,
+      );
       continue;
     }
 
@@ -334,8 +358,7 @@ async function main() {
     if (sErr) throw sErr;
 
     const snapshotId = existingSnapshot?.id ?? crypto.randomUUID();
-    const yelpCount = Number(existingSnapshot?.yelp_reviews_analyzed ?? 0);
-    const totalReviews = n + yelpCount;
+    const totalReviews = n;
 
     const { data: existingCategoryRows, error: cErr } = await supabase
       .from("snapshot_category_scores")
@@ -371,6 +394,7 @@ async function main() {
 
     const scorecardData = {
       review_scoring_model: "guest_signal_google_gss_v1",
+      gss_review_sources_used: reviewSources,
       gss_google_base: gssBase,
       gss_google_trend_delta_vs_prior: prevBase == null ? null : Number(delta.toFixed(2)),
       gss_google_trend_modifier: trend,
@@ -379,8 +403,8 @@ async function main() {
       gss_category_weights: GSS_CATEGORY_WEIGHTS,
       category_scores: [...categoryScoresPayload],
       total_reviews_analyzed: totalReviews,
-      google_reviews_analyzed: n,
-      yelp_reviews_analyzed: yelpCount,
+      google_reviews_analyzed: googleInWindow,
+      yelp_reviews_analyzed: yelpInWindow,
       experience_quality: pillars.experience_quality,
       service_hospitality: categoryScores.service,
       food_beverage: categoryScores.food,
@@ -392,7 +416,10 @@ async function main() {
       total_score_breakdown: {
         scorecard_total_score: gssFinal,
         weighted_subtotal_pre_normalize: Number(wSum.toFixed(4)),
-        source: "Guest Signal Score™ Google methodology (board): sentiment ratio → category score → ÷0.9 normalize → trend",
+        source:
+          reviewSources.length === 1 && reviewSources[0] === "google"
+            ? "Guest Signal Score™ Google methodology (board): sentiment ratio → category score → ÷0.9 normalize → trend"
+            : `Guest Signal Score™ methodology on sources [${reviewSources.join(",")}] (board math); prefer pure google when available`,
       },
     };
 
@@ -414,8 +441,8 @@ async function main() {
         written_review_score: gssBase,
         confidence_level: confidenceLevel,
         total_reviews_analyzed: totalReviews,
-        google_reviews_analyzed: n,
-        yelp_reviews_analyzed: yelpCount,
+        google_reviews_analyzed: googleInWindow,
+        yelp_reviews_analyzed: yelpInWindow,
         pillar_experience_quality: pillars.experience_quality,
         pillar_operational_reliability: pillars.operational_reliability,
         pillar_emotional_connection: pillars.emotional_connection,
@@ -431,8 +458,8 @@ async function main() {
           written_review_score: gssBase,
           confidence_level: confidenceLevel,
           total_reviews_analyzed: totalReviews,
-          google_reviews_analyzed: n,
-          yelp_reviews_analyzed: yelpCount,
+          google_reviews_analyzed: googleInWindow,
+          yelp_reviews_analyzed: yelpInWindow,
           pillar_experience_quality: pillars.experience_quality,
           pillar_operational_reliability: pillars.operational_reliability,
           pillar_emotional_connection: pillars.emotional_connection,
@@ -463,7 +490,10 @@ async function main() {
         restaurant_id: restaurant.id,
         period: periodLabel,
         score: gssFinal,
-        headline: `Guest Signal Score™ (${periodLabel}, Google window)`,
+        headline:
+          reviewSources.length === 1 && reviewSources[0] === "google"
+            ? `Guest Signal Score™ (${periodLabel}, Google window)`
+            : `Guest Signal Score™ (${periodLabel}, ${reviewSources.join("+")} window)`,
         data: {
           snapshot_id: snapshotId,
           ...scorecardData,
