@@ -135,6 +135,7 @@ Optional env vars:
 - `MAX_REVIEWS_PER_LOCATION` (default `250`)
 - `APIFY_YELP_INPUT_TEMPLATE_JSON` (JSON template with `{{YELP_URL}}` placeholder)
 - `DRY_RUN=1` for a no-write preview
+- `APIFY_MOCK_DATASET_FILE` (path to local JSON fixture) or `APIFY_MOCK_DATASET_JSON` (inline JSON string) to bypass live Apify calls for non-live validation
 
 Behavior:
 
@@ -146,3 +147,26 @@ Behavior:
   - overall Guest Signal score
   - 5 pillar scores
   - source coverage (`google_reviews_analyzed`, `yelp_reviews_analyzed`, `total_reviews_analyzed`)
+
+Mock validation examples (no live actor/quota needed):
+
+```bash
+# Dry-run using local mock Yelp payload
+DRY_RUN=1 \
+SUPABASE_URL=... \
+SUPABASE_SERVICE_ROLE_KEY=... \
+PERIOD_LABEL="Mar 2026" \
+PERIOD_START="2026-03-01" \
+PERIOD_END="2026-03-31" \
+APIFY_MOCK_DATASET_FILE="scripts/fixtures/yelp-mock-reviews.json" \
+npm run pipeline:yelp:monthly
+
+# Write-run using the same mock payload
+SUPABASE_URL=... \
+SUPABASE_SERVICE_ROLE_KEY=... \
+PERIOD_LABEL="Mar 2026" \
+PERIOD_START="2026-03-01" \
+PERIOD_END="2026-03-31" \
+APIFY_MOCK_DATASET_FILE="scripts/fixtures/yelp-mock-reviews.json" \
+npm run pipeline:yelp:monthly
+```

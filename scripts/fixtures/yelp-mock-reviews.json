@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": "mock-yelp-001",
+      "text": "Fantastic service and quick seating. Food was delicious and the vibe felt warm.",
+      "rating": 5,
+      "date": "2026-03-10"
+    },
+    {
+      "id": "mock-yelp-002",
+      "text": "Wait time was long and the bathroom was dirty, but staff remained polite.",
+      "rating": 2,
+      "date": "2026-03-14"
+    },
+    {
+      "id": "mock-yelp-003",
+      "text": "Great cocktails, clean dining room, and attentive staff.",
+      "rating": 4,
+      "date": "2026-03-21"
+    }
+  ]
+}

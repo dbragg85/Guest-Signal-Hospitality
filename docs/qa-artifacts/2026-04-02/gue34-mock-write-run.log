@@ -1,0 +1,8 @@
+Running in mock Yelp dataset mode (no live Apify actor calls).
+Running period Mar 2026 (2026-03-01 → 2026-03-31) for 1 restaurants
+
+[boca] Loaded 3 mock Yelp review rows.
+[boca] 3 Yelp reviews in period
+[boca] Updated snapshot + scorecard with Yelp source coverage.
+
+Pipeline run complete.

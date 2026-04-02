@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createClient } from "@supabase/supabase-js";
+import { readFileSync } from "node:fs";
 
 const CATEGORY_KEYWORDS = {
   food: ["food", "meal", "dish", "menu", "taste", "flavor", "drink", "cocktail", "beer", "wine"],
@@ -147,6 +148,12 @@ function weightedAverage(entries) {
   return Math.round(weightedScore / totalMentions);
 }
 
+function confidenceLevelFromReviewCount(totalReviews) {
+  if (totalReviews >= 50) return "high";
+  if (totalReviews >= 20) return "medium";
+  return "low";
+}
+
 function buildApifyInput(yelpUrl) {
   const rawTemplate = getEnv("APIFY_YELP_INPUT_TEMPLATE_JSON", { fallback: "" });
   if (!rawTemplate) {
@@ -207,6 +214,34 @@ async function fetchApifyDatasetItems({ token, datasetId }) {
     throw new Error(`Apify dataset fetch failed (${response.status}): ${await response.text()}`);
   }
   return response.json();
+}
+
+function loadMockDatasetFromEnv() {
+  const rawJson = getEnv("APIFY_MOCK_DATASET_JSON", { fallback: "" });
+  const filePath = getEnv("APIFY_MOCK_DATASET_FILE", { fallback: "" });
+  if (!rawJson && !filePath) return null;
+
+  const raw = rawJson || readFileSync(filePath, "utf8");
+  const parsed = JSON.parse(raw);
+
+  if (Array.isArray(parsed)) return { defaultItems: parsed };
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("Mock dataset must be an array or object.");
+  }
+  if (Array.isArray(parsed.items)) return { defaultItems: parsed.items };
+
+  const bySlug = {};
+  const entries = Object.entries(parsed.bySlug ?? {});
+  for (const [slug, items] of entries) {
+    if (!Array.isArray(items)) {
+      throw new Error(`Mock dataset bySlug.${slug} must be an array.`);
+    }
+    bySlug[slug] = items;
+  }
+  if (!entries.length) {
+    throw new Error("Mock dataset object must include either items[] or bySlug{slug:[]}.");
+  }
+  return { bySlug };
 }
 
 function normalizeApifyItem(item) {
@@ -276,8 +311,9 @@ function normalizeApifyItem(item) {
 async function main() {
   const supabaseUrl = getEnv("SUPABASE_URL", { required: true });
   const supabaseServiceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY", { required: true });
-  const apifyToken = getEnv("APIFY_TOKEN", { required: true });
-  const apifyActorId = getEnv("APIFY_YELP_ACTOR_ID", { required: true });
+  const mockDataset = loadMockDatasetFromEnv();
+  const apifyToken = mockDataset ? null : getEnv("APIFY_TOKEN", { required: true });
+  const apifyActorId = mockDataset ? null : getEnv("APIFY_YELP_ACTOR_ID", { required: true });
   const dryRun = ["1", "true", "yes"].includes((getEnv("DRY_RUN", { fallback: "0" }) || "").toLowerCase());
 
   const providedStart = getEnv("PERIOD_START", { fallback: "" });
@@ -325,20 +361,27 @@ async function main() {
     return;
   }
 
+  if (mockDataset) {
+    console.log("Running in mock Yelp dataset mode (no live Apify actor calls).");
+  }
+
   console.log(`Running period ${periodLabel} (${periodStartIso} → ${periodEndIso}) for ${candidates.length} restaurants`);
 
   for (const restaurant of candidates) {
-    console.log(`\n[${restaurant.slug}] Pulling Yelp reviews from Apify...`);
-
-    const input = buildApifyInput(restaurant.yelp_url);
-    const run = await startApifyRun({ token: apifyToken, actorId: apifyActorId, input });
-    const finalRun = await waitForApifyRun({ token: apifyToken, runId: run.id });
-
-    if (finalRun.status !== "SUCCEEDED") {
-      throw new Error(`[${restaurant.slug}] Apify run ${run.id} ended with status ${finalRun.status}`);
+    let rawItems = [];
+    if (mockDataset) {
+      rawItems = mockDataset.bySlug?.[restaurant.slug] ?? mockDataset.defaultItems ?? [];
+      console.log(`\n[${restaurant.slug}] Loaded ${rawItems.length} mock Yelp review rows.`);
+    } else {
+      console.log(`\n[${restaurant.slug}] Pulling Yelp reviews from Apify...`);
+      const input = buildApifyInput(restaurant.yelp_url);
+      const run = await startApifyRun({ token: apifyToken, actorId: apifyActorId, input });
+      const finalRun = await waitForApifyRun({ token: apifyToken, runId: run.id });
+      if (finalRun.status !== "SUCCEEDED") {
+        throw new Error(`[${restaurant.slug}] Apify run ${run.id} ended with status ${finalRun.status}`);
+      }
+      rawItems = await fetchApifyDatasetItems({ token: apifyToken, datasetId: finalRun.defaultDatasetId });
     }
-
-    const rawItems = await fetchApifyDatasetItems({ token: apifyToken, datasetId: finalRun.defaultDatasetId });
     const parsed = rawItems.map(normalizeApifyItem).filter(Boolean);
     if (rawItems.length > 0 && parsed.length === 0) {
       const sample = rawItems[0] ?? {};
@@ -422,7 +465,6 @@ async function main() {
 
     const mergedRows = [...merged.entries()].map(([category, row]) => ({
       snapshot_id: snapshotId,
-      restaurant_id: restaurant.id,
       category,
       score: row.score,
       mentions: row.mentions,
@@ -431,6 +473,7 @@ async function main() {
     const googleCount = Number(existingSnapshot?.google_reviews_analyzed ?? 0);
     const yelpCount = periodReviews.length;
     const totalReviews = googleCount + yelpCount;
+    const confidenceLevel = confidenceLevelFromReviewCount(totalReviews);
 
     const overallScore = weightedAverage([...merged.values()]);
     const existingOverallScore = parseNumber(existingSnapshot?.guest_signal_score);
@@ -497,9 +540,13 @@ async function main() {
         period_end: periodEndIso,
         guest_signal_score: effectiveOverallScore,
         written_review_score: effectiveOverallScore,
+        confidence_level: confidenceLevel,
         total_reviews_analyzed: totalReviews,
         google_reviews_analyzed: googleCount,
         yelp_reviews_analyzed: yelpCount,
+        pillar_experience_quality: pillarScores.experience_quality,
+        pillar_operational_reliability: pillarScores.operational_reliability,
+        pillar_emotional_connection: pillarScores.emotional_connection,
       });
       if (snapshotInsertError) throw snapshotInsertError;
     } else {
@@ -510,9 +557,13 @@ async function main() {
           period_end: periodEndIso,
           guest_signal_score: effectiveOverallScore,
           written_review_score: effectiveOverallScore,
+          confidence_level: confidenceLevel,
           total_reviews_analyzed: totalReviews,
           google_reviews_analyzed: googleCount,
           yelp_reviews_analyzed: yelpCount,
+          pillar_experience_quality: pillarScores.experience_quality,
+          pillar_operational_reliability: pillarScores.operational_reliability,
+          pillar_emotional_connection: pillarScores.emotional_connection,
         })
         .eq("id", snapshotId);
       if (snapshotUpdateError) throw snapshotUpdateError;

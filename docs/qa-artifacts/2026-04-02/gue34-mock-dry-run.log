@@ -1,0 +1,49 @@
+Running in mock Yelp dataset mode (no live Apify actor calls).
+Running period Mar 2026 (2026-03-01 → 2026-03-31) for 1 restaurants
+
+[boca] Loaded 3 mock Yelp review rows.
+[boca] 3 Yelp reviews in period
+[boca] DRY_RUN
+{
+  "snapshotId": "3ad9f81a-416b-40b8-92a3-f99e0ec4c748",
+  "overallScore": 70,
+  "totalReviews": 3,
+  "googleCount": 0,
+  "yelpCount": 3,
+  "pillars": {
+    "experience_quality": 84,
+    "service_hospitality": 67,
+    "food_beverage": 100,
+    "operational_reliability": 50,
+    "emotional_connection": 75
+  },
+  "categories": [
+    {
+      "category": "food",
+      "score": 100,
+      "mentions": 2
+    },
+    {
+      "category": "service",
+      "score": 67,
+      "mentions": 3
+    },
+    {
+      "category": "speed",
+      "score": 50,
+      "mentions": 2
+    },
+    {
+      "category": "atmosphere",
+      "score": 100,
+      "mentions": 1
+    },
+    {
+      "category": "cleanliness",
+      "score": 50,
+      "mentions": 2
+    }
+  ]
+}
+
+Pipeline run complete.
