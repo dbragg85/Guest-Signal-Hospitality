@@ -524,6 +524,11 @@ async function main() {
   const list = (leads ?? []).filter((row) => force || !row.restaurant_id);
   if (!list.length) {
     console.log("No pending lead_intake_submissions to process.");
+    if (process.env.GITHUB_ACTIONS === "true") {
+      console.log(
+        "::notice::No pending service-tier leads — the job succeeded but had nothing to convert. Ensure a row exists in lead_intake_submissions (processing_status=pending) from a /contact?plan=… submit, or use LEAD_INTAKE_ID / FORCE_REPROCESS for re-runs.",
+      );
+    }
     return;
   }
 
