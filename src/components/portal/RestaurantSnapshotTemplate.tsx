@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { guestSignalHeadlineFromDisplayPillars } from "@/lib/guest-signal-display-score";
 import {
-  guestSignalHeadlineFromDisplayPillars,
-  guestSignalHeadlineFromScorecardData,
-} from "@/lib/guest-signal-display-score";
+  computePortalPillarScores,
+  portalGuestSignalHeadline,
+  type PortalPillarComputed,
+} from "@/lib/portal-pillar-scores";
 
 export type ScorecardRow = {
   id: string;
@@ -197,44 +199,6 @@ const PILLAR_DEF = [
   },
 ] as const;
 
-const PILLAR_CATEGORY_KEYS: Record<string, string[]> = {
-  experience_quality: [
-    "experience_quality",
-    "food",
-    "service",
-    "atmosphere",
-    "hospitality",
-  ],
-  service_hospitality: [
-    "service_hospitality",
-    "service",
-    "hospitality",
-    "staff",
-    "friendliness",
-  ],
-  food_beverage: [
-    "food_beverage",
-    "food",
-    "menu",
-    "drinks",
-    "beverage",
-  ],
-  operational_reliability: [
-    "operational_reliability",
-    "speed",
-    "consistency",
-    "cleanliness",
-    "operations",
-  ],
-  emotional_connection: [
-    "emotional_connection",
-    "momentum",
-    "service",
-    "atmosphere",
-    "sentiment",
-  ],
-};
-
 type MonthlyRow = {
   month: string;
   score: number;
@@ -323,8 +287,7 @@ function monthlyBreakdownFromScorecards(cards: ScorecardRow[]): MonthlyRow[] {
   for (const c of sorted) {
     const d =
       c.data && typeof c.data === "object" ? (c.data as Record<string, unknown>) : null;
-    const derived = guestSignalHeadlineFromScorecardData(d);
-    const score = derived ?? c.score;
+    const score = portalGuestSignalHeadline(d, c.score);
     if (score == null) continue;
     out.push({
       month: c.period,
@@ -462,61 +425,6 @@ export function RestaurantSnapshotTemplate({
       ? Number((totalScoreForBreakdown - categoryAverageForBreakdown).toFixed(1))
       : null);
 
-  function avgFor(keys: string[]): number | null {
-    const weighted = keys.flatMap((k) => {
-      const value = categoryScoreMap.get(k);
-      if (!value || !Number.isFinite(value.score)) return [];
-      return [value];
-    });
-    if (weighted.length === 0) return null;
-
-    const mentionWeighted = weighted.filter(
-      (v) => v.mentions != null && Number.isFinite(v.mentions) && v.mentions > 0,
-    );
-    const hasMentionMetadata = weighted.some(
-      (v) => v.mentions != null && Number.isFinite(v.mentions),
-    );
-    if (mentionWeighted.length > 0) {
-      const totalMentions = mentionWeighted.reduce((sum, v) => sum + (v.mentions ?? 0), 0);
-      if (totalMentions > 0) {
-        const totalScore = mentionWeighted.reduce(
-          (sum, v) => sum + v.score * (v.mentions ?? 0),
-          0,
-        );
-        return Math.round(totalScore / totalMentions);
-      }
-    }
-
-    // If mention metadata exists but no category has >0 mentions, treat as no-data.
-    if (hasMentionMetadata) return null;
-
-    return Math.round(
-      weighted.reduce((sum, v) => sum + v.score, 0) / weighted.length,
-    );
-  }
-
-  const fallbackPillarScores: Record<string, number | null> = {
-    experience_quality: avgFor(PILLAR_CATEGORY_KEYS.experience_quality),
-    service_hospitality: avgFor(PILLAR_CATEGORY_KEYS.service_hospitality),
-    food_beverage: avgFor(PILLAR_CATEGORY_KEYS.food_beverage),
-    operational_reliability: avgFor(PILLAR_CATEGORY_KEYS.operational_reliability),
-    emotional_connection: avgFor(PILLAR_CATEGORY_KEYS.emotional_connection),
-  };
-
-  function pillarMentionStats(keys: string[]): { hasMentionMetadata: boolean; totalMentions: number } {
-    let hasMentionMetadata = false;
-    let totalMentions = 0;
-    for (const key of keys) {
-      const value = categoryScoreMap.get(key);
-      if (!value) continue;
-      if (value.mentions != null && Number.isFinite(value.mentions)) {
-        hasMentionMetadata = true;
-        if (value.mentions > 0) totalMentions += value.mentions;
-      }
-    }
-    return { hasMentionMetadata, totalMentions };
-  }
-
   function normalizePeriodLabel(input: string): string {
     return input
       .trim()
@@ -553,29 +461,13 @@ export function RestaurantSnapshotTemplate({
     return null;
   }
 
+  const pillarComputedByKey = Object.fromEntries(
+    computePortalPillarScores(data).map((pc) => [pc.key, pc]),
+  ) as Record<(typeof PILLAR_DEF)[number]["key"], PortalPillarComputed>;
+
   const pillars = PILLAR_DEF.map((p) => {
-    const v =
-      data?.[p.key] ??
-      data?.[`pillar_${p.key}`] ??
-      (p.key === "service_hospitality" ? data?.service : null) ??
-      (p.key === "food_beverage" ? data?.food : null);
-    const explicitScore = parseNumeric(v);
-    let score = explicitScore ?? fallbackPillarScores[p.key] ?? null;
-    const mentionStats = pillarMentionStats(PILLAR_CATEGORY_KEYS[p.key] ?? []);
-    const missingMentionEvidence =
-      !mentionStats.hasMentionMetadata || mentionStats.totalMentions === 0;
-    if (
-      mentionStats.hasMentionMetadata &&
-      mentionStats.totalMentions === 0 &&
-      (explicitScore == null || explicitScore === 0)
-    ) {
-      score = null;
-    }
-    // Legacy rows can carry default 0 pillar values without category mention evidence.
-    // Treat those as insufficient data so UI state matches the no-score cards.
-    if (explicitScore === 0 && missingMentionEvidence) {
-      score = null;
-    }
+    const pc = pillarComputedByKey[p.key];
+    const score = pc.score;
     const blurbKey = `${p.key}_blurb`;
     const customBlurb = data?.[blurbKey];
     const blurb =
