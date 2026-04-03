@@ -124,6 +124,13 @@ function parseOptionalString(value: unknown): string | undefined {
   return trimmed || undefined;
 }
 
+function parseStringArray(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((x): x is string => typeof x === "string" && Boolean(x.trim()))
+    .map((x) => x.trim());
+}
+
 function parsePriceLevelValue(raw: unknown): number | string | undefined {
   if (typeof raw === "number" && Number.isFinite(raw)) return raw;
   if (typeof raw === "string") {
@@ -528,6 +535,20 @@ export function RestaurantSnapshotTemplate({
       ? "Guest Signal snapshot"
       : "Reporting will appear here when the first scorecard is published.");
 
+  const intakePlanLabel = parseOptionalString(data?.intake_plan_label) ?? null;
+  const scoringPeriodNote = parseOptionalString(data?.scoring_period_note) ?? null;
+  const intakePlanCallouts = parseStringArray(data?.intake_plan_callouts);
+  const intakeAutomation = data?.intake_automation === true;
+  const reviewSourceNote = parseOptionalString(data?.review_source_note) ?? null;
+  const showIntakeContext =
+    intakeAutomation &&
+    Boolean(
+      intakePlanLabel ||
+        scoringPeriodNote ||
+        intakePlanCallouts.length > 0 ||
+        reviewSourceNote,
+    );
+
   return (
     <div className="mt-10 space-y-12">
       <section
@@ -644,6 +665,33 @@ export function RestaurantSnapshotTemplate({
               >
                 {selected?.period ? `${selected.period} snapshot` : "Latest snapshot"}
               </h2>
+              {showIntakeContext ? (
+                <div className="mt-4 max-w-2xl rounded-2xl border border-amber-200/90 bg-amber-50/80 p-4 text-sm text-amber-950">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
+                    Intake preview
+                  </p>
+                  {intakePlanLabel ? (
+                    <p className="mt-1 font-semibold text-slate-900">
+                      Plan selected: {intakePlanLabel}
+                    </p>
+                  ) : null}
+                  {scoringPeriodNote ? (
+                    <p className="mt-2 leading-relaxed text-slate-800">{scoringPeriodNote}</p>
+                  ) : null}
+                  {intakePlanCallouts.length > 0 ? (
+                    <ul className="mt-3 list-disc space-y-1.5 pl-5 text-slate-800">
+                      {intakePlanCallouts.map((line, idx) => (
+                        <li key={`${idx}-${line.slice(0, 48)}`}>{line}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {reviewSourceNote ? (
+                    <p className="mt-3 font-mono text-xs text-slate-600">
+                      Pipeline source: {reviewSourceNote}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
                 {headlineText}
               </p>

@@ -1,4 +1,5 @@
-# Processes pending public.lead_intake_submissions (free snapshot by default):
+# Processes pending service-tier lead_intake_submissions (free + Monitor/Growth/Elevate).
+# Uses prior completed calendar month for scoring; see scripts/process-lead-intake-snapshot.mjs.
 # creates restaurant, review_observations, snapshots, scorecards.
 # Apify optional; on failure or missing credits uses 15 mock reviews + same rubric.
 

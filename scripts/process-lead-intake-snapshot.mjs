@@ -2,7 +2,9 @@
 /**
  * Lead intake → restaurant + Yelp rubric snapshot + portal scorecard.
  *
- * 1. Picks pending rows from public.lead_intake_submissions (default: inquiry_plan = free_snapshot).
+ * 1. Picks pending service-tier rows from public.lead_intake_submissions (free snapshot + three paid
+ *    plans). Generic "general" contact leads are skipped unless LEAD_INTAKE_FREE_SNAPSHOT_ONLY=1
+ *    (legacy: only free_snapshot).
  * 2. Optionally pulls live Yelp reviews via Apify when APIFY_TOKEN + APIFY_YELP_ACTOR_ID +
  *    LEAD_INTAKE_APIFY_YELP_URL are set and the run succeeds with in-period reviews.
  * 3. On Apify failure, empty dataset, zero parsed reviews, or missing credentials:
@@ -11,7 +13,7 @@
  * Env:
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (required)
  *   LEAD_INTAKE_ID — process a single row
- *   LEAD_INTAKE_ALL_PLANS=1 — not only free_snapshot
+ *   LEAD_INTAKE_FREE_SNAPSHOT_ONLY=1 — restrict to free_snapshot only (default processes all service plans)
  *   LEAD_INTAKE_APIFY_YELP_URL — Yelp biz URL used when testing Apify (intake form has no Yelp field)
  *   APIFY_TOKEN, APIFY_YELP_ACTOR_ID — same as monthly pipeline
  *   DRY_RUN=1 — no writes
@@ -34,6 +36,62 @@ import {
   weightedPillarFromMerged,
   RUBRIC_SUBWEIGHTS,
 } from "./lib/guest-signal-rubric.mjs";
+
+const SERVICE_INQUIRY_PLANS = [
+  "free_snapshot",
+  "signal_monitor",
+  "signal_growth",
+  "signal_elevate",
+];
+
+function normalizeInquiryPlan(raw) {
+  const s = String(raw ?? "").trim();
+  if (SERVICE_INQUIRY_PLANS.includes(s)) return s;
+  return "free_snapshot";
+}
+
+function intakePlanPresentation(planKey) {
+  const pk = normalizeInquiryPlan(planKey);
+  switch (pk) {
+    case "signal_monitor":
+      return {
+        headlineTag: " — Signal Monitor preview",
+        humanLabel: "Signal Monitor",
+        callouts: [
+          "Monitor includes monthly scorecards, Google sentiment trends, and 72-hour risk alerts in production.",
+          "This preview still uses the prior completed month’s Yelp-style rubric window so scores stay comparable across tiers.",
+        ],
+      };
+    case "signal_growth":
+      return {
+        headlineTag: " — Signal Growth preview",
+        humanLabel: "Signal Growth",
+        callouts: [
+          "Growth adds tracking for up to three local peers—curate the competitors array on this scorecard to mirror production tiles.",
+          "You also get weekly category breakdowns and 48-hour priority alerts once the live subscription is active.",
+        ],
+      };
+    case "signal_elevate":
+      return {
+        headlineTag: " — Signal Elevate preview",
+        humanLabel: "Signal Elevate",
+        callouts: [
+          "Elevate adds drafted review responses, weekly coaching notes, and social + review cross-signals in production.",
+          "The score below uses the same prior-month review rubric as other tiers so leadership can compare apples to apples.",
+        ],
+      };
+    case "free_snapshot":
+    default:
+      return {
+        headlineTag: " — Free snapshot",
+        humanLabel: "Free Guest Signal Snapshot",
+        callouts: [
+          "This intake preview reflects the prior completed calendar month only (e.g. March when you run in April).",
+          "Full onboarding layers Google coverage, executive summary, and your prioritized action plan.",
+        ],
+      };
+  }
+}
 
 function slugifyBase(name) {
   const s = String(name || "venue")
@@ -76,7 +134,11 @@ async function persistSnapshotFromReviews({
   periodEndIso,
   dryRun,
   reviewSourceNote,
+  inquiryPlan,
 }) {
+  const planPresentation = intakePlanPresentation(inquiryPlan);
+  const scorecardHeadline = `Guest Signal snapshot (${periodLabel})${planPresentation.headlineTag}`;
+
   const googleCount = 0;
   const yelpCount = periodReviews.length;
   const totalReviews = googleCount + yelpCount;
@@ -177,6 +239,13 @@ async function persistSnapshotFromReviews({
     operational_reliability: pillarScores.operational_reliability,
     emotional_connection: pillarScores.emotional_connection,
     intake_automation: true,
+    intake_inquiry_plan: normalizeInquiryPlan(inquiryPlan),
+    intake_plan_label: planPresentation.humanLabel,
+    scoring_period_label: periodLabel,
+    scoring_period_start: periodStartIso,
+    scoring_period_end: periodEndIso,
+    scoring_period_note: `Review window: ${periodLabel} (${periodStartIso} through ${periodEndIso} UTC) — the most recently completed calendar month. Reviews outside this range are excluded before scoring.`,
+    intake_plan_callouts: planPresentation.callouts,
     review_source_note: reviewSourceNote,
     total_score_breakdown: {
       scorecard_total_score: overallScore,
@@ -260,16 +329,16 @@ async function persistSnapshotFromReviews({
   if (scorecardFetchError) throw scorecardFetchError;
 
   if (!existingScorecard) {
-    const { error: scorecardInsertError } = await supabase.from("scorecards").insert({
-      restaurant_id: restaurant.id,
-      period: periodLabel,
-      score: effectiveOverallScore,
-      headline: `Guest Signal snapshot (${periodLabel})`,
-      data: {
-        snapshot_id: snapshotId,
-        ...scorecardData,
-      },
-    });
+      const { error: scorecardInsertError } = await supabase.from("scorecards").insert({
+        restaurant_id: restaurant.id,
+        period: periodLabel,
+        score: effectiveOverallScore,
+        headline: scorecardHeadline,
+        data: {
+          snapshot_id: snapshotId,
+          ...scorecardData,
+        },
+      });
     if (scorecardInsertError) throw scorecardInsertError;
   } else {
     const existingData =
@@ -278,6 +347,7 @@ async function persistSnapshotFromReviews({
       .from("scorecards")
       .update({
         score: effectiveOverallScore,
+        headline: scorecardHeadline,
         data: {
           ...existingData,
           snapshot_id: snapshotId,
@@ -339,13 +409,19 @@ async function main() {
   const supabaseServiceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY", { required: true });
   const dryRun = ["1", "true", "yes"].includes((getEnv("DRY_RUN", { fallback: "0" }) || "").toLowerCase());
   const force = ["1", "true", "yes"].includes((getEnv("FORCE_REPROCESS", { fallback: "0" }) || "").toLowerCase());
-  const allPlans = ["1", "true", "yes"].includes((getEnv("LEAD_INTAKE_ALL_PLANS", { fallback: "0" }) || "").toLowerCase());
+  const freeSnapshotOnly = ["1", "true", "yes"].includes(
+    (getEnv("LEAD_INTAKE_FREE_SNAPSHOT_ONLY", { fallback: "0" }) || "").toLowerCase(),
+  );
   const singleId = getEnv("LEAD_INTAKE_ID", { fallback: "" });
 
   const { start, end } = lastCompletedMonthWindow();
   const periodStartIso = toIsoDate(start);
   const periodEndIso = toIsoDate(end);
   const periodLabel = getEnv("PERIOD_LABEL", { fallback: monthLabelFromDate(start) });
+
+  console.log(
+    `Scoring window = prior completed calendar month: ${periodLabel} (${periodStartIso} → ${periodEndIso} UTC).`,
+  );
 
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -357,8 +433,10 @@ async function main() {
     .eq("processing_status", "pending")
     .order("created_at", { ascending: true });
 
-  if (!allPlans) {
+  if (freeSnapshotOnly) {
     query = query.eq("inquiry_plan", "free_snapshot");
+  } else {
+    query = query.in("inquiry_plan", SERVICE_INQUIRY_PLANS);
   }
 
   if (singleId) {
@@ -427,6 +505,7 @@ async function main() {
       periodEndIso,
       dryRun,
       reviewSourceNote: sourceNote,
+      inquiryPlan: lead.inquiry_plan,
     });
 
     if (!dryRun && persisted) {
