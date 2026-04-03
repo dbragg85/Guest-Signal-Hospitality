@@ -46,6 +46,121 @@ const SERVICE_INQUIRY_PLANS = [
   "signal_elevate",
 ];
 
+/**
+ * When the job finds nothing to process, explain why (counts + recent rows).
+ * Helps debug wrong Supabase project, general contact submissions, or already-converted leads.
+ */
+async function logNoMatchingLeadsHelp(supabase, ctx) {
+  const { freeSnapshotOnly, singleId, force } = ctx;
+  const plans = freeSnapshotOnly ? ["free_snapshot"] : SERVICE_INQUIRY_PLANS;
+
+  if (singleId) {
+    const { data: one, error } = await supabase
+      .from("lead_intake_submissions")
+      .select("id, inquiry_plan, processing_status, restaurant_id, created_at, business")
+      .eq("id", singleId)
+      .maybeSingle();
+    if (error) {
+      console.log(`LEAD_INTAKE_ID lookup failed: ${error.message}`);
+      return;
+    }
+    if (!one) {
+      console.log(
+        `::warning::LEAD_INTAKE_ID=${singleId} not found in lead_intake_submissions (wrong project URL/secret?).`,
+      );
+      return;
+    }
+    console.log("LEAD_INTAKE_ID row snapshot:", JSON.stringify(one, null, 2));
+    if (!plans.includes(one.inquiry_plan)) {
+      console.log(
+        `::notice::That row inquiry_plan="${one.inquiry_plan}" — this job only processes: ${plans.join(", ")}. Submit via /services/inquiry?plan=free_snapshot (or paid plan key).`,
+      );
+    }
+    if (one.processing_status !== "pending") {
+      console.log(
+        `::notice::That row processing_status="${one.processing_status}" — only "pending" rows are picked up. Already converted leads stay out of the queue.`,
+      );
+    }
+    if (one.restaurant_id && !force) {
+      console.log(
+        "::notice::That row already has restaurant_id. Re-run with repo Variable/Secret FORCE_REPROCESS=1 if you intentionally want another pass.",
+      );
+    }
+    return;
+  }
+
+  const countExact = async (builder) => {
+    const { count, error } = await builder;
+    if (error) return { n: null, err: error.message };
+    return { n: count ?? 0, err: null };
+  };
+
+  const { n: pendingService, err: e1 } = await countExact(
+    supabase
+      .from("lead_intake_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("processing_status", "pending")
+      .in("inquiry_plan", plans),
+  );
+  const { n: pendingServiceLinked, err: e2 } = await countExact(
+    supabase
+      .from("lead_intake_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("processing_status", "pending")
+      .in("inquiry_plan", plans)
+      .not("restaurant_id", "is", null),
+  );
+  const { n: pendingGeneral, err: e3 } = await countExact(
+    supabase
+      .from("lead_intake_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("processing_status", "pending")
+      .eq("inquiry_plan", "general"),
+  );
+  const { n: totalRows, err: e4 } = await countExact(
+    supabase.from("lead_intake_submissions").select("*", { count: "exact", head: true }),
+  );
+
+  if (e1 || e2 || e3 || e4) {
+    console.log(
+      `Diagnostic counts unavailable: ${[e1, e2, e3, e4].filter(Boolean).join("; ")}`,
+    );
+  } else {
+    console.log(
+      `Diagnostics: total_rows=${totalRows} pending_service_plans=${pendingService} pending_service_but_linked=${pendingServiceLinked} pending_general=${pendingGeneral} force=${force}`,
+    );
+  }
+
+  const { data: recent, error: recentErr } = await supabase
+    .from("lead_intake_submissions")
+    .select("id, inquiry_plan, processing_status, restaurant_id, created_at, business")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (!recentErr && recent?.length) {
+    console.log("Most recent submissions (up to 5):");
+    for (const r of recent) {
+      console.log(
+        `  - ${r.id} plan=${r.inquiry_plan} status=${r.processing_status} restaurant_id=${r.restaurant_id ? "set" : "null"} business=${JSON.stringify(r.business)}`,
+      );
+    }
+  }
+
+  let notice =
+    "No pending service-tier leads to process. Check diagnostics above. Common fixes: submit from /services/inquiry?plan=free_snapshot (not plain /contact); confirm GitHub SUPABASE_URL matches the project where the form posts; if the row is already converted, it will not run again.";
+  if (pendingGeneral > 0 && (pendingService === 0 || pendingService == null)) {
+    notice =
+      `You have ${pendingGeneral} pending row(s) with inquiry_plan=general (plain contact form). This job skips those — use a plan URL so inquiry_plan is free_snapshot or a paid key.`;
+  }
+  if (pendingService > 0 && pendingServiceLinked === pendingService && !force) {
+    notice =
+      "Pending service rows all already have restaurant_id (unusual). Try FORCE_REPROCESS=1 or reset processing_status in Studio if you need a re-run.";
+  }
+  if (process.env.GITHUB_ACTIONS === "true") {
+    console.log(`::notice::${notice}`);
+  }
+}
+
 function normalizeInquiryPlan(raw) {
   const s = String(raw ?? "").trim();
   if (SERVICE_INQUIRY_PLANS.includes(s)) return s;
@@ -524,11 +639,7 @@ async function main() {
   const list = (leads ?? []).filter((row) => force || !row.restaurant_id);
   if (!list.length) {
     console.log("No pending lead_intake_submissions to process.");
-    if (process.env.GITHUB_ACTIONS === "true") {
-      console.log(
-        "::notice::No pending leads matched this job (free_snapshot + paid plans only). Plain /contact without ?plan= saves inquiry_plan=general — skipped here. FormSubmit email does not prove a Supabase row: confirm lead_intake_submissions in Studio, or submit via /services/inquiry?plan=free_snapshot (or /contact?plan= for legacy; paid plan keys same).",
-      );
-    }
+    await logNoMatchingLeadsHelp(supabase, { freeSnapshotOnly, singleId, force });
     return;
   }
 
