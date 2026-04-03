@@ -97,7 +97,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
       ? "This intake is scoped to your selected plan so we can onboard you faster than a generic contact form."
       : mode === "service"
         ? "Choose a plan below to open the right questionnaire."
-        : "Share your restaurant name and how we can help. Optional address helps us locate the right listings without asking for review URLs.";
+        : "Share your restaurant name and how we can help.";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
