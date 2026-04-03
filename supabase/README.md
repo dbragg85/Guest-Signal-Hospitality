@@ -44,6 +44,12 @@
    - source counters (`google_reviews_analyzed`, `yelp_reviews_analyzed`) on `snapshots`
    - mention counts on `snapshot_category_scores`
    - `review_observations` table for raw review records
+8. **Website lead intake (`lead_intake_submissions`):** the contact / plan forms **insert into this table**; Supabase does **not** create it automatically. In **SQL Editor**, run these **in order** (copy each file entirely from the repo):
+   - `migrations/010_lead_intake_submissions.sql` — table + RLS (anon insert)
+   - `migrations/011_lead_intake_submission_client_key.sql`
+   - `migrations/012_restaurants_intake_inquiry_plan.sql`
+   - `migrations/013_lead_intake_social_presence.sql`  
+   After that, **Table Editor** should list **`lead_intake_submissions`**. If you use the Supabase CLI against this repo, `supabase db push` applies the same migration set.
 
 ---
 
