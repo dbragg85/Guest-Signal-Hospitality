@@ -21,6 +21,9 @@ export type LeadIntakePayload = {
   goals: string;
   competitorsNote: string;
   socialPresenceNote: string;
+  venuePhone: string;
+  websiteUrl: string;
+  operatingHoursNote: string;
   message: string;
 };
 
@@ -69,6 +72,9 @@ export async function persistLeadIntakeToSupabase(
     goals: cleanField(payload.goals),
     competitors_note: cleanField(payload.competitorsNote),
     social_presence_note: cleanField(payload.socialPresenceNote),
+    venue_phone: cleanField(payload.venuePhone),
+    website_url: cleanField(payload.websiteUrl),
+    operating_hours_note: cleanField(payload.operatingHoursNote),
     message: cleanField(payload.message),
     submission_client_key: submissionClientKey,
   });

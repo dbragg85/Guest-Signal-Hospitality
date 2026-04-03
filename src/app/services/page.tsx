@@ -18,6 +18,14 @@ export default function ServicesPage() {
             <p className="mt-6 text-left text-sm text-slate-600 max-w-3xl mx-auto leading-relaxed rounded-2xl border border-stone-200 bg-white/80 px-5 py-4">
               {servicesPricingBenchmark}
             </p>
+            <p className="mt-4 text-center text-sm text-slate-600 max-w-2xl mx-auto">
+              Each plan opens a dedicated intake with tier-specific questions (address, concept, and priorities)—not the
+              same short form as general{" "}
+              <Link href="/contact" className="font-semibold text-slate-800 underline underline-offset-2">
+                Contact
+              </Link>
+              .
+            </p>
           </div>
         </div>
       </section>

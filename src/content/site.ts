@@ -45,7 +45,7 @@ export function isPlanInquiryKey(v: string | null): v is PlanInquiryKey {
 
 /** Short note on how plans compare to typical reputation tools / light consulting retainers */
 export const servicesPricingBenchmark =
-  "Independent research on reputation and review platforms (e.g. Podium, Birdeye, Grade.us) often shows essential monitoring in roughly the $80–200/mo range for a single location, with fuller response workflows, multi-location rollups, and executive reporting commonly landing around $200–500+/mo. Light hospitality consulting retainers are frequently $150–400/mo for recurring check-ins. Our tiers sit in that same landscape: Signal Monitor for essential restaurant-specific scorecards and alerts, Growth when you want peer context and faster priorities, and Elevate when you want hands-on response support plus social listening and coordination—not a generic SMB dashboard.";
+  "Compared with typical offerings: reputation SaaS for a single location often runs about $80–200/mo for core monitoring, while fuller workflows, multi-site rollups, and leadership reporting frequently reach $200–500+/mo. Fractional hospitality or CX consulting commonly lands around $150–400/mo for light retainers and $500–2,000+/mo when strategy and execution are bundled. Our tiers sit in that band: Signal Monitor for restaurant-specific scorecards and alerts, Growth for peer context and sharper priorities, and Signal Elevate for hands-on review support plus social tracking and coordinated management—not a generic SMB dashboard.";
 
 export const pricingPlans = [
   {
@@ -89,10 +89,11 @@ export const pricingPlans = [
     price: "$299",
     period: "month",
     badge: "Best Value",
-    description: "Hands-on reputation elevation with weekly guidance, executive support, and social visibility.",
+    description:
+      "Our highest tier: hands-on reputation elevation plus social media tracking, mention monitoring, and coordinated management alongside review intelligence.",
     features: [
       "Everything in Growth, plus:",
-      "Social media tracking and active management support: mentions, tags, DMs, and review cross-signals (Instagram, Facebook, TikTok where applicable) mapped to guest-experience themes",
+      "Social media tracking and active management: mentions, tags, DMs, and review cross-signals (Instagram, Facebook, TikTok where applicable) mapped to guest-experience themes",
       "Monthly social + review narrative with recommended posts/replies, escalation flags, and light content cadence guidance",
       "Ongoing coordination for social and review response pacing (aligned with your brand voice)",
       "Professional review response drafting (up to 20/month)",

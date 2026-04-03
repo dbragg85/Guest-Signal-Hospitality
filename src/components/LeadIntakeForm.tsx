@@ -121,6 +121,10 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
     const competitorsNote = (formData.get("competitorsNote") as string) || "";
     const socialPresenceNote =
       (formData.get("socialPresenceNote") as string) || "";
+    const venuePhone = (formData.get("venuePhone") as string) || "";
+    const websiteUrl = (formData.get("websiteUrl") as string) || "";
+    const operatingHoursNote =
+      (formData.get("operatingHoursNote") as string) || "";
 
     const endpoint =
       process.env.NEXT_PUBLIC_CONTACT_ENDPOINT || DEFAULT_CONTACT_ENDPOINT;
@@ -143,6 +147,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
         goals,
         competitorsNote,
         socialPresenceNote,
+        venuePhone,
+        websiteUrl,
+        operatingHoursNote,
         message,
       });
       if (supabaseResult.attempted && supabaseResult.insertErrorMessage) {
@@ -184,6 +191,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
       requestBody.append("goals", goals || "—");
       requestBody.append("competitorsNote", competitorsNote || "—");
       requestBody.append("socialPresenceNote", socialPresenceNote || "—");
+      requestBody.append("venuePhone", venuePhone || "—");
+      requestBody.append("websiteUrl", websiteUrl || "—");
+      requestBody.append("operatingHoursNote", operatingHoursNote || "—");
       requestBody.append("message", message || "—");
       requestBody.append("leadIntakeId", supabaseResult.leadIntakeId ?? "—");
       requestBody.append(
@@ -352,6 +362,17 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
           </h1>
           <p className="mt-3 text-slate-600">{subcopy}</p>
 
+          {mode === "contact" ? (
+            <p className="mt-5 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950/90">
+              <span className="font-semibold">Choosing a paid plan or free snapshot?</span> Use{" "}
+              <Link href="/services" className="font-semibold underline underline-offset-2">
+                Plans
+              </Link>{" "}
+              → <span className="font-medium">Get started</span> so we can ask the right questions for your tier—we
+              keep this contact form lighter on purpose.
+            </p>
+          ) : null}
+
           <form
             className="mt-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
             onSubmit={handleSubmit}
@@ -435,6 +456,53 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
                       </label>
                     </div>
                   </fieldset>
+
+                  {isSnapshot ? (
+                    <fieldset className="grid gap-4 rounded-2xl border border-amber-100 bg-amber-50/40 p-4">
+                      <legend className="px-1 text-sm font-semibold text-slate-800">
+                        Snapshot build details (optional but speeds up matching)
+                      </legend>
+                      <p className="text-xs text-slate-600 -mt-1">
+                        We locate public listings from your address. These fields help when names or plazas collide—we
+                        never ask for Google or Yelp URLs.
+                      </p>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium">
+                          Public phone shown on your door or website
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          Often matches Google Business Profile; use the main guest-facing line.
+                        </span>
+                        <input
+                          name="venuePhone"
+                          type="tel"
+                          autoComplete="tel"
+                          className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                        />
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium">Official website (if you have one)</span>
+                        <input
+                          name="websiteUrl"
+                          type="url"
+                          inputMode="url"
+                          placeholder="https://"
+                          className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                        />
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium">Typical operating hours</span>
+                        <span className="text-xs text-slate-500">
+                          e.g. Tue–Sun 11am–10pm; helps interpret review timing and rush patterns.
+                        </span>
+                        <textarea
+                          name="operatingHoursNote"
+                          rows={2}
+                          className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                        />
+                      </label>
+                    </fieldset>
+                  ) : null}
 
                   <label className="grid gap-2">
                     <span className="text-sm font-semibold">Concept type</span>
@@ -525,12 +593,12 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
                   {showSocialPresenceField ? (
                     <label className="grid gap-2">
                       <span className="text-sm font-semibold">
-                        Social accounts for Elevate (optional)
+                        Social tracking & management (Elevate)
                       </span>
                       <span className="text-xs text-slate-500">
-                        Handles or page names only (e.g. @yourrestaurant on
-                        Instagram). We do not need Google or Yelp URLs—we locate
-                        listings from your venue address.
+                        Handles or page names (e.g. @yourrestaurant on Instagram). Tell us if you want us to prioritize
+                        mentions, DMs, or review cross-signals. We do not need Google or Yelp URLs—we locate listings from
+                        your venue address.
                       </span>
                       <textarea
                         name="socialPresenceNote"

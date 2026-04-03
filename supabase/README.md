@@ -48,7 +48,8 @@
    - `migrations/010_lead_intake_submissions.sql` — table + RLS (anon insert)
    - `migrations/011_lead_intake_submission_client_key.sql`
    - `migrations/012_restaurants_intake_inquiry_plan.sql`
-   - `migrations/013_lead_intake_social_presence.sql`  
+   - `migrations/013_lead_intake_social_presence.sql`
+   - `migrations/014_lead_intake_snapshot_context.sql` — optional venue phone, website, and hours for faster snapshot matching  
    After that, **Table Editor** should list **`lead_intake_submissions`**. If you use the Supabase CLI against this repo, `supabase db push` applies the same migration set.
 
 ---
