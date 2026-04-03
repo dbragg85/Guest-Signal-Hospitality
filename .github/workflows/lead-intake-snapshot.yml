@@ -5,6 +5,9 @@
 #
 # Immediate run (no wait for schedule): GitHub → Actions → this workflow → "Run workflow".
 # Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub.
+#
+# Requires repository Actions *Secrets* (not only Variables): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+# Same project URL as NEXT_PUBLIC_SUPABASE_URL on Pages; use the service_role JWT for this job only.
 
 name: Process lead intake snapshots
 
@@ -48,4 +51,9 @@ jobs:
           LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id }}
           LEAD_INTAKE_INVITE_PORTAL_USERS: ${{ vars.LEAD_INTAKE_INVITE_PORTAL_USERS || '1' }}
           LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}
-        run: npm run pipeline:lead-intake
+        run: |
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "::error::Set repository Actions Secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (service_role JWT). Variables used for the Pages build are not enough for this workflow."
+            exit 1
+          fi
+          npm run pipeline:lead-intake

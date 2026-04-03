@@ -561,7 +561,7 @@ async function main() {
             slug,
             name: lead.business.trim(),
             address: formatAddress(lead),
-            intake_inquiry_plan: normalizeInquiryPlan(lead.inquiry_plan),
+            // Plan is set via update after snapshot so migration 012 is optional at insert time.
           })
           .select("id, slug, name")
           .single();
