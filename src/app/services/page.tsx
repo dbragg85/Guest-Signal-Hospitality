@@ -15,20 +15,7 @@ export default function ServicesPage() {
             <p className="mt-4 text-lg font-semibold tracking-tight text-slate-900 drop-shadow-sm md:text-xl">
               Choose the level of intelligence and support that fits your restaurant&apos;s growth goals.
             </p>
-            <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-stone-200 bg-white/90 px-6 py-6 text-left shadow-sm">
-              <h2 className="text-base font-semibold tracking-tight text-slate-900 md:text-lg">
-                {servicesPricingContext.title}
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-[0.95rem]">
-                {servicesPricingContext.lead}
-              </p>
-              <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-slate-600 md:text-[0.95rem]">
-                {servicesPricingContext.bullets.map((line, idx) => (
-                  <li key={idx}>{line}</li>
-                ))}
-              </ul>
-            </div>
-            <p className="mt-4 text-center text-sm text-slate-600 max-w-2xl mx-auto">
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-slate-600">
               Each plan opens a dedicated intake with tier-specific questions (address, concept, and priorities)—not the
               same short form as general{" "}
               <Link href="/contact" className="font-semibold text-slate-800 underline underline-offset-2">
@@ -79,6 +66,19 @@ export default function ServicesPage() {
               </p>
             </div>
           </div>
+        </div>
+      </Section>
+
+      <Section title={servicesPricingContext.title} kicker="Value">
+        <div className="mx-auto max-w-2xl">
+          <p className="text-center text-sm leading-relaxed text-slate-600 md:text-base">
+            {servicesPricingContext.lead}
+          </p>
+          <ul className="mt-5 list-disc space-y-3 pl-5 text-left text-sm leading-relaxed text-slate-600 md:text-base sm:pl-6">
+            {servicesPricingContext.bullets.map((line, idx) => (
+              <li key={idx}>{line}</li>
+            ))}
+          </ul>
         </div>
       </Section>
 

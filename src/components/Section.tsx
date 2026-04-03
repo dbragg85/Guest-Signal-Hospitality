@@ -17,7 +17,7 @@ export function Section({
     <section id={id} className={`py-12 md:py-14 ${className || ''}`}>
       <div className="mx-auto max-w-6xl px-4 sm:px-5">
         {title ? (
-          <div className="mb-8 max-w-2xl">
+          <div className="mx-auto mb-8 max-w-4xl text-center">
             {kicker ? (
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-800/80">
                 {kicker}

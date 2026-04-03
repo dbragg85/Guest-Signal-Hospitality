@@ -168,8 +168,8 @@ export default function HomePage() {
 
       {/* Pricing Plans Section */}
       <Section title="Ongoing Guest Experience Monitoring & Elevation" kicker="Core Plans">
-        <p className="text-center text-slate-600 mb-10 max-w-2xl mx-auto">
-          Choose the level of intelligence and support that fits your restaurant's growth goals.
+        <p className="mx-auto mb-10 max-w-2xl text-center text-lg font-semibold tracking-tight text-slate-900 drop-shadow-sm md:text-xl">
+          Choose the level of intelligence and support that fits your restaurant&apos;s growth goals.
         </p>
 
         <div className="grid gap-8 md:grid-cols-3">
