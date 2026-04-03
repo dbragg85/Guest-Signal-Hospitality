@@ -37,6 +37,10 @@ comment on table public.lead_intake_submissions is
 
 alter table public.lead_intake_submissions enable row level security;
 
+drop policy if exists "lead_intake_anon_insert" on public.lead_intake_submissions;
+drop policy if exists "lead_intake_super_admin_select" on public.lead_intake_submissions;
+drop policy if exists "lead_intake_super_admin_update" on public.lead_intake_submissions;
+
 create policy "lead_intake_anon_insert"
   on public.lead_intake_submissions for insert
   to anon
