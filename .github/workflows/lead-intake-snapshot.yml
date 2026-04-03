@@ -1,7 +1,10 @@
 # Processes pending service-tier lead_intake_submissions (free + Monitor/Growth/Elevate).
 # Uses prior completed calendar month for scoring; see scripts/process-lead-intake-snapshot.mjs.
-# creates restaurant, review_observations, snapshots, scorecards.
+# Creates restaurant, review_observations, snapshots, scorecards; then invites + memberships when enabled.
 # Apify optional; on failure or missing credits uses 15 mock reviews + same rubric.
+#
+# Immediate run (no wait for schedule): GitHub → Actions → this workflow → "Run workflow".
+# Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub.
 
 name: Process lead intake snapshots
 
@@ -13,7 +16,8 @@ on:
         required: false
         type: string
   schedule:
-    - cron: "15 * * * *"
+    # Every 10 minutes (was hourly) so restaurant + snapshot + membership land sooner without manual dispatch.
+    - cron: "*/10 * * * *"
 
 concurrency:
   group: lead-intake-snapshot
