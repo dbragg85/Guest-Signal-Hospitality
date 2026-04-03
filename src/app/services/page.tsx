@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { freeSnapshot, pricingPlans } from "@/content/site";
+import { freeSnapshot, pricingPlans, servicesPricingBenchmark } from "@/content/site";
 import { Section } from "@/components/Section";
 
 export default function ServicesPage() {
@@ -14,6 +14,9 @@ export default function ServicesPage() {
             </h1>
             <p className="mt-4 text-lg text-slate-600">
               Choose the level of intelligence and support that fits your restaurant's growth goals.
+            </p>
+            <p className="mt-6 text-left text-sm text-slate-600 max-w-3xl mx-auto leading-relaxed rounded-2xl border border-stone-200 bg-white/80 px-5 py-4">
+              {servicesPricingBenchmark}
             </p>
           </div>
         </div>
@@ -47,8 +50,9 @@ export default function ServicesPage() {
 
             <div className="text-center">
               <Link
-                href="/contact"
+                href={`/contact?plan=${freeSnapshot.inquiryKey}`}
                 className="btn-primary inline-block px-8 py-3"
+                data-track="services_cta_free_snapshot"
               >
                 {freeSnapshot.buttonText}
               </Link>
@@ -103,12 +107,13 @@ export default function ServicesPage() {
               </ul>
 
               <Link
-                href="/contact"
+                href={`/contact?plan=${plan.inquiryKey}`}
                 className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold ${
                   plan.popular
                     ? "btn-primary shadow-md"
                     : "border border-stone-300 text-slate-900 hover:bg-stone-50"
                 }`}
+                data-track={`services_cta_${plan.inquiryKey}`}
               >
                 {plan.buttonText}
               </Link>

@@ -25,8 +25,31 @@ export const nav = [
   { label: "Contact", href: "/contact" },
 ];
 
+/** Query param `plan=` on /contact for service-specific intake */
+export type PlanInquiryKey =
+  | "free_snapshot"
+  | "signal_monitor"
+  | "signal_growth"
+  | "signal_elevate";
+
+export const PLAN_INQUIRY_LABELS: Record<PlanInquiryKey, string> = {
+  free_snapshot: "Free Guest Signal Snapshot",
+  signal_monitor: "Signal Monitor",
+  signal_growth: "Signal Growth",
+  signal_elevate: "Signal Elevate",
+};
+
+export function isPlanInquiryKey(v: string | null): v is PlanInquiryKey {
+  return v !== null && Object.prototype.hasOwnProperty.call(PLAN_INQUIRY_LABELS, v);
+}
+
+/** Short note on how plans compare to typical reputation tools / light consulting retainers */
+export const servicesPricingBenchmark =
+  "Our ongoing tiers are priced in the same band as popular review-monitoring software and lighter hospitality consulting retainers—roughly $50–150/mo for essential alerts and scorecards, and $200–400/mo when you add hands-on response support and executive reporting. Guest Signal is built specifically for restaurants: category-level sentiment, local peer context, and operator-ready action lists—not generic dashboards.";
+
 export const pricingPlans = [
   {
+    inquiryKey: "signal_monitor" as const,
     name: "Signal Monitor",
     price: "$79",
     period: "month",
@@ -40,9 +63,10 @@ export const pricingPlans = [
       "Quarterly owner readout and next-step checklist"
     ],
     buttonText: "Start With Signal Monitor",
-    popular: false
+    popular: false,
   },
   {
+    inquiryKey: "signal_growth" as const,
     name: "Signal Growth",
     price: "$149",
     period: "month",
@@ -57,28 +81,33 @@ export const pricingPlans = [
       "Monthly growth summary and owner action list"
     ],
     buttonText: "Choose Signal Growth",
-    popular: true
+    popular: true,
   },
   {
+    inquiryKey: "signal_elevate" as const,
     name: "Signal Elevate",
     price: "$299",
     period: "month",
     badge: "Best Value",
-    description: "Hands-on reputation elevation with weekly guidance and executive support.",
+    description: "Hands-on reputation elevation with weekly guidance, executive support, and social visibility.",
     features: [
       "Everything in Growth, plus:",
+      "Social media tracking: mentions, tags, and review cross-signals (e.g. Instagram, Facebook) tied to guest themes",
+      "Monthly social + review narrative summary with recommended responses and escalation flags",
+      "Light ongoing coordination for social and review response pacing (aligned with your brand voice)",
       "Professional review response drafting (up to 20/month)",
       "Weekly reputation monitoring and coaching notes",
       "Guest recovery response playbook with SLA targets",
       "Monthly executive intelligence report + KPI review",
-      "Priority support with 24-hour response SLA"
+      "Priority support with 24-hour response SLA",
     ],
     buttonText: "Request Signal Elevate",
-    popular: false
-  }
+    popular: false,
+  },
 ];
 
 export const freeSnapshot = {
+  inquiryKey: "free_snapshot" as const,
   title: "Start With Your Free Guest Signal Snapshot",
   price: "Free",
   description: "See how your restaurant is performing through the eyes of your guests. Your complimentary snapshot provides immediate visibility into your reputation, strengths, and risk areas.",
