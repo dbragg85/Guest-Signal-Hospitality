@@ -43,7 +43,8 @@
    - `restaurants.yelp_url` for per-location Yelp source URLs
    - source counters (`google_reviews_analyzed`, `yelp_reviews_analyzed`) on `snapshots`
    - mention counts on `snapshot_category_scores`
-   - `review_observations` table for raw review records
+   - `review_observations` table for raw review records  
+   Then run **`migrations/015_review_observations_rls.sql`** so Security Advisor stops flagging RLS on that table (does **not** affect lead intake; service_role jobs still bypass RLS).
 8. **Website lead intake (`lead_intake_submissions`):** the contact / plan forms **insert into this table**; Supabase does **not** create it automatically. In **SQL Editor**, run these **in order** (copy each file entirely from the repo):
    - `migrations/010_lead_intake_submissions.sql` — table + RLS (anon insert)
    - `migrations/011_lead_intake_submission_client_key.sql`
