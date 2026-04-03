@@ -620,7 +620,11 @@ export function RestaurantSnapshotTemplate({
       ? (data.swot as SwotBlock)
       : null;
 
-  const competitors = parseCompetitors(restaurant.competitors);
+  const scorecardCompetitors = parseCompetitors(data?.competitors);
+  const restaurantCompetitors = parseCompetitors(restaurant.competitors);
+  const competitors =
+    scorecardCompetitors.length > 0 ? scorecardCompetitors : restaurantCompetitors;
+  const competitorsFromScorecard = scorecardCompetitors.length > 0;
   const websiteHref = normalizeWebsiteUrl(restaurant.website);
   const profileLogoUrl = restaurant.logo_url ?? logoUrlFromWebsite(restaurant.website);
 
@@ -1094,11 +1098,27 @@ export function RestaurantSnapshotTemplate({
           Google-first peer venues for each location, including price tier,
           cuisine style, distance, and Google review evidence.
         </p>
+        {competitorsFromScorecard ? (
+          <p className="mt-2 text-xs font-medium text-amber-900/80">
+            Showing peers from this period&apos;s scorecard JSON (
+            <code className="rounded bg-amber-100/80 px-1">competitors</code>
+            ).
+          </p>
+        ) : competitors.length > 0 ? (
+          <p className="mt-2 text-xs text-slate-500">
+            Using default peers from the restaurant profile (no per-period{" "}
+            <code className="rounded bg-stone-100 px-1 text-xs">competitors</code>{" "}
+            on this scorecard).
+          </p>
+        ) : null}
         {competitors.length === 0 ? (
           <p className="mt-6 rounded-2xl border border-stone-200 bg-white px-4 py-6 text-sm text-slate-600 shadow-sm">
-            No competitor rows yet. Edit the{" "}
+            No competitor rows yet. Add a{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">competitors</code>{" "}
-            JSON on this restaurant in the Table Editor (array of objects with{" "}
+            array to <strong>this scorecard&apos;s</strong> JSON for period-specific
+            peers, or set defaults on the{" "}
+            <code className="rounded bg-stone-100 px-1 text-xs">competitors</code>{" "}
+            column for this restaurant in the Table Editor (array of objects with{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">name</code>,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">address</code>,{" "}
             <code className="rounded bg-stone-100 px-1 text-xs">
