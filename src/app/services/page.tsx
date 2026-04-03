@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { freeSnapshot, pricingPlans, servicesPricingBenchmark } from "@/content/site";
+import { freeSnapshot, pricingPlans, servicesPricingContext } from "@/content/site";
 import { Section } from "@/components/Section";
 
 export default function ServicesPage() {
@@ -15,9 +15,19 @@ export default function ServicesPage() {
             <p className="mt-4 text-lg font-semibold tracking-tight text-slate-900 drop-shadow-sm md:text-xl">
               Choose the level of intelligence and support that fits your restaurant&apos;s growth goals.
             </p>
-            <p className="mt-6 text-left text-sm text-slate-600 max-w-3xl mx-auto leading-relaxed rounded-2xl border border-stone-200 bg-white/80 px-5 py-4">
-              {servicesPricingBenchmark}
-            </p>
+            <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-stone-200 bg-white/90 px-6 py-6 text-left shadow-sm">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900 md:text-lg">
+                {servicesPricingContext.title}
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-[0.95rem]">
+                {servicesPricingContext.lead}
+              </p>
+              <ul className="mt-4 list-disc space-y-3 pl-5 text-sm leading-relaxed text-slate-600 md:text-[0.95rem]">
+                {servicesPricingContext.bullets.map((line, idx) => (
+                  <li key={idx}>{line}</li>
+                ))}
+              </ul>
+            </div>
             <p className="mt-4 text-center text-sm text-slate-600 max-w-2xl mx-auto">
               Each plan opens a dedicated intake with tier-specific questions (address, concept, and priorities)—not the
               same short form as general{" "}

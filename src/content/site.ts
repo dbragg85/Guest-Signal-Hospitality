@@ -43,9 +43,16 @@ export function isPlanInquiryKey(v: string | null): v is PlanInquiryKey {
   return v !== null && Object.prototype.hasOwnProperty.call(PLAN_INQUIRY_LABELS, v);
 }
 
-/** Short note on how plans compare to typical reputation tools / light consulting retainers */
-export const servicesPricingBenchmark =
-  "Compared with typical offerings: reputation SaaS for a single location often runs about $80–200/mo for core monitoring, while fuller workflows, multi-site rollups, and leadership reporting frequently reach $200–500+/mo. Fractional hospitality or CX consulting commonly lands around $150–400/mo for light retainers and $500–2,000+/mo when strategy and execution are bundled. Our tiers sit in that band: Signal Monitor for restaurant-specific scorecards and alerts, Growth for peer context and sharper priorities, and Signal Elevate for hands-on review support plus social tracking and coordinated management—not a generic SMB dashboard.";
+/** Plans hero: simple market context + how Guest Signal fits (render as title + lead + bullets on /services). */
+export const servicesPricingContext = {
+  title: "Fair pricing, built for restaurants",
+  lead: "Many operators already pay similar ranges for reputation software or light advisory. We stay in that ballpark on purpose—and keep the product focused on hospitality, not a generic small-business dashboard.",
+  bullets: [
+    "Reputation and review tools are often about $80–200/mo per location for the basics, and $200–500+/mo when you add multi-site reporting, workflows, and leadership-ready summaries.",
+    "Fractional guest-experience or CX support commonly runs roughly $150–400/mo for lighter engagement, and more when strategy and hands-on execution are bundled.",
+    "Guest Signal Monitor, Growth, and Elevate map to how much help you want: from scorecards and alerts, to peer context and priorities, to hands-on review support plus social coordination.",
+  ],
+} as const;
 
 export const pricingPlans = [
   {
