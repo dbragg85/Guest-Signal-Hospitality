@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { isPlanInquiryKey, PLAN_INQUIRY_LABELS } from "@/content/site";
+import { persistLeadIntakeToSupabase } from "@/lib/persistLeadIntake";
 import { trackEvent } from "@/lib/tracking";
 
 const DEFAULT_CONTACT_ENDPOINT =
@@ -86,6 +87,37 @@ function ContactForm() {
     const planLabel = planKey ? PLAN_INQUIRY_LABELS[planKey] : "General inquiry";
 
     try {
+      const supabaseResult = await persistLeadIntakeToSupabase({
+        inquiryPlan: planKey || "general",
+        name,
+        email,
+        business,
+        streetAddress,
+        city,
+        state,
+        zip,
+        conceptType,
+        locationCount,
+        snapshotFocus,
+        goals,
+        competitorsNote,
+        message,
+      });
+      if (supabaseResult.attempted && supabaseResult.errorMessage) {
+        console.warn(
+          "[contact] Supabase lead_intake_submissions insert failed:",
+          supabaseResult.errorMessage,
+        );
+        trackEvent("lead_intake_supabase_insert_fail", {
+          planKey: planKey ?? "general",
+          message: supabaseResult.errorMessage,
+        });
+      } else if (supabaseResult.attempted) {
+        trackEvent("lead_intake_supabase_insert_ok", {
+          planKey: planKey ?? "general",
+        });
+      }
+
       const requestBody = new FormData();
       requestBody.append("name", name);
       requestBody.append("email", email);
