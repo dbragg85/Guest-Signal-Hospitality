@@ -526,7 +526,7 @@ async function main() {
     console.log("No pending lead_intake_submissions to process.");
     if (process.env.GITHUB_ACTIONS === "true") {
       console.log(
-        "::notice::No pending service-tier leads — the job succeeded but had nothing to convert. Ensure a row exists in lead_intake_submissions (processing_status=pending) from a /contact?plan=… submit, or use LEAD_INTAKE_ID / FORCE_REPROCESS for re-runs.",
+        "::notice::No pending leads matched this job (free_snapshot + paid plans only). Plain /contact without ?plan= saves inquiry_plan=general — skipped here. FormSubmit email does not prove a Supabase row: confirm lead_intake_submissions in Studio, or submit via /contact?plan=free_snapshot (or a paid plan key).",
       );
     }
     return;
