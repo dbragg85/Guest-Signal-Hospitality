@@ -51,6 +51,9 @@
    - `migrations/012_restaurants_intake_inquiry_plan.sql`
    - `migrations/013_lead_intake_social_presence.sql`
    - `migrations/014_lead_intake_snapshot_context.sql` — optional venue phone, website, and hours for faster snapshot matching  
+
+   **`010` vs `011`:** keep **both**. `010` creates the table and RLS; **`011` adds `submission_client_key` plus the RPC `fetch_lead_intake_id_by_client_key`** so the browser can learn the new row’s `id` after an anon **INSERT** (anon still cannot `SELECT` the table). The website **`persistLeadIntakeToSupabase`** calls that RPC — **do not delete `011` from the repo or omit it in SQL Editor**. Replacing `010` with one giant script is only a greenfield convenience; on an existing project, run **`011` after `010`** and never drop the column or function.
+
    After that, **Table Editor** should list **`lead_intake_submissions`**. If you use the Supabase CLI against this repo, `supabase db push` applies the same migration set.
 
 #### Lead intake → snapshot (step-by-step, plain English)
