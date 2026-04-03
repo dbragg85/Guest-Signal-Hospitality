@@ -52,6 +52,15 @@
    - `migrations/014_lead_intake_snapshot_context.sql` — optional venue phone, website, and hours for faster snapshot matching  
    After that, **Table Editor** should list **`lead_intake_submissions`**. If you use the Supabase CLI against this repo, `supabase db push` applies the same migration set.
 
+#### Lead intake → snapshot (step-by-step, plain English)
+
+1. **Finish the database setup above** (migrations through `014` in this Supabase project).
+2. **Point the public website at this same project.** In hosting (e.g. Vercel), set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from **Project Settings → API** for this project.
+3. **Submit a test using a plan link** — not the short contact page. Example: `https://your-domain.com/services/inquiry?plan=free_snapshot` (or a paid plan key from the Plans page). Plain `/contact` saves `inquiry_plan=general` and the snapshot **GitHub Action will skip it**.
+4. **Check Supabase.** Open **Table Editor → `lead_intake_submissions`**. You should see a new row: `inquiry_plan` = `free_snapshot` (or your plan key), `processing_status` = `pending`. An empty table or `general` means the form is not hitting this project or the wrong URL was used.
+5. **Point GitHub Actions at the same project.** Repo **Settings → Secrets and variables → Actions**: set **`SUPABASE_SERVICE_ROLE_KEY`** (the **service_role** JWT — never put this in the website). Set **`SUPABASE_URL`** *or* reuse the repository **Variable** `NEXT_PUBLIC_SUPABASE_URL` — it must be the **same** Supabase URL as in step 2.
+6. **Run the workflow.** **Actions → Process lead intake snapshots → Run workflow.** If the log says nothing to process, scroll to **Diagnostics** (counts + last few rows) and fix whatever it shows (wrong plan, already converted, or wrong GitHub project).
+
 ---
 
 ## C. Auth URLs
