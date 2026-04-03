@@ -23,16 +23,37 @@ export type LeadIntakePayload = {
   message: string;
 };
 
+export type PersistLeadIntakeResult = {
+  attempted: boolean;
+  /** True when a row was inserted into lead_intake_submissions. */
+  rowInserted: boolean;
+  /** Set when INSERT fails. */
+  insertErrorMessage: string | null;
+  /** Set when INSERT succeeded but RPC id lookup failed (e.g. migration 011 not applied). */
+  lookupErrorMessage: string | null;
+  /** Primary key — copy into FormSubmit email for SQL join. */
+  leadIntakeId?: string;
+  /** Stored on row; inbox can match this column if id is missing. */
+  submissionClientKey?: string;
+};
+
 /** When Supabase env is configured, inserts a row for super-admin review. */
 export async function persistLeadIntakeToSupabase(
   payload: LeadIntakePayload,
-): Promise<{ attempted: boolean; errorMessage: string | null }> {
+): Promise<PersistLeadIntakeResult> {
   const supabase = createClientIfConfigured();
   if (!supabase) {
-    return { attempted: false, errorMessage: null };
+    return {
+      attempted: false,
+      rowInserted: false,
+      insertErrorMessage: null,
+      lookupErrorMessage: null,
+    };
   }
 
-  const { error } = await supabase.from("lead_intake_submissions").insert({
+  const submissionClientKey = crypto.randomUUID();
+
+  const { error: insertError } = await supabase.from("lead_intake_submissions").insert({
     inquiry_plan: payload.inquiryPlan.trim(),
     name: payload.name.trim(),
     email: payload.email.trim(),
@@ -47,10 +68,43 @@ export async function persistLeadIntakeToSupabase(
     goals: cleanField(payload.goals),
     competitors_note: cleanField(payload.competitorsNote),
     message: cleanField(payload.message),
+    submission_client_key: submissionClientKey,
   });
 
-  if (error) {
-    return { attempted: true, errorMessage: error.message };
+  if (insertError) {
+    return {
+      attempted: true,
+      rowInserted: false,
+      insertErrorMessage: insertError.message,
+      lookupErrorMessage: null,
+      submissionClientKey,
+    };
   }
-  return { attempted: true, errorMessage: null };
+
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "fetch_lead_intake_id_by_client_key",
+    { p_key: submissionClientKey },
+  );
+
+  if (rpcError) {
+    return {
+      attempted: true,
+      rowInserted: true,
+      insertErrorMessage: null,
+      lookupErrorMessage: rpcError.message,
+      submissionClientKey,
+    };
+  }
+
+  const leadIntakeId =
+    typeof rpcData === "string" && rpcData.length > 0 ? rpcData : undefined;
+
+  return {
+    attempted: true,
+    rowInserted: true,
+    insertErrorMessage: null,
+    lookupErrorMessage: null,
+    leadIntakeId,
+    submissionClientKey,
+  };
 }

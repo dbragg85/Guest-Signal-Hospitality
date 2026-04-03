@@ -31,7 +31,10 @@ function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [thankYouMeta, setThankYouMeta] = useState<{
-    supabaseLeadRowOk: boolean;
+    rowInserted: boolean;
+    lookupIssue?: string | null;
+    leadIntakeId?: string;
+    submissionClientKey?: string;
   } | null>(null);
 
   const planKey = useMemo(() => {
@@ -106,16 +109,25 @@ function ContactForm() {
         competitorsNote,
         message,
       });
-      if (supabaseResult.attempted && supabaseResult.errorMessage) {
+      if (supabaseResult.attempted && supabaseResult.insertErrorMessage) {
         console.warn(
           "[contact] Supabase lead_intake_submissions insert failed:",
-          supabaseResult.errorMessage,
+          supabaseResult.insertErrorMessage,
         );
         trackEvent("lead_intake_supabase_insert_fail", {
           planKey: planKey ?? "general",
-          message: supabaseResult.errorMessage,
+          message: supabaseResult.insertErrorMessage,
         });
-      } else if (supabaseResult.attempted) {
+      } else if (supabaseResult.rowInserted && supabaseResult.lookupErrorMessage) {
+        console.warn(
+          "[contact] lead_intake id lookup failed (apply migration 011?):",
+          supabaseResult.lookupErrorMessage,
+        );
+        trackEvent("lead_intake_id_lookup_fail", {
+          planKey: planKey ?? "general",
+          message: supabaseResult.lookupErrorMessage,
+        });
+      } else if (supabaseResult.attempted && supabaseResult.rowInserted) {
         trackEvent("lead_intake_supabase_insert_ok", {
           planKey: planKey ?? "general",
         });
@@ -136,9 +148,18 @@ function ContactForm() {
       requestBody.append("goals", goals || "—");
       requestBody.append("competitorsNote", competitorsNote || "—");
       requestBody.append("message", message || "—");
+      requestBody.append("leadIntakeId", supabaseResult.leadIntakeId ?? "—");
+      requestBody.append(
+        "submissionClientKey",
+        supabaseResult.submissionClientKey ?? "—",
+      );
+      const subjectRef =
+        supabaseResult.leadIntakeId != null
+          ? ` [SQL ${supabaseResult.leadIntakeId.slice(0, 8)}]`
+          : "";
       requestBody.append(
         "_subject",
-        `Guest Signal — ${planLabel}: ${business || name}`,
+        `Guest Signal — ${planLabel}: ${business || name}${subjectRef}`,
       );
       requestBody.append("_template", "table");
       requestBody.append("_captcha", "false");
@@ -157,9 +178,10 @@ function ContactForm() {
 
       form.reset();
       setThankYouMeta({
-        supabaseLeadRowOk: Boolean(
-          supabaseResult.attempted && !supabaseResult.errorMessage,
-        ),
+        rowInserted: supabaseResult.rowInserted,
+        lookupIssue: supabaseResult.lookupErrorMessage,
+        leadIntakeId: supabaseResult.leadIntakeId,
+        submissionClientKey: supabaseResult.submissionClientKey,
       });
       setSubmitted(true);
       trackEvent("contact_submit_success", {
@@ -190,6 +212,40 @@ function ContactForm() {
                 Your message has been received. We&apos;ll respond to you at the
                 email address you provided within 24 hours.
               </p>
+              {thankYouMeta?.rowInserted &&
+              (thankYouMeta.leadIntakeId || thankYouMeta.submissionClientKey) ? (
+                <div className="mt-6 max-w-xl mx-auto rounded-2xl border border-slate-200 bg-white/90 p-4 text-left text-sm text-slate-800">
+                  <p className="font-semibold text-slate-900">
+                    Link this email to Supabase
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                    The message to the audit inbox now includes{" "}
+                    <strong>leadIntakeId</strong> and{" "}
+                    <strong>submissionClientKey</strong>. Use the UUID in{" "}
+                    <span className="font-mono">lead_intake_submissions.id</span>{" "}
+                    or match{" "}
+                    <span className="font-mono">submission_client_key</span>.
+                  </p>
+                  {thankYouMeta.leadIntakeId ? (
+                    <p className="mt-2 break-all font-mono text-xs text-slate-800">
+                      lead_intake_submissions.id: {thankYouMeta.leadIntakeId}
+                    </p>
+                  ) : null}
+                  {thankYouMeta.submissionClientKey ? (
+                    <p className="mt-1 break-all font-mono text-xs text-slate-800">
+                      submission_client_key: {thankYouMeta.submissionClientKey}
+                    </p>
+                  ) : null}
+                  {thankYouMeta.lookupIssue && !thankYouMeta.leadIntakeId ? (
+                    <p className="mt-3 text-xs text-amber-900">
+                      Public id lookup did not run—apply Supabase migration{" "}
+                      <span className="font-mono">011</span> and redeploy. You can
+                      still join on <span className="font-mono">submission_client_key</span>{" "}
+                      above.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               {isServiceIntake && thankYouMeta ? (
                 <div className="mt-8 rounded-2xl border border-green-200/80 bg-white/70 p-6 text-left text-sm text-slate-800">
                   <p className="font-semibold text-slate-900">
@@ -198,7 +254,7 @@ function ContactForm() {
                   <ul className="mt-3 list-disc space-y-3 pl-5 leading-relaxed">
                     <li>
                       <strong>Intake row</strong> —{" "}
-                      {thankYouMeta?.supabaseLeadRowOk
+                      {thankYouMeta?.rowInserted
                         ? "Queued immediately in the lead intake table when the live site is built with Supabase keys (check Table Editor within a minute)."
                         : "The public site could not write to Supabase from the browser (missing env, blocked RLS, or network). Your answers still went to the audit email inbox—ask ops to verify NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY on the GitHub Pages build."}
                     </li>
