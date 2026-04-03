@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { isPlanInquiryKey, PLAN_INQUIRY_LABELS } from "@/content/site";
+import { brand, isPlanInquiryKey, PLAN_INQUIRY_LABELS } from "@/content/site";
 import { persistLeadIntakeToSupabase } from "@/lib/persistLeadIntake";
 import { trackEvent } from "@/lib/tracking";
 
@@ -30,6 +30,10 @@ function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  /** Service-tier submit only: false when Supabase row was not saved (or client not configured). */
+  const [serviceIntakeSavedOnline, setServiceIntakeSavedOnline] = useState<
+    boolean | null
+  >(null);
 
   const planKey = useMemo(() => {
     const raw = searchParams?.get("plan");
@@ -171,6 +175,9 @@ function ContactForm() {
       }
 
       form.reset();
+      setServiceIntakeSavedOnline(
+        isServiceIntake ? supabaseResult.rowInserted : null,
+      );
       setSubmitted(true);
       trackEvent("contact_submit_success", {
         planKey: planKey ?? "general",
@@ -200,6 +207,19 @@ function ContactForm() {
                 Your message has been received. We&apos;ll respond to you at the
                 email address you provided within 24 hours.
               </p>
+              {serviceIntakeSavedOnline === false ? (
+                <p className="mt-5 max-w-xl mx-auto text-left text-sm leading-relaxed text-amber-950/90">
+                  We also delivered your request to our team by email. If you
+                  don&apos;t hear from us within one business day, reach us at{" "}
+                  <a
+                    href={`mailto:${brand.email}`}
+                    className="font-semibold text-green-900 underline underline-offset-2"
+                  >
+                    {brand.email}
+                  </a>
+                  .
+                </p>
+              ) : null}
             </div>
           </div>
         </section>
