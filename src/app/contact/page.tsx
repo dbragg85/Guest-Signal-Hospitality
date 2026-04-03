@@ -30,6 +30,9 @@ function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [thankYouMeta, setThankYouMeta] = useState<{
+    supabaseLeadRowOk: boolean;
+  } | null>(null);
 
   const planKey = useMemo(() => {
     const raw = searchParams?.get("plan");
@@ -153,6 +156,11 @@ function ContactForm() {
       }
 
       form.reset();
+      setThankYouMeta({
+        supabaseLeadRowOk: Boolean(
+          supabaseResult.attempted && !supabaseResult.errorMessage,
+        ),
+      });
       setSubmitted(true);
       trackEvent("contact_submit_success", {
         planKey: planKey ?? "general",
@@ -182,6 +190,38 @@ function ContactForm() {
                 Your message has been received. We&apos;ll respond to you at the
                 email address you provided within 24 hours.
               </p>
+              {isServiceIntake && thankYouMeta ? (
+                <div className="mt-8 rounded-2xl border border-green-200/80 bg-white/70 p-6 text-left text-sm text-slate-800">
+                  <p className="font-semibold text-slate-900">
+                    What lands in Supabase (and when)
+                  </p>
+                  <ul className="mt-3 list-disc space-y-3 pl-5 leading-relaxed">
+                    <li>
+                      <strong>Intake row</strong> —{" "}
+                      {thankYouMeta?.supabaseLeadRowOk
+                        ? "Queued immediately in the lead intake table when the live site is built with Supabase keys (check Table Editor within a minute)."
+                        : "The public site could not write to Supabase from the browser (missing env, blocked RLS, or network). Your answers still went to the audit email inbox—ask ops to verify NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY on the GitHub Pages build."}
+                    </li>
+                    <li>
+                      <strong>Restaurant + scored snapshot</strong> — Created
+                      after the automated job runs (about once an hour in
+                      GitHub Actions) or when an operator runs{" "}
+                      <span className="whitespace-nowrap font-mono text-xs">
+                        npm run pipeline:lead-intake
+                      </span>{" "}
+                      with the service role. While waiting, the intake row stays{" "}
+                      <span className="font-mono text-xs">pending</span>; when
+                      processing finishes it becomes{" "}
+                      <span className="font-mono text-xs">converted</span> and
+                      new rows appear under restaurants / scorecards.
+                    </li>
+                  </ul>
+                  <p className="mt-4 text-xs text-slate-600">
+                    Automated agents do not receive a private copy of your
+                    submission—operators use email and Supabase to review it.
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
@@ -394,6 +434,14 @@ function ContactForm() {
               >
                 {isSubmitting ? "Sending..." : "Send"}
               </button>
+              {isServiceIntake ? (
+                <p className="text-xs leading-relaxed text-slate-500">
+                  Intake rows save to Supabase immediately when the deployed site
+                  includes Supabase environment variables. Restaurant and
+                  snapshot records follow the hourly automation (or a manual
+                  pipeline run).
+                </p>
+              ) : null}
               {submitError ? (
                 <p className="text-sm font-medium text-red-700">{submitError}</p>
               ) : null}
