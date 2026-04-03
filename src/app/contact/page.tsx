@@ -30,12 +30,6 @@ function ContactForm() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [thankYouMeta, setThankYouMeta] = useState<{
-    rowInserted: boolean;
-    lookupIssue?: string | null;
-    leadIntakeId?: string;
-    submissionClientKey?: string;
-  } | null>(null);
 
   const planKey = useMemo(() => {
     const raw = searchParams?.get("plan");
@@ -177,12 +171,6 @@ function ContactForm() {
       }
 
       form.reset();
-      setThankYouMeta({
-        rowInserted: supabaseResult.rowInserted,
-        lookupIssue: supabaseResult.lookupErrorMessage,
-        leadIntakeId: supabaseResult.leadIntakeId,
-        submissionClientKey: supabaseResult.submissionClientKey,
-      });
       setSubmitted(true);
       trackEvent("contact_submit_success", {
         planKey: planKey ?? "general",
@@ -212,72 +200,6 @@ function ContactForm() {
                 Your message has been received. We&apos;ll respond to you at the
                 email address you provided within 24 hours.
               </p>
-              {thankYouMeta?.rowInserted &&
-              (thankYouMeta.leadIntakeId || thankYouMeta.submissionClientKey) ? (
-                <div className="mt-6 max-w-xl mx-auto rounded-2xl border border-slate-200 bg-white/90 p-4 text-left text-sm text-slate-800">
-                  <p className="font-semibold text-slate-900">
-                    Link this email to Supabase
-                  </p>
-                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                    The message to the audit inbox now includes{" "}
-                    <strong>leadIntakeId</strong> and{" "}
-                    <strong>submissionClientKey</strong>. Use the UUID in{" "}
-                    <span className="font-mono">lead_intake_submissions.id</span>{" "}
-                    or match{" "}
-                    <span className="font-mono">submission_client_key</span>.
-                  </p>
-                  {thankYouMeta.leadIntakeId ? (
-                    <p className="mt-2 break-all font-mono text-xs text-slate-800">
-                      lead_intake_submissions.id: {thankYouMeta.leadIntakeId}
-                    </p>
-                  ) : null}
-                  {thankYouMeta.submissionClientKey ? (
-                    <p className="mt-1 break-all font-mono text-xs text-slate-800">
-                      submission_client_key: {thankYouMeta.submissionClientKey}
-                    </p>
-                  ) : null}
-                  {thankYouMeta.lookupIssue && !thankYouMeta.leadIntakeId ? (
-                    <p className="mt-3 text-xs text-amber-900">
-                      Public id lookup did not run—apply Supabase migration{" "}
-                      <span className="font-mono">011</span> and redeploy. You can
-                      still join on <span className="font-mono">submission_client_key</span>{" "}
-                      above.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-              {isServiceIntake && thankYouMeta ? (
-                <div className="mt-8 rounded-2xl border border-green-200/80 bg-white/70 p-6 text-left text-sm text-slate-800">
-                  <p className="font-semibold text-slate-900">
-                    What lands in Supabase (and when)
-                  </p>
-                  <ul className="mt-3 list-disc space-y-3 pl-5 leading-relaxed">
-                    <li>
-                      <strong>Intake row</strong> —{" "}
-                      {thankYouMeta?.rowInserted
-                        ? "Queued immediately in the lead intake table when the live site is built with Supabase keys (check Table Editor within a minute)."
-                        : "The public site could not write to Supabase from the browser (missing env, blocked RLS, or network). Your answers still went to the audit email inbox—ask ops to verify NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY on the GitHub Pages build."}
-                    </li>
-                    <li>
-                      <strong>Restaurant + scored snapshot</strong> — Created
-                      after the automated job runs (scheduled in GitHub
-                      Actions, typically within a few minutes) or when an operator runs{" "}
-                      <span className="whitespace-nowrap font-mono text-xs">
-                        npm run pipeline:lead-intake
-                      </span>{" "}
-                      with the service role. While waiting, the intake row stays{" "}
-                      <span className="font-mono text-xs">pending</span>; when
-                      processing finishes it becomes{" "}
-                      <span className="font-mono text-xs">converted</span> and
-                      new rows appear under restaurants / scorecards.
-                    </li>
-                  </ul>
-                  <p className="mt-4 text-xs text-slate-600">
-                    Automated agents do not receive a private copy of your
-                    submission—operators use email and Supabase to review it.
-                  </p>
-                </div>
-              ) : null}
             </div>
           </div>
         </section>
@@ -481,14 +403,6 @@ function ContactForm() {
               >
                 {isSubmitting ? "Sending..." : "Send"}
               </button>
-              {isServiceIntake ? (
-                <p className="text-xs leading-relaxed text-slate-500">
-                  Intake rows save to Supabase immediately when the deployed site
-                  includes Supabase environment variables. Restaurant and
-                  snapshot records follow the scheduled automation (or a manual
-                  pipeline run).
-                </p>
-              ) : null}
               {submitError ? (
                 <p className="text-sm font-medium text-red-700">{submitError}</p>
               ) : null}
