@@ -84,7 +84,10 @@ export const pricingPlans = [
       "Weekly sentiment breakdown by category",
       "Monthly improvement roadmap with top 5 priorities",
       "48-hour priority alerts for rating drops",
-      "Monthly growth summary and owner action list"
+      "Monthly growth summary and owner action list",
+      "90-day rolling theme view so priorities stay tied to recent guest feedback",
+      "Peer comparison snapshots on hospitality, speed, and value vs. each tracked competitor",
+      "Month-over-month Guest Signal trend with plain-language what-moved callouts",
     ],
     buttonText: "Choose Signal Growth",
     popular: true,
@@ -99,7 +102,7 @@ export const pricingPlans = [
       "Our highest tier: hands-on reputation elevation plus social media tracking, mention monitoring, and coordinated management alongside review intelligence.",
     features: [
       "Everything in Growth, plus:",
-      "Social media tracking and active management: mentions, tags, DMs, and review cross-signals (Instagram, Facebook, TikTok where applicable) mapped to guest-experience themes",
+      "Social tracking: mentions, tags, and DMs on Instagram, Facebook, and TikTok (where applicable), tied to review signals",
       "Monthly social + review narrative with recommended posts/replies, escalation flags, and light content cadence guidance",
       "Ongoing coordination for social and review response pacing (aligned with your brand voice)",
       "Professional review response drafting (up to 20/month)",
