@@ -40,7 +40,7 @@ function get(name) {
 const url = get("NEXT_PUBLIC_SUPABASE_URL");
 const key = get("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
-if (!url || url.includes("your-project")) {
+if (!url || url.includes("your-project") || url.includes("<project-ref>")) {
   console.error("NEXT_PUBLIC_SUPABASE_URL is missing or still a placeholder in .env.local.");
   process.exit(1);
 }
