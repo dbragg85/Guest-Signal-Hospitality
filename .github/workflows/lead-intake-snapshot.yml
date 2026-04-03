@@ -6,8 +6,8 @@
 # Immediate run (no wait for schedule): GitHub → Actions → this workflow → "Run workflow".
 # Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub.
 #
-# Requires repository Actions *Secrets* (not only Variables): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
-# Same project URL as NEXT_PUBLIC_SUPABASE_URL on Pages; use the service_role JWT for this job only.
+# Requires SUPABASE_SERVICE_ROLE_KEY as an Actions *Secret* (service_role JWT).
+# Project URL: Secret SUPABASE_URL *or* reuse Variable NEXT_PUBLIC_SUPABASE_URL (same host as Studio).
 # Do not use `secrets.*` in job-level `if:` — GitHub rejects that as an invalid workflow.
 
 name: Process lead intake snapshots
@@ -33,13 +33,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Require Supabase Actions secrets
+      - name: Require Supabase credentials
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
-            echo "::error::Set repository Actions Secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (service_role JWT). Variables used for the Pages build are not enough for this workflow."
+            echo "::error::Add Actions Secret SUPABASE_SERVICE_ROLE_KEY (service_role JWT from Supabase). Set either Secret SUPABASE_URL or Variable NEXT_PUBLIC_SUPABASE_URL to your project URL (https://xxx.supabase.co)."
             exit 1
           fi
 
@@ -53,7 +53,7 @@ jobs:
 
       - name: Process pending leads
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           APIFY_YELP_ACTOR_ID: ${{ secrets.APIFY_YELP_ACTOR_ID }}
