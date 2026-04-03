@@ -147,7 +147,7 @@ function normalizePeriodForLookup(period: string): string {
   return canonical ?? `raw:${normalizePeriod(period)}`;
 }
 
-/** Legacy demo seed from migration 001; removed in 008 — hide until DB migration runs. */
+/** Legacy demo seed from migration 001; removed in 009 — hide until DB migration runs. */
 function isRetractedBocaQ12025Seed(
   restaurantSlug: string | undefined,
   period: string,
