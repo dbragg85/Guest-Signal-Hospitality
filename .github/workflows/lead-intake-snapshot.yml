@@ -8,6 +8,7 @@
 #
 # Requires repository Actions *Secrets* (not only Variables): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 # Same project URL as NEXT_PUBLIC_SUPABASE_URL on Pages; use the service_role JWT for this job only.
+# Do not use `secrets.*` in job-level `if:` — GitHub rejects that as an invalid workflow.
 
 name: Process lead intake snapshots
 
@@ -28,10 +29,19 @@ concurrency:
 
 jobs:
   run:
-    if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Require Supabase Actions secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "::error::Set repository Actions Secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (service_role JWT). Variables used for the Pages build are not enough for this workflow."
+            exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -51,9 +61,4 @@ jobs:
           LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id }}
           LEAD_INTAKE_INVITE_PORTAL_USERS: ${{ vars.LEAD_INTAKE_INVITE_PORTAL_USERS || '1' }}
           LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}
-        run: |
-          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
-            echo "::error::Set repository Actions Secrets SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (service_role JWT). Variables used for the Pages build are not enough for this workflow."
-            exit 1
-          fi
-          npm run pipeline:lead-intake
+        run: npm run pipeline:lead-intake
