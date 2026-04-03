@@ -18,6 +18,8 @@
  *   APIFY_TOKEN, APIFY_YELP_ACTOR_ID — same as monthly pipeline
  *   DRY_RUN=1 — no writes
  *   FORCE_REPROCESS=1 — re-run even if restaurant_id is set
+ *   LEAD_INTAKE_INVITE_PORTAL_USERS=1 — invite lead email via Supabase Auth + upsert memberships (viewer)
+ *   LEAD_INTAKE_INVITE_REDIRECT_URL — defaults to https://guestsignalhospitality.com/portal
  */
 import { createClient } from "@supabase/supabase-js";
 import { pullYelpReviewsViaApify } from "./lib/apify-yelp-actor.mjs";
@@ -123,6 +125,75 @@ function formatAddress(lead) {
     (p) => p && String(p).trim() && String(p).trim() !== "—"
   );
   return parts.length ? parts.join(", ") : null;
+}
+
+function envFlag(name, fallback = "0") {
+  return ["1", "true", "yes"].includes((getEnv(name, { fallback }) || "").toLowerCase());
+}
+
+/**
+ * Invite by email or resolve existing auth user; returns user id or null.
+ */
+async function ensurePortalUser(supabase, email, displayName) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!e || !e.includes("@")) return null;
+
+  const redirectTo = getEnv("LEAD_INTAKE_INVITE_REDIRECT_URL", {
+    fallback: "https://guestsignalhospitality.com/portal",
+  });
+
+  const { data: invited, error: invErr } = await supabase.auth.admin.inviteUserByEmail(e, {
+    data: { full_name: String(displayName || "").trim() || e },
+    redirectTo,
+  });
+
+  if (!invErr && invited?.user?.id) {
+    console.log(`Auth: invite issued for ${e}`);
+    return invited.user.id;
+  }
+
+  const msg = String(invErr?.message || "");
+  const maybeExists =
+    /already|registered|exists/i.test(msg) ||
+    invErr?.code === "email_exists" ||
+    invErr?.status === 422;
+
+  if (maybeExists) {
+    const pageSize = 200;
+    for (let page = 1; page <= 10; page++) {
+      const { data: list, error: listErr } = await supabase.auth.admin.listUsers({
+        page,
+        perPage: pageSize,
+      });
+      if (listErr) {
+        console.warn("Auth: listUsers failed:", listErr.message);
+        break;
+      }
+      const u = list?.users?.find((x) => (x.email || "").toLowerCase() === e);
+      if (u?.id) {
+        console.log(`Auth: matched existing user for ${e}`);
+        return u.id;
+      }
+      if ((list?.users?.length || 0) < pageSize) break;
+    }
+    console.warn(`Auth: could not resolve existing user for ${e} (${msg})`);
+    return null;
+  }
+
+  console.warn(`Auth: inviteUserByEmail failed for ${e}:`, msg);
+  return null;
+}
+
+async function upsertMembershipViewer(supabase, userId, restaurantId) {
+  const { error } = await supabase.from("memberships").upsert(
+    {
+      user_id: userId,
+      restaurant_id: restaurantId,
+      role: "viewer",
+    },
+    { onConflict: "user_id,restaurant_id" },
+  );
+  if (error) throw error;
 }
 
 async function persistSnapshotFromReviews({
@@ -412,6 +483,7 @@ async function main() {
   const freeSnapshotOnly = ["1", "true", "yes"].includes(
     (getEnv("LEAD_INTAKE_FREE_SNAPSHOT_ONLY", { fallback: "0" }) || "").toLowerCase(),
   );
+  const invitePortalUsers = envFlag("LEAD_INTAKE_INVITE_PORTAL_USERS", "0");
   const singleId = getEnv("LEAD_INTAKE_ID", { fallback: "" });
 
   const { start, end } = lastCompletedMonthWindow();
@@ -422,6 +494,9 @@ async function main() {
   console.log(
     `Scoring window = prior completed calendar month: ${periodLabel} (${periodStartIso} → ${periodEndIso} UTC).`,
   );
+  if (invitePortalUsers) {
+    console.log("Portal: LEAD_INTAKE_INVITE_PORTAL_USERS enabled — will invite + upsert memberships after snapshot.");
+  }
 
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -486,6 +561,7 @@ async function main() {
             slug,
             name: lead.business.trim(),
             address: formatAddress(lead),
+            intake_inquiry_plan: normalizeInquiryPlan(lead.inquiry_plan),
           })
           .select("id, slug, name")
           .single();
@@ -509,6 +585,27 @@ async function main() {
     });
 
     if (!dryRun && persisted) {
+      const planNorm = normalizeInquiryPlan(lead.inquiry_plan);
+      const { error: planErr } = await supabase
+        .from("restaurants")
+        .update({ intake_inquiry_plan: planNorm })
+        .eq("id", restaurant.id);
+      if (planErr) {
+        console.warn("Could not set restaurants.intake_inquiry_plan (migration 012 applied?):", planErr.message);
+      }
+
+      if (invitePortalUsers) {
+        try {
+          const uid = await ensurePortalUser(supabase, lead.email, lead.name);
+          if (uid) {
+            await upsertMembershipViewer(supabase, uid, restaurant.id);
+            console.log(`Portal: viewer membership for ${String(lead.email).trim()} → ${restaurant.slug}`);
+          }
+        } catch (portalErr) {
+          console.warn("Portal invite/membership failed:", portalErr?.message || portalErr);
+        }
+      }
+
       const { error: upErr } = await supabase
         .from("lead_intake_submissions")
         .update({

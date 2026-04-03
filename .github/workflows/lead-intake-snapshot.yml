@@ -42,4 +42,6 @@ jobs:
           APIFY_YELP_ACTOR_ID: ${{ secrets.APIFY_YELP_ACTOR_ID }}
           LEAD_INTAKE_APIFY_YELP_URL: ${{ vars.LEAD_INTAKE_APIFY_YELP_URL }}
           LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id }}
+          LEAD_INTAKE_INVITE_PORTAL_USERS: ${{ vars.LEAD_INTAKE_INVITE_PORTAL_USERS || '1' }}
+          LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}
         run: npm run pipeline:lead-intake

@@ -3,6 +3,10 @@
 import { RestaurantSnapshotTemplate } from "@/components/portal/RestaurantSnapshotTemplate";
 import { usePortalSession } from "@/contexts/PortalSessionContext";
 import { isPortalRestaurantSlug } from "@/data/portal-restaurants";
+import {
+  isPlanInquiryKey,
+  PLAN_INQUIRY_LABELS,
+} from "@/content/site";
 import { portalGuestSignalHeadline } from "@/lib/portal-pillar-scores";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,6 +24,7 @@ type Restaurant = {
   google_rating: number | null;
   price_level: string | number | null;
   competitors: unknown;
+  intake_inquiry_plan: string | null;
 };
 
 type Scorecard = {
@@ -254,7 +259,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
     const { data: rests, error: rErr } = await supabase
       .from("restaurants")
       .select(
-        "id, slug, name, portal_intro, address, phone, website, logo_url, google_rating, price_level, competitors"
+        "id, slug, name, portal_intro, address, phone, website, logo_url, google_rating, price_level, competitors, intake_inquiry_plan"
       )
       .order("name");
 
@@ -656,8 +661,21 @@ export function PortalDashboardClient({ initialSlug }: Props) {
               (() => {
                 const cur = restaurants.find((r) => r.id === selectedId);
                 if (!cur) return null;
+                const planRaw = cur.intake_inquiry_plan;
+                const planLabel =
+                  planRaw && isPlanInquiryKey(planRaw)
+                    ? PLAN_INQUIRY_LABELS[planRaw]
+                    : planRaw?.trim() || null;
                 return (
                   <>
+                    {planLabel ? (
+                      <p className="mt-2 text-xs text-slate-600">
+                        Intake plan:{" "}
+                        <span className="font-semibold text-slate-800">
+                          {planLabel}
+                        </span>
+                      </p>
+                    ) : null}
                     <RestaurantSnapshotTemplate
                       restaurant={{
                         name: cur.name,
