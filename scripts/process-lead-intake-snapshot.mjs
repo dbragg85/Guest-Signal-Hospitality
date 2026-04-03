@@ -21,6 +21,7 @@
  *   LEAD_INTAKE_INVITE_PORTAL_USERS=1 — invite lead email via Supabase Auth + upsert memberships (viewer)
  *   LEAD_INTAKE_INVITE_REDIRECT_URL — defaults to https://guestsignalhospitality.com/portal
  */
+import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { pullYelpReviewsViaApify } from "./lib/apify-yelp-actor.mjs";
 import {
@@ -46,6 +47,16 @@ const SERVICE_INQUIRY_PLANS = [
   "signal_elevate",
 ];
 
+function appendGithubJobSummary(markdown) {
+  const path = process.env.GITHUB_STEP_SUMMARY;
+  if (!path) return;
+  try {
+    fs.appendFileSync(path, `${markdown}\n`, "utf8");
+  } catch (e) {
+    console.warn("Could not write GITHUB_STEP_SUMMARY:", e?.message || e);
+  }
+}
+
 /**
  * When the job finds nothing to process, explain why (counts + recent rows).
  * Helps debug wrong Supabase project, general contact submissions, or already-converted leads.
@@ -62,11 +73,17 @@ async function logNoMatchingLeadsHelp(supabase, ctx) {
       .maybeSingle();
     if (error) {
       console.log(`LEAD_INTAKE_ID lookup failed: ${error.message}`);
+      appendGithubJobSummary(
+        `## Lead intake — no match\n\n**LEAD_INTAKE_ID** lookup failed: \`${error.message}\``,
+      );
       return;
     }
     if (!one) {
       console.log(
         `::warning::LEAD_INTAKE_ID=${singleId} not found in lead_intake_submissions (wrong project URL/secret?).`,
+      );
+      appendGithubJobSummary(
+        `## Lead intake — no match\n\n**LEAD_INTAKE_ID** \`${singleId}\` **not found** in \`lead_intake_submissions\`. GitHub **SUPABASE_URL** / service role may point at a different project than the website.`,
       );
       return;
     }
@@ -86,6 +103,13 @@ async function logNoMatchingLeadsHelp(supabase, ctx) {
         "::notice::That row already has restaurant_id. Re-run with repo Variable/Secret FORCE_REPROCESS=1 if you intentionally want another pass.",
       );
     }
+    appendGithubJobSummary(
+      `## Lead intake — targeted row\n\n\`\`\`json\n${JSON.stringify(one, null, 2)}\n\`\`\`\n\n` +
+        `- **inquiry_plan** must be one of: ${plans.map((p) => "`" + p + "`").join(", ")}\n` +
+        `- **processing_status** must be \`pending\` to process\n` +
+        `- If **restaurant_id** is set, set repo Variable **FORCE_REPROCESS=1** to re-run (unless you only needed to inspect this row).\n\n` +
+        `Data lives in **Supabase tables**, not in a SQL file produced by this Action.`,
+    );
     return;
   }
 
@@ -159,6 +183,59 @@ async function logNoMatchingLeadsHelp(supabase, ctx) {
   if (process.env.GITHUB_ACTIONS === "true") {
     console.log(`::notice::${notice}`);
   }
+
+  const countLines =
+    e1 || e2 || e3 || e4
+      ? `Count queries failed: ${[e1, e2, e3, e4].filter(Boolean).join("; ")}`
+      : [
+          `| Metric | Value |`,
+          `| --- | --- |`,
+          `| Total rows in lead_intake_submissions | ${totalRows} |`,
+          `| Pending + service plan (${plans.join(", ")}) | ${pendingService} |`,
+          `| Pending + service + restaurant_id set | ${pendingServiceLinked} |`,
+          `| Pending + inquiry_plan=general (skipped) | ${pendingGeneral} |`,
+          `| FORCE_REPROCESS | ${force} |`,
+        ].join("\n");
+
+  const recentLines =
+    !recentErr && recent?.length
+      ? [
+          ``,
+          `### Most recent submissions (newest first)`,
+          ``,
+          `| id (prefix) | inquiry_plan | processing_status | restaurant_id | business |`,
+          `| --- | --- | --- | --- | --- |`,
+          ...recent.map((r) => {
+            const idShort = String(r.id).slice(0, 8);
+            const rid = r.restaurant_id ? "set" : "null";
+            const biz = String(r.business ?? "").replace(/\|/g, "\\|").slice(0, 40);
+            return `| ${idShort}… | ${r.inquiry_plan} | ${r.processing_status} | ${rid} | ${biz} |`;
+          }),
+        ].join("\n")
+      : "\n_No rows in lead_intake_submissions (empty table or no read access)._";
+
+  appendGithubJobSummary(
+    [
+      `## Lead intake snapshot — nothing processed`,
+      ``,
+      `The workflow **succeeded** but **did not create or update snapshot data** because no row matched the queue.`,
+      ``,
+      `### Where data actually goes`,
+      ``,
+      `- Intake form → **Supabase** table \`lead_intake_submissions\` (check **Table Editor** in the **same** project as your site’s anon key).`,
+      `- This job → same DB: new \`restaurants\` row (if needed), \`review_observations\`, \`snapshots\`, scorecard tables, then marks the lead \`converted\`.`,
+      `- **GitHub does not download a .sql file** for you — open **Supabase** to see rows.`,
+      ``,
+      `### Diagnostics (from service_role query of that project)`,
+      ``,
+      countLines,
+      recentLines,
+      ``,
+      `### What to fix`,
+      ``,
+      notice,
+    ].join("\n"),
+  );
 }
 
 function normalizeInquiryPlan(raw) {

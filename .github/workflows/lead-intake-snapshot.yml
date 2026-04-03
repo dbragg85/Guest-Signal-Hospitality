@@ -5,8 +5,9 @@
 #
 # Immediate run (no wait for schedule): GitHub → Actions → this workflow → "Run workflow".
 # Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub.
-# If the job succeeds but logs "No pending lead_intake_submissions", expand the job log: the script prints
-# row counts (pending general vs service plans) and the 5 most recent submissions. Typical causes: submission
+# If the job succeeds but logs "No pending lead_intake_submissions", open the run's **Summary** tab: the script
+# writes diagnostics there (counts + recent rows). The Action does **not** emit a .sql file — data is in Supabase.
+# The job log also prints the same. Typical causes: submission
 # used plain /contact (inquiry_plan=general), row already converted, or GitHub SUPABASE_URL points at a
 # different project than production. Re-run with FORCE_REPROCESS=1 only when you intend to reprocess.
 #
