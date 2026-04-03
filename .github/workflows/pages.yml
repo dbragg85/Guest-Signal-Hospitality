@@ -29,6 +29,15 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Check Supabase vars for browser lead intake
+        run: |
+          if [ -z "${NEXT_PUBLIC_SUPABASE_URL}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" ]; then
+            echo "::warning::NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is unset — the deployed site will not insert into lead_intake_submissions (FormSubmit email still works). Set both as GitHub repository Variables."
+          fi
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
       - name: Build Next.js static export
         run: npm run build
         env:
