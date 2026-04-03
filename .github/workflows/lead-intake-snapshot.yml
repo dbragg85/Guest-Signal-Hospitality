@@ -1,0 +1,44 @@
+# Processes pending public.lead_intake_submissions (free snapshot by default):
+# creates restaurant, review_observations, snapshots, scorecards.
+# Apify optional; on failure or missing credits uses 15 mock reviews + same rubric.
+
+name: Process lead intake snapshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      lead_id:
+        description: Optional UUID of a single lead_intake_submissions row
+        required: false
+        type: string
+  schedule:
+    - cron: "15 * * * *"
+
+concurrency:
+  group: lead-intake-snapshot
+  cancel-in-progress: true
+
+jobs:
+  run:
+    if: ${{ secrets.SUPABASE_URL != '' && secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Process pending leads
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_YELP_ACTOR_ID: ${{ secrets.APIFY_YELP_ACTOR_ID }}
+          LEAD_INTAKE_APIFY_YELP_URL: ${{ vars.LEAD_INTAKE_APIFY_YELP_URL }}
+          LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id }}
+        run: npm run pipeline:lead-intake
