@@ -239,20 +239,29 @@ export const audiences: Record<
   },
 };
 
+/** Leadership bios for /team (replace names/links when you publish real profiles). */
 export const team = [
   {
     name: "Your Name",
-    title: "Founder / Restaurant Analyst",
-    bio: "Hospitality operator with over [X] years of experience in restaurant operations, guest experience management, and data analysis. Passionate about helping independent operators succeed by turning guest feedback into actionable insights. Previously worked in [relevant experience] and understands the day-to-day challenges of running a successful restaurant.",
+    title: "Founder & Lead Analyst",
+    bio: "Hospitality operator who bridges the line and the spreadsheet—turning review signals into training priorities, recovery plans, and owner-ready scorecards. Focused on independents and small groups who want clarity without corporate overhead.",
     linkedin: "#",
   },
   {
     name: "Advisor Name",
-    title: "Advisor / Brand & Operations",
-    bio: "Hospitality strategist with deep expertise in positioning, process optimization, coaching, and execution planning for owner-operators. Brings [X] years of experience helping restaurants improve guest experience and profitability through data-driven decision making.",
+    title: "Advisor, Brand & Operations",
+    bio: "Strategist for positioning, service design, and execution planning. Helps operators translate guest feedback into SOP tweaks, coaching cadences, and leadership talking points your team can actually run.",
     linkedin: "#",
   },
 ];
+
+/** Short trust strip for /team — swap metrics as you collect public proof. */
+export const teamPageProofPoints = [
+  "Guest Signal Score™ methodology tied to real review themes—not a mystery number",
+  "Cincinnati roots with nationwide delivery",
+  "Start with a free snapshot before you commit to a plan",
+  "Plain-English reporting your GM and owners can use the same week",
+] as const;
 
 export const jobs = [
   {

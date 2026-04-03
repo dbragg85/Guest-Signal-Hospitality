@@ -7,6 +7,8 @@ export function CTA({
   primaryLabel = "Get a Free Snapshot",
   secondaryHref = "/services",
   secondaryLabel = "See Services",
+  align = "start",
+  className,
 }: {
   title: string;
   desc: string;
@@ -14,15 +16,33 @@ export function CTA({
   primaryLabel?: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  /** `center` stacks copy and buttons for pages like /team */
+  align?: "start" | "center";
+  className?: string;
 }) {
+  const centered = align === "center";
   return (
-    <div className="rounded-3xl border border-stone-200 bg-stone-50/80 p-8 shadow-sm">
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="max-w-2xl">
+    <div
+      className={`rounded-3xl border border-stone-200 bg-stone-50/80 p-8 shadow-sm ${className || ""}`}
+    >
+      <div
+        className={
+          centered
+            ? "flex flex-col items-center gap-6 text-center"
+            : "flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
+        }
+      >
+        <div className={centered ? "max-w-xl" : "max-w-2xl"}>
           <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
           <p className="mt-2 text-sm text-slate-600">{desc}</p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div
+          className={
+            centered
+              ? "flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center"
+              : "flex flex-col gap-3 sm:flex-row"
+          }
+        >
           <Link href={primaryHref} className="btn-primary text-center">
             {primaryLabel}
           </Link>
