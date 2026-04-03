@@ -147,6 +147,15 @@ function normalizePeriodForLookup(period: string): string {
   return canonical ?? `raw:${normalizePeriod(period)}`;
 }
 
+/** Legacy demo seed from migration 001; removed in 008 — hide until DB migration runs. */
+function isRetractedBocaQ12025Seed(
+  restaurantSlug: string | undefined,
+  period: string,
+): boolean {
+  if (!restaurantSlug || restaurantSlug !== "boca") return false;
+  return canonicalPeriodKey(period) === "q:2025:1";
+}
+
 function getSnapshotIdFromScorecardData(data: Record<string, unknown> | null): string | null {
   if (!data) return null;
   const raw = data.snapshot_id;
@@ -299,7 +308,10 @@ export function PortalDashboardClient({ initialSlug }: Props) {
         setLoadError(error.message);
         return;
       }
-      const base = sortScorecards((data ?? []) as Scorecard[]);
+      const selectedSlug = restaurants.find((r) => r.id === selectedId)?.slug;
+      const base = sortScorecards((data ?? []) as Scorecard[]).filter(
+        (row) => !isRetractedBocaQ12025Seed(selectedSlug, row.period),
+      );
       if (base.length === 0) {
         setScorecards(base);
         setActiveScorecardId(null);
@@ -499,7 +511,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
       });
     }
     loadScorecards();
-  }, [supabase, selectedId]);
+  }, [supabase, selectedId, restaurants]);
 
   async function signOut() {
     if (!supabase) return;
