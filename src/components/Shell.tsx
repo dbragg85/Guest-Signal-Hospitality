@@ -34,7 +34,10 @@ export function Shell({ children }: { children: ReactNode }) {
             >
               Portal
             </Link>
-            <Link href="/contact" className="btn-primary whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm">
+            <Link
+              href="/contact?plan=free_snapshot"
+              className="btn-primary whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm"
+            >
               <span className="hidden sm:inline">Get Your Free Snapshot</span>
               <span className="sm:hidden">Free Snapshot</span>
             </Link>

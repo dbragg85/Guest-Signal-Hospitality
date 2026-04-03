@@ -110,7 +110,7 @@ export default function TeamPage() {
           <CTA
             title="Ready to improve your restaurant?"
             desc="Get a free snapshot of your review signals and see how we can help you turn guest feedback into growth."
-            primaryHref="/contact"
+            primaryHref="/contact?plan=free_snapshot"
             primaryLabel="Get Free Snapshot"
             secondaryHref="/services"
             secondaryLabel="View Services"

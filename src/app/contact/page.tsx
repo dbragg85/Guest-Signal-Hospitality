@@ -260,8 +260,8 @@ function ContactForm() {
                     </li>
                     <li>
                       <strong>Restaurant + scored snapshot</strong> — Created
-                      after the automated job runs (about once an hour in
-                      GitHub Actions) or when an operator runs{" "}
+                      after the automated job runs (scheduled in GitHub
+                      Actions, typically within a few minutes) or when an operator runs{" "}
                       <span className="whitespace-nowrap font-mono text-xs">
                         npm run pipeline:lead-intake
                       </span>{" "}
@@ -336,18 +336,13 @@ function ContactForm() {
                 <>
                   <fieldset className="grid gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
                     <legend className="px-1 text-sm font-semibold text-slate-800">
-                      {isSnapshot
-                        ? "Venue location (we use this to find your public listings)"
-                        : "Primary location"}
+                      Venue location (we use this to find your public listings)
                     </legend>
                     <label className="grid gap-2">
-                      <span className="text-sm font-medium">
-                        Street address
-                        {isSnapshot ? "" : " (recommended)"}
-                      </span>
+                      <span className="text-sm font-medium">Street address</span>
                       <input
                         name="streetAddress"
-                        required={isSnapshot}
+                        required={isServiceIntake}
                         autoComplete="street-address"
                         className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
                       />
@@ -387,12 +382,10 @@ function ContactForm() {
                     <span className="text-sm font-semibold">Concept type</span>
                     <select
                       name="conceptType"
-                      required={isSnapshot}
+                      required={isServiceIntake}
                       className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200 bg-white"
                     >
-                      <option value="">
-                        {isSnapshot ? "Select one" : "Optional"}
-                      </option>
+                      <option value="">Select one</option>
                       {CONCEPT_TYPES.map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -407,12 +400,10 @@ function ContactForm() {
                     </span>
                     <select
                       name="locationCount"
-                      required={isSnapshot}
+                      required={isServiceIntake}
                       className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200 bg-white"
                     >
-                      <option value="">
-                        {isSnapshot ? "Select one" : "Optional"}
-                      </option>
+                      <option value="">Select one</option>
                       {LOCATION_BUCKETS.map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -494,7 +485,7 @@ function ContactForm() {
                 <p className="text-xs leading-relaxed text-slate-500">
                   Intake rows save to Supabase immediately when the deployed site
                   includes Supabase environment variables. Restaurant and
-                  snapshot records follow the hourly automation (or a manual
+                  snapshot records follow the scheduled automation (or a manual
                   pipeline run).
                 </p>
               ) : null}
