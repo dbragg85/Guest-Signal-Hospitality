@@ -12,8 +12,8 @@ export default function ServicesPage() {
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
               Guest Signal Plans
             </h1>
-            <p className="mt-4 text-lg text-slate-600">
-              Choose the level of intelligence and support that fits your restaurant's growth goals.
+            <p className="mt-4 text-lg font-semibold tracking-tight text-slate-900 drop-shadow-sm md:text-xl">
+              Choose the level of intelligence and support that fits your restaurant&apos;s growth goals.
             </p>
             <p className="mt-6 text-left text-sm text-slate-600 max-w-3xl mx-auto leading-relaxed rounded-2xl border border-stone-200 bg-white/80 px-5 py-4">
               {servicesPricingBenchmark}
@@ -74,8 +74,8 @@ export default function ServicesPage() {
 
       {/* Pricing Plans Section */}
       <Section title="Ongoing Guest Experience Monitoring & Elevation" kicker="Core Plans">
-        <p className="text-center text-slate-600 mb-10 max-w-2xl mx-auto">
-          Choose the level of intelligence and support that fits your restaurant's growth goals.
+        <p className="mx-auto mb-10 max-w-2xl text-center text-lg font-semibold tracking-tight text-slate-900 drop-shadow-sm md:text-xl">
+          Choose the level of intelligence and support that fits your restaurant&apos;s growth goals.
         </p>
 
         <div className="grid gap-8 md:grid-cols-3">
