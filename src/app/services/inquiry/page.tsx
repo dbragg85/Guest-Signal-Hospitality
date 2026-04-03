@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { LeadIntakeForm } from "@/components/LeadIntakeForm";
 
-export default function ContactPage() {
+export default function ServicesInquiryPage() {
   return (
     <Suspense
       fallback={
@@ -11,15 +11,15 @@ export default function ContactPage() {
           <section className="border-b bg-slate-50">
             <div className="mx-auto max-w-3xl px-4 py-14">
               <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
-                Contact
+                Plan intake
               </h1>
-              <p className="mt-3 text-slate-600">Loading form…</p>
+              <p className="mt-3 text-slate-600">Loading…</p>
             </div>
           </section>
         </div>
       }
     >
-      <LeadIntakeForm mode="contact" />
+      <LeadIntakeForm mode="service" />
     </Suspense>
   );
 }

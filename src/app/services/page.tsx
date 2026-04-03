@@ -50,7 +50,7 @@ export default function ServicesPage() {
 
             <div className="text-center">
               <Link
-                href={`/contact?plan=${freeSnapshot.inquiryKey}`}
+                href={`/services/inquiry?plan=${freeSnapshot.inquiryKey}`}
                 className="btn-primary inline-block px-8 py-3"
                 data-track="services_cta_free_snapshot"
               >
@@ -107,7 +107,7 @@ export default function ServicesPage() {
               </ul>
 
               <Link
-                href={`/contact?plan=${plan.inquiryKey}`}
+                href={`/services/inquiry?plan=${plan.inquiryKey}`}
                 className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold ${
                   plan.popular
                     ? "btn-primary shadow-md"

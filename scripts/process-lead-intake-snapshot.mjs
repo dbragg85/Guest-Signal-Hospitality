@@ -526,7 +526,7 @@ async function main() {
     console.log("No pending lead_intake_submissions to process.");
     if (process.env.GITHUB_ACTIONS === "true") {
       console.log(
-        "::notice::No pending leads matched this job (free_snapshot + paid plans only). Plain /contact without ?plan= saves inquiry_plan=general — skipped here. FormSubmit email does not prove a Supabase row: confirm lead_intake_submissions in Studio, or submit via /contact?plan=free_snapshot (or a paid plan key).",
+        "::notice::No pending leads matched this job (free_snapshot + paid plans only). Plain /contact without ?plan= saves inquiry_plan=general — skipped here. FormSubmit email does not prove a Supabase row: confirm lead_intake_submissions in Studio, or submit via /services/inquiry?plan=free_snapshot (or /contact?plan= for legacy; paid plan keys same).",
       );
     }
     return;

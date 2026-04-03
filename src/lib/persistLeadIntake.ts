@@ -20,6 +20,7 @@ export type LeadIntakePayload = {
   snapshotFocus: string;
   goals: string;
   competitorsNote: string;
+  socialPresenceNote: string;
   message: string;
 };
 
@@ -67,6 +68,7 @@ export async function persistLeadIntakeToSupabase(
     snapshot_focus: cleanField(payload.snapshotFocus),
     goals: cleanField(payload.goals),
     competitors_note: cleanField(payload.competitorsNote),
+    social_presence_note: cleanField(payload.socialPresenceNote),
     message: cleanField(payload.message),
     submission_client_key: submissionClientKey,
   });

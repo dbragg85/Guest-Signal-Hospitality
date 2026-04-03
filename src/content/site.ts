@@ -25,7 +25,7 @@ export const nav = [
   { label: "Contact", href: "/contact" },
 ];
 
-/** Query param `plan=` on /contact for service-specific intake */
+/** Query param `plan=` on `/services/inquiry` (or legacy `/contact`) for service-specific intake */
 export type PlanInquiryKey =
   | "free_snapshot"
   | "signal_monitor"
@@ -45,7 +45,7 @@ export function isPlanInquiryKey(v: string | null): v is PlanInquiryKey {
 
 /** Short note on how plans compare to typical reputation tools / light consulting retainers */
 export const servicesPricingBenchmark =
-  "Our ongoing tiers are priced in the same band as popular review-monitoring software and lighter hospitality consulting retainers—roughly $50–150/mo for essential alerts and scorecards, and $200–400/mo when you add hands-on response support and executive reporting. Guest Signal is built specifically for restaurants: category-level sentiment, local peer context, and operator-ready action lists—not generic dashboards.";
+  "Independent research on reputation and review platforms (e.g. Podium, Birdeye, Grade.us) often shows essential monitoring in roughly the $80–200/mo range for a single location, with fuller response workflows, multi-location rollups, and executive reporting commonly landing around $200–500+/mo. Light hospitality consulting retainers are frequently $150–400/mo for recurring check-ins. Our tiers sit in that same landscape: Signal Monitor for essential restaurant-specific scorecards and alerts, Growth when you want peer context and faster priorities, and Elevate when you want hands-on response support plus social listening and coordination—not a generic SMB dashboard.";
 
 export const pricingPlans = [
   {
@@ -92,9 +92,9 @@ export const pricingPlans = [
     description: "Hands-on reputation elevation with weekly guidance, executive support, and social visibility.",
     features: [
       "Everything in Growth, plus:",
-      "Social media tracking: mentions, tags, and review cross-signals (e.g. Instagram, Facebook) tied to guest themes",
-      "Monthly social + review narrative summary with recommended responses and escalation flags",
-      "Light ongoing coordination for social and review response pacing (aligned with your brand voice)",
+      "Social media tracking and active management support: mentions, tags, DMs, and review cross-signals (Instagram, Facebook, TikTok where applicable) mapped to guest-experience themes",
+      "Monthly social + review narrative with recommended posts/replies, escalation flags, and light content cadence guidance",
+      "Ongoing coordination for social and review response pacing (aligned with your brand voice)",
       "Professional review response drafting (up to 20/month)",
       "Weekly reputation monitoring and coaching notes",
       "Guest recovery response playbook with SLA targets",
