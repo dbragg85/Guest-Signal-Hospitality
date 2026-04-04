@@ -239,19 +239,13 @@ export const audiences: Record<
   },
 };
 
-/** Leadership bios for /team (replace names/links when you publish real profiles). */
+/** Leadership bios for /team */
 export const team = [
   {
-    name: "Your Name",
+    name: "David Bragg",
     title: "Founder & Lead Analyst",
-    bio: "Hospitality operator who bridges the line and the spreadsheet—turning review signals into training priorities, recovery plans, and owner-ready scorecards. Focused on independents and small groups who want clarity without corporate overhead.",
-    linkedin: "#",
-  },
-  {
-    name: "Advisor Name",
-    title: "Advisor, Brand & Operations",
-    bio: "Strategist for positioning, service design, and execution planning. Helps operators translate guest feedback into SOP tweaks, coaching cadences, and leadership talking points your team can actually run.",
-    linkedin: "#",
+    bio: "David bridges the line and the spreadsheet—turning review signals into training priorities, recovery plans, and owner-ready scorecards. He pairs that with positioning, service design, and execution planning so guest feedback becomes SOP tweaks, coaching cadences, and leadership talking points your team can actually run. Focused on independents and small groups who want clarity without corporate overhead.",
+    linkedin: "https://www.linkedin.com/in/david-bragg-26073326",
   },
 ];
 

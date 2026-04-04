@@ -49,7 +49,7 @@ export default function TeamPage() {
       </Section>
 
       <Section title="Leadership" kicker="People">
-        <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
+        <div className="mx-auto grid max-w-2xl gap-8">
           {team.map((member) => (
             <Card key={member.name} className="text-center">
               <h3 className="text-xl font-semibold tracking-tight text-slate-900">{member.name}</h3>
