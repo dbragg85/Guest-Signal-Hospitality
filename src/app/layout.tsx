@@ -4,6 +4,8 @@ import "./globals.css";
 import { Shell } from "@/components/Shell";
 import { ReactNode } from "react";
 import { TrackingClickEvents } from "@/components/TrackingClickEvents";
+import { brand } from "@/content/site";
+import { getSiteOrigin } from "@/lib/site-url";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -13,10 +15,35 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteOrigin()),
   title:
     "Guest Signal Hospitality | Operational intelligence for restaurant owners.",
   description:
     "We turn Google Reviews into clear, actionable insights—SWOT, reputation signals, competitive positioning, and a prioritized action plan that improves guest experience and profitability.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: brand.name,
+    title:
+      "Guest Signal Hospitality | Operational intelligence for restaurant owners.",
+    description:
+      "We turn Google Reviews into clear, actionable insights—SWOT, reputation signals, competitive positioning, and a prioritized action plan that improves guest experience and profitability.",
+    url: "/",
+    images: [
+      {
+        url: "/guest-signal-header-icon.svg",
+        alt: `${brand.name} mark`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title:
+      "Guest Signal Hospitality | Operational intelligence for restaurant owners.",
+    description:
+      "We turn Google Reviews into clear, actionable insights—SWOT, reputation signals, competitive positioning, and a prioritized action plan that improves guest experience and profitability.",
+    images: ["/guest-signal-header-icon.svg"],
+  },
 };
 
 export default function RootLayout({
