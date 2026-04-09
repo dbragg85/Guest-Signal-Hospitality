@@ -2,6 +2,7 @@ import Link from "next/link";
 import { brand, nav } from "@/content/site";
 import { ReactNode } from "react";
 import { BrandLockup, BrandLockupFooter } from "@/components/BrandLockup";
+import { MobileNavMenu } from "@/components/MobileNavMenu";
 
 export function Shell({ children }: { children: ReactNode }) {
   return (
@@ -28,12 +29,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
-            <Link
-              href="/portal"
-              className="text-sm font-semibold text-amber-800 transition-colors hover:text-amber-950 md:hidden"
-            >
-              Portal
-            </Link>
+            <MobileNavMenu items={nav} />
             <Link
               href="/services/inquiry?plan=free_snapshot"
               className="btn-primary whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm"
