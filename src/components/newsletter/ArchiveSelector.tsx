@@ -3,14 +3,15 @@
 import { useMemo, useState } from 'react'
 
 const ISSUE_TARGETS: Record<string, string> = {
+  'issue-03': '#issue-03-files',
   'issue-02': '#issue-02-files',
   'issue-01': '#issue-01-files',
 }
 
 export default function ArchiveSelector() {
-  const [issue, setIssue] = useState('issue-02')
+  const [issue, setIssue] = useState('issue-03')
 
-  const targetHref = useMemo(() => ISSUE_TARGETS[issue] ?? ISSUE_TARGETS['issue-02'], [issue])
+  const targetHref = useMemo(() => ISSUE_TARGETS[issue] ?? ISSUE_TARGETS['issue-03'], [issue])
 
   return (
     <div className="flex w-full max-w-md gap-2">
@@ -24,6 +25,7 @@ export default function ArchiveSelector() {
         onChange={(event) => setIssue(event.target.value)}
         className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-amber-500 focus:outline-none"
       >
+        <option value="issue-03">Issue 03 (April 8, 2026)</option>
         <option value="issue-02">Issue 02 (April 1, 2026)</option>
         <option value="issue-01">Issue 01 (March 25, 2026)</option>
       </select>

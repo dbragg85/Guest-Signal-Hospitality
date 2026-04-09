@@ -3,6 +3,168 @@
 import { useMemo, useState } from 'react'
 
 const ISSUE_CONTENT = {
+  'issue-04': {
+    label: 'Issue 04 (April 9, 2026)',
+    title: 'Guest Signal Report',
+    metadataLine: 'Published April 9, 2026 | Issue 04 | 10-15 minute read',
+    description:
+      'Issue 04 focuses on the April-May conversion window: independent restaurants have enough demand moments on the calendar, but compounding revenue now depends on capture discipline and weekly retention control.',
+    highlights: [
+      'National sales outlook with continued value sensitivity',
+      'Great Lakes recognition pressure with multiple Cincinnati semifinalists',
+      'Greater Cincinnati event stack: Restaurant Week into Taste of Cincinnati',
+    ],
+    snapshot: [
+      { label: 'Demand Pulse', value: 'Visible', note: 'Calendar-driven traffic windows are active' },
+      { label: 'Core Risk', value: 'Margin Leak', note: 'Promo traffic without repeat systems erodes profit' },
+      { label: 'Owner Priority', value: 'Retention Ops', note: 'Convert first visit into second visit quickly' },
+    ],
+    archiveSummary:
+      'April operations issue centered on converting event traffic into measurable repeat revenue and cleaner contribution margin.',
+    problemSummary:
+      'Independent operators are not short on exposure right now. They are short on systems that turn that exposure into list growth, second visits, and stable weekly economics.',
+    calloutTitle: 'The problem in one line',
+    calloutText:
+      'Attention is up. Retention is optional. Operators with a fixed follow-up rhythm will win this quarter.',
+    signals: [
+      {
+        title: 'National signal',
+        text: 'The National Restaurant Association projects 2026 sales growth, but consumer behavior remains value-sensitive and operators still face persistent cost pressure.',
+      },
+      {
+        title: 'Regional signal',
+        text: 'James Beard 2026 semifinalist momentum in the Great Lakes category includes multiple Cincinnati chefs, raising competitive standards for positioning and execution.',
+      },
+      {
+        title: 'Greater Cincinnati signal',
+        text: 'The market is entering a stacked traffic run from Greater Cincinnati Restaurant Week to Taste of Cincinnati, creating a concentrated acquisition window.',
+      },
+    ],
+    implications: [
+      {
+        title: '1) Treat April-May as one conversion campaign',
+        text: 'Every event touchpoint should feed owned list capture and one measurable return path.',
+      },
+      {
+        title: '2) Protect contribution margin weekly',
+        text: 'Audit promo offers and labor scheduling against second-visit behavior, not just top-line traffic.',
+      },
+      {
+        title: '3) Make value narrative operational',
+        text: 'Run one clear value message across host stand, menu framing, and follow-up messaging every week.',
+      },
+    ],
+    aha: 'Demand windows are already here. The advantage is no longer visibility, it is retention execution.',
+    actionSequence: [
+      'Days 1-14: Make guest capture mandatory at table/QR/POS and launch one 48-hour return message.',
+      'Days 15-45: Remove low-contribution promotions and keep only offers that drive second visits.',
+      'Days 46-90: Review one retention scorecard weekly: list growth, second-visit rate, and 30-day repeat revenue.',
+    ],
+    files: {
+      doc: '/newsletters/issue-04/GUESIGNAL_Newsletter_2026-04-09_Issue-04.doc',
+      md: '/newsletters/issue-04/GUESIGNAL_Newsletter_2026-04-09_Issue-04.md',
+      txt: '/newsletters/issue-04/GUESIGNAL_Newsletter_2026-04-09_Issue-04.txt',
+    },
+    sources: [
+      {
+        label: 'National Restaurant Association, 2026 State of the Restaurant Industry',
+        href: 'https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/',
+      },
+      {
+        label: 'National Restaurant Association, Consumer Outlook',
+        href: 'https://www.restaurant.org/research-and-media/research/restaurant-economic-insights/economic-indicators/consumer-outlook/',
+      },
+      {
+        label: 'James Beard Foundation, 2026 Award Semifinalists',
+        href: 'https://www.jamesbeard.org/stories/james-beard-award-semifinalists-2026',
+      },
+      {
+        label: 'Greater Cincinnati Restaurant Week',
+        href: 'https://www.greatercincinnatirestaurantweek.com/',
+      },
+      { label: 'Taste of Cincinnati', href: 'https://tasteofcincinnati.com/' },
+    ],
+  },
+  'issue-03': {
+    label: 'Issue 03 (April 8, 2026)',
+    title: 'Guest Signal Report',
+    metadataLine: 'Published April 8, 2026 | Issue 03 | 10-15 minute read',
+    description:
+      'Issue 03 focuses on turning spring demand spikes into repeat traffic through tighter capture, faster follow-up, and fixed weekly owner scorecards.',
+    highlights: [
+      'National demand with ongoing value sensitivity',
+      'Midwest visibility pressure from recognition cycles',
+      'Greater Cincinnati spring event conversion window',
+    ],
+    snapshot: [
+      { label: 'Demand Pulse', value: 'Seasonal Lift', note: 'Spring events are increasing attention' },
+      { label: 'Core Risk', value: 'Drop-Off', note: 'Event traffic not converting into owned audience' },
+      { label: 'Owner Priority', value: 'Follow-Up', note: 'Run 48-hour return sequence + Monday scorecard' },
+    ],
+    archiveSummary:
+      'Spring operating issue centered on converting event-driven traffic into measurable repeat behavior.',
+    problemSummary:
+      'Spring traffic windows are opening, but most independents still have no weekly mechanism that turns attention into owned audience and repeat covers.',
+    calloutTitle: 'The problem in one line',
+    calloutText:
+      'Strong food. Weak system. Events create exposure, but retention only happens when follow-up is operationalized.',
+    signals: [
+      {
+        title: 'National signal',
+        text: 'NRA research updates continue to show active demand with persistent value-sensitive guest behavior and cost pressure.',
+      },
+      {
+        title: 'Regional signal',
+        text: 'Midwest and Great Lakes recognition cycles are raising visibility standards and rewarding clear concept positioning.',
+      },
+      {
+        title: 'Greater Cincinnati signal',
+        text: 'Restaurant Week and spring festivals are creating dense traffic windows, but retention still depends on list capture and follow-up.',
+      },
+    ],
+    implications: [
+      {
+        title: '1) Capture every event-driven visit',
+        text: 'Collect first-party contacts at table, QR, and checkout every service period.',
+      },
+      {
+        title: '2) Install a 48-hour return trigger',
+        text: 'Every first visit should receive one offer-led follow-up inside 48 hours.',
+      },
+      {
+        title: '3) Run one fixed weekly scorecard',
+        text: 'Track list growth, repeat indicators, and top review friction every Monday.',
+      },
+    ],
+    aha: 'Events create exposure, not retention. Your follow-up system decides whether demand compounds or disappears.',
+    actionSequence: [
+      'Days 1-14: Standardize one in-store capture flow and one automated post-visit message.',
+      'Days 15-45: Rewrite menu/service messaging around your top repeat-visit trigger and train staff to repeat it.',
+      'Days 46-90: Publish weekly owner scorecards and assign one accountable owner for each conversion gap.',
+    ],
+    files: {
+      doc: '/newsletters/issue-03/GUESIGNAL_Newsletter_2026-04-08_Issue-03.doc',
+      md: '/newsletters/issue-03/GUESIGNAL_Newsletter_2026-04-08_Issue-03.md',
+      txt: '/newsletters/issue-03/GUESIGNAL_Newsletter_2026-04-08_Issue-03.txt',
+    },
+    sources: [
+      {
+        label: "National Restaurant Association, Economist's Notebook",
+        href: 'https://restaurant.org/research-and-media/research/economists-notebook/',
+      },
+      {
+        label: 'National Restaurant Association, State of the Restaurant Industry',
+        href: 'https://restaurant.org/research-and-media/research/state-of-the-restaurant-industry/',
+      },
+      { label: 'James Beard Foundation Awards', href: 'https://www.jamesbeard.org/awards' },
+      {
+        label: 'Greater Cincinnati Restaurant Week',
+        href: 'https://greatercincinnatirestaurantweek.com/',
+      },
+      { label: 'Cincinnati CityBeat Food & Drink', href: 'https://www.citybeat.com/food-drink' },
+      { label: 'Taste of Cincinnati', href: 'https://tasteofcincinnati.com/' },
+    ],
+  },
   'issue-01': {
     label: 'Issue 01 (March 25, 2026)',
     title: 'Guest Signal Report',
@@ -161,14 +323,16 @@ const ISSUE_CONTENT = {
 }
 
 const ISSUE_OPTIONS = [
-  { value: 'issue-01', label: ISSUE_CONTENT['issue-01'].label },
+  { value: 'issue-04', label: ISSUE_CONTENT['issue-04'].label },
+  { value: 'issue-03', label: ISSUE_CONTENT['issue-03'].label },
   { value: 'issue-02', label: ISSUE_CONTENT['issue-02'].label },
+  { value: 'issue-01', label: ISSUE_CONTENT['issue-01'].label },
 ]
 
 export default function NewsletterPageContent() {
-  const [issue, setIssue] = useState('issue-01')
-  const current = useMemo(() => ISSUE_CONTENT[issue] ?? ISSUE_CONTENT['issue-01'], [issue])
-  const secondaryIssue = issue === 'issue-01' ? 'issue-02' : 'issue-01'
+  const [issue, setIssue] = useState('issue-04')
+  const current = useMemo(() => ISSUE_CONTENT[issue] ?? ISSUE_CONTENT['issue-04'], [issue])
+  const secondaryIssue = ISSUE_OPTIONS.map((option) => option.value).find((value) => value !== issue) ?? 'issue-04'
   const secondary = ISSUE_CONTENT[secondaryIssue]
 
   return (
