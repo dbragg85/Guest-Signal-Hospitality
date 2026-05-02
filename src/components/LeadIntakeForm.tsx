@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   brand,
   freeSnapshot,
@@ -63,11 +63,29 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
   const [serviceIntakeSavedOnline, setServiceIntakeSavedOnline] = useState<
     boolean | null
   >(null);
+  /** Next `useSearchParams()` can miss `plan` on static export (e.g. /inquiry?plan= without trailing slash). */
+  const [planFromLocation, setPlanFromLocation] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    if (mode !== "service") {
+      setPlanFromLocation(null);
+      return;
+    }
+    const fromNext = searchParams?.get("plan");
+    if (isPlanInquiryKey(fromNext)) {
+      setPlanFromLocation(null);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    const fromUrl = new URLSearchParams(window.location.search).get("plan");
+    if (isPlanInquiryKey(fromUrl)) setPlanFromLocation(fromUrl);
+    else setPlanFromLocation(null);
+  }, [mode, searchParams]);
 
   const planKey = useMemo(() => {
-    const raw = searchParams?.get("plan");
+    const raw = searchParams?.get("plan") ?? planFromLocation;
     return isPlanInquiryKey(raw) ? raw : null;
-  }, [searchParams]);
+  }, [searchParams, planFromLocation]);
 
   const isSnapshot = planKey === "free_snapshot";
   const isPaidPlan =
