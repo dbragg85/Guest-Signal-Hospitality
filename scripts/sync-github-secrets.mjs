@@ -24,6 +24,7 @@ const SECRET_NAMES = [
   "SUPABASE_SERVICE_ROLE_KEY",
   "APIFY_TOKEN",
   "LEAD_INTAKE_SUCCESS_WEBHOOK_URL",
+  "RESEND_API_KEY",
 ];
 
 function loadLines() {

@@ -78,7 +78,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
     planKey === "signal_growth" || planKey === "signal_elevate";
   const showSocialPresenceField = planKey === "signal_elevate";
   const isServiceIntake = planKey !== null;
-  const serviceRouteBase = "/services/inquiry";
+  const serviceRouteBase = "/services/inquiry/";
 
   useEffect(() => {
     if (searchParams?.get("sent") === "1") {
@@ -348,7 +348,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
         <div className="mx-auto max-w-3xl px-4 py-14">
           {mode === "service" ? (
             <p className="text-sm font-medium text-slate-500">
-              <Link href="/services/inquiry" className="text-slate-700 hover:underline">
+              <Link href="/services/inquiry/" className="text-slate-700 hover:underline">
                 ← Choose a different plan
               </Link>
               <span className="mx-2 text-slate-300">·</span>

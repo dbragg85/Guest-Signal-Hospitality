@@ -61,10 +61,45 @@
 
 1. **Finish the database setup above** (migrations through `014` in this Supabase project).
 2. **Point the public website at this same project.** In hosting (e.g. Vercel), set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from **Project Settings → API** for this project.
-3. **Submit a test using a plan link** — not the short contact page. Example: `https://your-domain.com/services/inquiry?plan=free_snapshot` (or a paid plan key from the Plans page). Plain `/contact` saves `inquiry_plan=general` and the snapshot **GitHub Action will skip it**.
+3. **Submit a test using a plan link** — not the short contact page. Example: `https://your-domain.com/services/inquiry/?plan=free_snapshot` (or a paid plan key from the Plans page). Plain `/contact` saves `inquiry_plan=general` and the snapshot **GitHub Action will skip it**.
 4. **Check Supabase.** Open **Table Editor → `lead_intake_submissions`**. You should see a new row: `inquiry_plan` = `free_snapshot` (or your plan key), `processing_status` = `pending`. An empty table or `general` means the form is not hitting this project or the wrong URL was used.
-5. **Point GitHub Actions at the same project.** Repo **Settings → Secrets and variables → Actions**: set **`SUPABASE_SERVICE_ROLE_KEY`** (the **service_role** JWT — never put this in the website). Set **`SUPABASE_URL`** *or* reuse the repository **Variable** `NEXT_PUBLIC_SUPABASE_URL` — it must be the **same** Supabase URL as in step 2.
+5. **Point GitHub Actions at the same project.** Repo **Settings → Secrets and variables → Actions**: set **`SUPABASE_SERVICE_ROLE_KEY`** (the **service_role** JWT — never put this in the website). Set **`SUPABASE_URL`** *or* reuse the repository **Variable** `NEXT_PUBLIC_SUPABASE_URL` — it must be the **same** Supabase URL as in step 2. Optional: **`RESEND_API_KEY`** (Secret) and **`RESEND_FROM`** (Variable, e.g. `Guest Signal <hello@yourdomain.com>`) so each converted lead with portal access gets a **Resend** email with sign-in and dashboard links (see `DEPLOYMENT.md`).
 6. **Run the workflow.** **Actions → Process lead intake snapshots → Run workflow.** If the log says nothing to process, scroll to **Diagnostics** (counts + last few rows) and fix whatever it shows (wrong plan, already converted, or wrong GitHub project).
+
+#### Run the snapshot workflow right after a test (easiest — no Supabase webhook)
+
+The GitHub job also runs on a **10-minute schedule**. To start it **immediately** from your computer:
+
+1. In GitHub: **[Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)** → create a token that can call **`repository_dispatch`** on this repo  
+   - **Classic:** enable **`repo`**  
+   - **Fine-grained:** grant **Contents: Read and write** on **`dbragg85/Guest-Signal-Hospitality`**
+2. In **`.env.local`** (never commit), add one line:
+
+   `GITHUB_DISPATCH_TOKEN=`_paste the token here_
+
+   (Optional: `GITHUB_DISPATCH_REPOSITORY=your-username/your-fork` if you are not using the default repo.)
+
+3. In the repo folder on your machine:
+
+   ```bash
+   npm run dispatch:lead-intake
+   ```
+
+   That tells GitHub to run **Process lead intake snapshots** once; it will pick up **all** pending service-tier rows. To target only the **newest** pending row (same as typing its UUID in “Run workflow”):
+
+   ```bash
+   npm run dispatch:lead-intake -- --latest
+   ```
+
+   `--latest` needs **`SUPABASE_URL`** and **`SUPABASE_SERVICE_ROLE_KEY`** already in `.env.local` (same values you use for the pipeline).
+
+4. Open **GitHub → Actions → Process lead intake snapshots** and confirm a new run appears.
+
+If you do not set `GITHUB_DISPATCH_TOKEN`, the script tries **`gh auth token`** after **`gh auth login`** — that only works if your GitHub CLI token has access to dispatch on this repository.
+
+#### Fully automatic (advanced — insert → run within seconds)
+
+Use the Edge Function **`github-dispatch-lead-intake`** plus a **Database Webhook** on `INSERT` into `lead_intake_submissions`, as documented in the repo under `supabase/functions/github-dispatch-lead-intake/index.ts` and **`DEPLOYMENT.md`**. That path keeps the PAT in **Supabase Edge secrets**, not in your laptop `.env.local`.
 
 ---
 

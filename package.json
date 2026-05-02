@@ -10,10 +10,12 @@
     "export": "next build",
     "setup:env": "node scripts/setup-env.mjs",
     "check:env": "node scripts/check-env.mjs",
+    "smoke:lead-intake": "node scripts/smoke-lead-intake-insert.mjs",
     "sync:github-vars": "node scripts/sync-github-actions-vars.mjs",
     "sync:github-secrets": "node scripts/sync-github-secrets.mjs",
     "pipeline:yelp:monthly": "node scripts/run-monthly-yelp-pipeline.mjs",
     "pipeline:lead-intake": "node scripts/process-lead-intake-snapshot.mjs",
+    "dispatch:lead-intake": "node scripts/dispatch-github-lead-intake.mjs",
     "pipeline:google:gss": "node scripts/run-google-gss-monthly.mjs",
     "audit:scorecard-reviews": "node scripts/audit-scorecard-reviews.mjs",
     "build:profile-seed": "node scripts/build-google-profile-seed.mjs"

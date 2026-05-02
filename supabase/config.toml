@@ -1,0 +1,7 @@
+# Supabase CLI — link a remote project with `supabase link`, then deploy Edge Functions.
+# https://supabase.com/docs/guides/cli/config
+project_id = "guest-signal-hospitality"
+
+[functions.github-dispatch-lead-intake]
+# Database Webhook uses a shared header secret instead of a JWT.
+verify_jwt = false

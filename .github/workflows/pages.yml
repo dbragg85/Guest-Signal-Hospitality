@@ -29,10 +29,11 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Check Supabase vars for browser lead intake
+      - name: Require Supabase vars for browser lead intake
         run: |
           if [ -z "${NEXT_PUBLIC_SUPABASE_URL}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_ANON_KEY}" ]; then
-            echo "::warning::NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is unset — the deployed site will not insert into lead_intake_submissions (FormSubmit email still works). Set both as GitHub repository Variables."
+            echo "::error::Set repository **Variables** (not only Secrets) NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY — pages.yml passes vars.* into the build. Without them, the site sends no apikey and Supabase returns \"No API key found in request\"."
+            exit 1
           fi
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}

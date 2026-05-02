@@ -25,7 +25,7 @@ export const nav = [
   { label: "Contact", href: "/contact" },
 ];
 
-/** Query param `plan=` on `/services/inquiry` (or legacy `/contact`) for service-specific intake */
+/** Query param `plan=` on `/services/inquiry/` (or legacy `/contact`) for service-specific intake */
 export type PlanInquiryKey =
   | "free_snapshot"
   | "signal_monitor"

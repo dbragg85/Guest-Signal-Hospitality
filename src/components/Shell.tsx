@@ -31,7 +31,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <MobileNavMenu items={nav} />
             <Link
-              href="/services/inquiry?plan=free_snapshot"
+              href="/services/inquiry/?plan=free_snapshot"
               className="btn-primary whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm"
             >
               <span className="hidden sm:inline">Get Your Free Snapshot</span>

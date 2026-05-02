@@ -20,7 +20,7 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/services/inquiry?plan=free_snapshot"
+                href="/services/inquiry/?plan=free_snapshot"
                 className="btn-primary"
                 data-track="cta_hero_snapshot"
               >
@@ -72,7 +72,7 @@ export default function HomePage() {
 
             <div className="text-center">
               <Link
-                href="/services/inquiry?plan=free_snapshot"
+                href="/services/inquiry/?plan=free_snapshot"
                 className="btn-primary inline-block px-8 py-3"
                 data-track="cta_snapshot_primary"
               >
@@ -209,7 +209,7 @@ export default function HomePage() {
               </ul>
 
               <Link
-                href={`/services/inquiry?plan=${plan.inquiryKey}`}
+                href={`/services/inquiry/?plan=${plan.inquiryKey}`}
                 className={`block w-full rounded-xl px-5 py-3 text-center text-sm font-semibold transition-all ${
                   plan.popular
                     ? "btn-primary shadow-md"

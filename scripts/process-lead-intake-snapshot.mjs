@@ -21,6 +21,8 @@
  *   FORCE_REPROCESS=1 — re-run even if restaurant_id is set
  *   LEAD_INTAKE_INVITE_PORTAL_USERS=1 — invite lead email via Supabase Auth + upsert memberships (viewer)
  *   LEAD_INTAKE_INVITE_REDIRECT_URL — defaults to https://guestsignalhospitality.com/portal
+ *   RESEND_API_KEY + RESEND_FROM — after conversion + portal membership, send the submitter a welcome email
+ *     (portal URLs + optional one-click magic link). See https://resend.com — verify sending domain in Resend.
  */
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
@@ -93,7 +95,7 @@ async function logNoMatchingLeadsHelp(supabase, ctx) {
     console.log("LEAD_INTAKE_ID row snapshot:", JSON.stringify(one, null, 2));
     if (!plans.includes(one.inquiry_plan)) {
       console.log(
-        `::notice::That row inquiry_plan="${one.inquiry_plan}" — this job only processes: ${plans.join(", ")}. Submit via /services/inquiry?plan=free_snapshot (or paid plan key).`,
+        `::notice::That row inquiry_plan="${one.inquiry_plan}" — this job only processes: ${plans.join(", ")}. Submit via /services/inquiry/?plan=free_snapshot (or paid plan key).`,
       );
     }
     if (one.processing_status !== "pending") {
@@ -174,7 +176,7 @@ async function logNoMatchingLeadsHelp(supabase, ctx) {
   }
 
   let notice =
-    "No pending service-tier leads to process. Check diagnostics above. Common fixes: submit from /services/inquiry?plan=free_snapshot (not plain /contact); confirm GitHub SUPABASE_URL matches the project where the form posts; if the row is already converted, it will not run again.";
+    "No pending service-tier leads to process. Check diagnostics above. Common fixes: submit from /services/inquiry/?plan=free_snapshot (not plain /contact); confirm GitHub SUPABASE_URL matches the project where the form posts; if the row is already converted, it will not run again.";
   if (pendingGeneral > 0 && (pendingService === 0 || pendingService == null)) {
     notice =
       `You have ${pendingGeneral} pending row(s) with inquiry_plan=general (plain contact form). This job skips those — use a plan URL so inquiry_plan is free_snapshot or a paid key.`;
@@ -389,6 +391,121 @@ async function upsertMembershipViewer(supabase, userId, restaurantId) {
     { onConflict: "user_id,restaurant_id" },
   );
   if (error) throw error;
+}
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * One-time sign-in link for the lead’s email (redirects to dashboard after auth).
+ */
+async function tryGenerateMagicLink(supabase, email, redirectTo) {
+  const e = String(email || "").trim().toLowerCase();
+  if (!e || !e.includes("@")) return null;
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: "magiclink",
+    email: e,
+    options: { redirectTo: String(redirectTo || "").trim() || undefined },
+  });
+  if (error) {
+    console.warn("Auth: generateLink (magiclink) failed:", error.message);
+    return null;
+  }
+  const link = data?.properties?.action_link;
+  return typeof link === "string" && link.startsWith("http") ? link : null;
+}
+
+/**
+ * Transactional welcome after portal viewer membership exists. Uses Resend when configured.
+ * Failures are logged only — lead is already marked converted.
+ */
+async function sendPortalWelcomeEmailResend({
+  toEmail,
+  displayName,
+  restaurantName,
+  restaurantSlug,
+  portalBase,
+  dashboardUrl,
+  magicLink,
+}) {
+  const apiKey = getEnv("RESEND_API_KEY", { fallback: "" }).trim();
+  const from = getEnv("RESEND_FROM", { fallback: "" }).trim();
+  if (!apiKey || !from) {
+    console.log(
+      "Portal welcome email skipped (set RESEND_API_KEY + RESEND_FROM to email the submitter via Resend).",
+    );
+    return;
+  }
+
+  const to = String(toEmail || "").trim().toLowerCase();
+  if (!to.includes("@")) return;
+
+  const subject = "Your Guest Signal client portal is ready";
+  const greeting = displayName?.trim() ? `Hi ${displayName.trim()},` : "Hi,";
+  const textLines = [
+    greeting,
+    "",
+    "Your snapshot is ready in the Guest Signal client portal.",
+    "",
+    `Sign in: ${portalBase}/`,
+    `Your dashboard for ${String(restaurantName || "your location").trim()}: ${dashboardUrl}`,
+    "",
+    `Use this same email address to sign in: ${to}`,
+    magicLink
+      ? `One-time sign-in link (expires): ${magicLink}`
+      : "If you need a sign-in link, open the portal and choose “Magic link” on the sign-in page.",
+    "",
+    "If you also received an account invite from Supabase, you can set your password from that message first.",
+    "",
+    "— Guest Signal Hospitality",
+  ];
+  const text = textLines.join("\n");
+
+  const magicBlock = magicLink
+    ? `<p><a href="${escapeHtml(magicLink)}">One-click sign in</a> <span style="color:#64748b">(expires; use Magic link on the portal if it stops working.)</span></p>`
+    : `<p>Use <strong>Magic link</strong> on the sign-in page with the email above if you need a fresh link.</p>`;
+
+  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.5;color:#0f172a;max-width:36rem">
+<p>${escapeHtml(greeting)}</p>
+<p>Your snapshot is ready in the <strong>Guest Signal</strong> client portal.</p>
+<p><a href="${escapeHtml(`${portalBase}/`)}">Open portal sign-in</a></p>
+<p><strong>Your dashboard</strong> (${escapeHtml(String(restaurantName || "").trim() || restaurantSlug)}):<br/>
+<a href="${escapeHtml(dashboardUrl)}">${escapeHtml(dashboardUrl)}</a></p>
+<p>Sign in with: <strong>${escapeHtml(to)}</strong></p>
+${magicBlock}
+<p style="font-size:0.875rem;color:#64748b">If you received a separate Supabase invite, you can set your password from that email first.</p>
+<p>— Guest Signal Hospitality</p>
+</body></html>`;
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject,
+        text,
+        html,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.warn("Resend portal welcome email failed:", res.status, body);
+      return;
+    }
+    console.log(`Email: portal welcome sent to ${to}`);
+  } catch (err) {
+    console.warn("Resend portal welcome email error:", err?.message || err);
+  }
 }
 
 async function persistSnapshotFromReviews({
@@ -830,12 +947,14 @@ async function main() {
         console.warn("Could not set restaurants.intake_inquiry_plan (migration 012 applied?):", planErr.message);
       }
 
+      let portalMembershipOk = false;
       if (invitePortalUsers) {
         try {
           const uid = await ensurePortalUser(supabase, lead.email, lead.name);
           if (uid) {
             await upsertMembershipViewer(supabase, uid, restaurant.id);
             console.log(`Portal: viewer membership for ${String(lead.email).trim()} → ${restaurant.slug}`);
+            portalMembershipOk = true;
           }
         } catch (portalErr) {
           console.warn("Portal invite/membership failed:", portalErr?.message || portalErr);
@@ -871,6 +990,23 @@ async function main() {
         } catch (hookErr) {
           console.warn("LEAD_INTAKE_SUCCESS_WEBHOOK_URL post failed:", hookErr?.message || hookErr);
         }
+      }
+
+      if (portalMembershipOk) {
+        const portalBase = getEnv("LEAD_INTAKE_INVITE_REDIRECT_URL", {
+          fallback: "https://guestsignalhospitality.com/portal",
+        }).replace(/\/+$/, "");
+        const dashboardUrl = `${portalBase}/dashboard/${restaurant.slug}/`;
+        const magicLink = await tryGenerateMagicLink(supabase, lead.email, dashboardUrl);
+        await sendPortalWelcomeEmailResend({
+          toEmail: lead.email,
+          displayName: lead.name,
+          restaurantName: restaurant.name,
+          restaurantSlug: restaurant.slug,
+          portalBase,
+          dashboardUrl,
+          magicLink,
+        });
       }
     } else if (!dryRun && !persisted) {
       await supabase
