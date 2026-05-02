@@ -116,5 +116,36 @@ async function upsertVariable(name, value) {
 
 await upsertVariable("NEXT_PUBLIC_SUPABASE_URL", url);
 await upsertVariable("NEXT_PUBLIC_SUPABASE_ANON_KEY", key);
+
+/** Optional repository Variables (non-secret); only synced when set in .env.local and not placeholders. */
+const OPTIONAL_VARS = [
+  "APIFY_GOOGLE_ACTOR_ID",
+  "LEAD_INTAKE_MAX_REVIEWS",
+  "SCORING_TIMEZONE",
+  "LEAD_INTAKE_ENABLE_YELP",
+  "APIFY_GOOGLE_START_URL",
+  "LEAD_INTAKE_APIFY_YELP_URL",
+  "LEAD_INTAKE_INVITE_PORTAL_USERS",
+  "LEAD_INTAKE_INVITE_REDIRECT_URL",
+  "FORCE_REPROCESS",
+];
+
+function isPlaceholderVar(v) {
+  const s = String(v).trim();
+  if (!s) return true;
+  if (s.includes("your-")) return true;
+  if (s.includes("<project-ref>")) return true;
+  if (s.includes("<")) return true;
+  return false;
+}
+
+for (const name of OPTIONAL_VARS) {
+  const v = get(name);
+  if (!isPlaceholderVar(v)) {
+    await upsertVariable(name, v);
+  }
+}
+
 console.log(`\nDone. Repository: ${owner}/${repo}`);
 console.log("Push to main (or re-run Actions) so the next build picks up these variables.");
+console.log("For SUPABASE_SERVICE_ROLE_KEY and APIFY_TOKEN, run: npm run sync:github-secrets (requires gh CLI).");
