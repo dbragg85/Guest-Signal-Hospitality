@@ -5,10 +5,11 @@
  * 1. Picks pending service-tier rows from public.lead_intake_submissions (free snapshot + three paid
  *    plans). Generic "general" contact leads are skipped unless LEAD_INTAKE_FREE_SNAPSHOT_ONLY=1
  *    (legacy: only free_snapshot).
- * 2. Optionally pulls live Yelp reviews via Apify when APIFY_TOKEN + APIFY_YELP_ACTOR_ID +
- *    LEAD_INTAKE_APIFY_YELP_URL are set and the run succeeds with in-period reviews.
- * 3. On Apify failure, empty dataset, zero parsed reviews, or missing credentials:
- *    uses 15 synthetic reviews (guest-signal-rubric.mjs) scored with the same rubric.
+ * 2. Pulls Google Maps reviews via Apify when APIFY_TOKEN + APIFY_GOOGLE_ACTOR_ID are set (see
+ *    scripts/lib/apify-google-reviews.mjs). Uses prior completed calendar month in SCORING_TIMEZONE
+ *    (default America/New_York) and caps total reviews at LEAD_INTAKE_MAX_REVIEWS (default 50).
+ * 3. Optional Yelp: set LEAD_INTAKE_ENABLE_YELP=1 plus APIFY_YELP_ACTOR_ID + LEAD_INTAKE_APIFY_YELP_URL.
+ * 4. On failure / empty in-window reviews: uses 15 synthetic reviews (same rubric) as google-sourced mocks.
  *
  * Env:
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (required)
@@ -24,12 +25,14 @@
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { pullYelpReviewsViaApify } from "./lib/apify-yelp-actor.mjs";
+import { pullGoogleReviewsViaApify } from "./lib/apify-google-reviews.mjs";
 import {
   buildFifteenMockApifyItems,
   computeRubricCategoryScores,
   confidenceLevelFromReviewCount,
   getEnv,
   lastCompletedMonthWindow,
+  lastCompletedMonthWindowInTimeZone,
   monthLabelFromDate,
   normalizeApifyItem,
   overallGuestSignalFromPillars,
@@ -402,8 +405,8 @@ async function persistSnapshotFromReviews({
   const planPresentation = intakePlanPresentation(inquiryPlan);
   const scorecardHeadline = `Guest Signal snapshot (${periodLabel})${planPresentation.headlineTag}`;
 
-  const googleCount = 0;
-  const yelpCount = periodReviews.length;
+  const googleCount = periodReviews.filter((r) => r.source === "google").length;
+  const yelpCount = periodReviews.filter((r) => r.source === "yelp").length;
   const totalReviews = googleCount + yelpCount;
   const confidenceLevel = confidenceLevelFromReviewCount(totalReviews);
 
@@ -625,43 +628,70 @@ async function persistSnapshotFromReviews({
   return true;
 }
 
-async function loadReviewsForLead(periodStartIso, periodEndIso) {
+async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
   const token = getEnv("APIFY_TOKEN", { fallback: "" });
-  const actorId = getEnv("APIFY_YELP_ACTOR_ID", { fallback: "" });
+  const googleActor = getEnv("APIFY_GOOGLE_ACTOR_ID", { fallback: "" });
+  const yelpActor = getEnv("APIFY_YELP_ACTOR_ID", { fallback: "" });
   const yelpUrl = getEnv("LEAD_INTAKE_APIFY_YELP_URL", { fallback: "" });
+  const enableYelp = ["1", "true", "yes"].includes(
+    (getEnv("LEAD_INTAKE_ENABLE_YELP", { fallback: "0" }) || "").toLowerCase(),
+  );
+  const maxTotal = Math.min(500, Math.max(1, Number(getEnv("LEAD_INTAKE_MAX_REVIEWS", { fallback: "50" }))));
 
-  let rawItems = [];
-  let sourceNote = "mock_15_rubric_fallback";
+  const sourceBits = [];
+  const combined = [];
 
-  if (token && actorId && yelpUrl) {
+  if (token && googleActor) {
     try {
-      console.log("Attempting Apify Yelp pull…");
-      rawItems = await pullYelpReviewsViaApify({ yelpUrl, token, actorId });
-      sourceNote = "apify_yelp_live";
+      console.log("Attempting Apify Google pull…");
+      const rawGoogle = await pullGoogleReviewsViaApify({ lead, token, actorId: googleActor });
+      const sliced = rawGoogle.slice(0, maxTotal);
+      const parsedG = sliced.map((item) => normalizeApifyItem(item, "google")).filter(Boolean);
+      combined.push(...parsedG);
+      sourceBits.push(`google_raw=${rawGoogle.length}`);
     } catch (e) {
-      console.warn("Apify Yelp pull failed:", e?.message || e);
-      sourceNote = "apify_failed_mock_15";
+      console.warn("Apify Google pull failed:", e?.message || e);
+      sourceBits.push(`google_error=${String(e?.message || e).slice(0, 120)}`);
     }
   } else {
-    console.log("Skipping Apify (missing APIFY_TOKEN / APIFY_YELP_ACTOR_ID / Yelp URL).");
+    sourceBits.push("google_skipped_missing_token_or_actor");
   }
 
-  let parsed = rawItems.map(normalizeApifyItem).filter(Boolean);
-  let periodReviews = parsed.filter((review) => {
+  if (enableYelp && token && yelpActor && yelpUrl) {
+    try {
+      console.log("Attempting Apify Yelp pull…");
+      const rawYelp = await pullYelpReviewsViaApify({ yelpUrl, token, actorId: yelpActor });
+      const room = Math.max(0, maxTotal - combined.length);
+      const sliced = rawYelp.slice(0, room || maxTotal);
+      const parsedY = sliced.map((item) => normalizeApifyItem(item, "yelp")).filter(Boolean);
+      combined.push(...parsedY);
+      sourceBits.push(`yelp_raw=${rawYelp.length}`);
+    } catch (e) {
+      console.warn("Apify Yelp pull failed:", e?.message || e);
+      sourceBits.push(`yelp_error=${String(e?.message || e).slice(0, 120)}`);
+    }
+  }
+
+  let periodReviews = combined.filter((review) => {
     if (!review.review_date) return false;
     return review.review_date >= periodStartIso && review.review_date <= periodEndIso;
   });
 
-  if (rawItems.length > 0 && parsed.length === 0) {
-    console.warn("Apify returned rows but none normalized to reviews — using mock dataset.");
-    sourceNote = "apify_unparsed_mock_15";
+  periodReviews.sort((a, b) => String(b.review_date).localeCompare(String(a.review_date)));
+  periodReviews = periodReviews.slice(0, maxTotal);
+
+  let sourceNote = `live_${sourceBits.join(";")}`;
+
+  if (combined.length > 0 && periodReviews.length === 0) {
+    console.warn("Apify returned rows but none fall in the scoring window — using mock dataset.");
+    sourceNote = "apify_outside_window_mock_15";
   }
 
   if (!periodReviews.length) {
     console.log("Using 15-review mock dataset (same Guest Signal rubric scoring).");
-    const mockItems = buildFifteenMockApifyItems(periodStartIso, periodEndIso);
-    periodReviews = mockItems.map(normalizeApifyItem).filter(Boolean);
-    if (sourceNote === "apify_yelp_live") sourceNote = "apify_empty_period_mock_15";
+    const mockItems = buildFifteenMockApifyItems(periodStartIso, periodEndIso, "google");
+    periodReviews = mockItems.map((item) => normalizeApifyItem(item, "google")).filter(Boolean);
+    sourceNote = sourceNote.includes("live_") ? `empty_or_unparsed_mock_15;${sourceNote}` : "mock_15_rubric_fallback";
   }
 
   return { periodReviews, sourceNote };
@@ -678,13 +708,14 @@ async function main() {
   const invitePortalUsers = envFlag("LEAD_INTAKE_INVITE_PORTAL_USERS", "0");
   const singleId = getEnv("LEAD_INTAKE_ID", { fallback: "" });
 
-  const { start, end } = lastCompletedMonthWindow();
+  const tz = getEnv("SCORING_TIMEZONE", { fallback: "America/New_York" });
+  const { start, end } = lastCompletedMonthWindowInTimeZone(tz);
   const periodStartIso = toIsoDate(start);
   const periodEndIso = toIsoDate(end);
   const periodLabel = getEnv("PERIOD_LABEL", { fallback: monthLabelFromDate(start) });
 
   console.log(
-    `Scoring window = prior completed calendar month: ${periodLabel} (${periodStartIso} → ${periodEndIso} UTC).`,
+    `Scoring window = prior completed calendar month (${tz}): ${periodLabel} (${periodStartIso} → ${periodEndIso} as UTC date boundaries from local month).`,
   );
   if (invitePortalUsers) {
     console.log("Portal: LEAD_INTAKE_INVITE_PORTAL_USERS enabled — will invite + upsert memberships after snapshot.");
@@ -724,6 +755,18 @@ async function main() {
 
   for (const lead of list) {
     console.log(`\n--- Lead ${lead.id} (${lead.business}) ---`);
+
+    if (!dryRun) {
+      const { error: stErr } = await supabase
+        .from("lead_intake_submissions")
+        .update({ processing_status: "processing", pipeline_last_error: null })
+        .eq("id", lead.id);
+      if (stErr) {
+        console.warn("Could not mark lead processing (migration 017 applied?):", stErr.message);
+      }
+    }
+
+    try {
     const baseSlug = slugifyBase(lead.business);
 
     let restaurant;
@@ -763,7 +806,7 @@ async function main() {
       }
     }
 
-    const { periodReviews, sourceNote } = await loadReviewsForLead(periodStartIso, periodEndIso);
+    const { periodReviews, sourceNote } = await loadReviewsForLead(lead, periodStartIso, periodEndIso);
 
     const persisted = await persistSnapshotFromReviews({
       supabase,
@@ -804,9 +847,49 @@ async function main() {
         .update({
           restaurant_id: restaurant.id,
           processing_status: "converted",
+          pipeline_last_error: null,
         })
         .eq("id", lead.id);
       if (upErr) throw upErr;
+
+      const hook = getEnv("LEAD_INTAKE_SUCCESS_WEBHOOK_URL", { fallback: "" });
+      if (hook) {
+        try {
+          await fetch(hook, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event: "lead_intake_converted",
+              lead_id: lead.id,
+              restaurant_id: restaurant.id,
+              slug: restaurant.slug,
+              inquiry_plan: lead.inquiry_plan,
+              email: lead.email,
+              period_label: periodLabel,
+            }),
+          });
+        } catch (hookErr) {
+          console.warn("LEAD_INTAKE_SUCCESS_WEBHOOK_URL post failed:", hookErr?.message || hookErr);
+        }
+      }
+    } else if (!dryRun && !persisted) {
+      await supabase
+        .from("lead_intake_submissions")
+        .update({
+          processing_status: "failed",
+          pipeline_last_error: "Snapshot not persisted (no score derived or dry run path).",
+        })
+        .eq("id", lead.id);
+    }
+    } catch (err) {
+      console.error(`Lead ${lead.id} failed:`, err);
+      if (!dryRun) {
+        const msg = String(err?.message || err).slice(0, 2000);
+        await supabase
+          .from("lead_intake_submissions")
+          .update({ processing_status: "failed", pipeline_last_error: msg })
+          .eq("id", lead.id);
+      }
     }
   }
 

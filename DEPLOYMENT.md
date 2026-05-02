@@ -16,6 +16,8 @@ The live site **guestsignalhospitality.com** uses **GitHub Pages** with **Next.j
 
 5. **Supabase (portal):** Add repository **Variables** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` if you want those values baked into the static build; otherwise the portal shows the configuration hint until you add them.
 
+6. **Lead intake → Apify → portal (automation):** After a row is inserted into `lead_intake_submissions` (`processing_status = pending`), GitHub Actions workflow **Process lead intake snapshots** (`.github/workflows/lead-intake-snapshot.yml`) runs on a **schedule** (every 10 minutes) or manually / via **`repository_dispatch`** type `lead_intake_process` with optional `client_payload.lead_id`. Apply migration `017_lead_intake_pipeline_status.sql` so rows can move through `processing` / `failed`. Configure **Secrets**: `SUPABASE_SERVICE_ROLE_KEY`, `APIFY_TOKEN`, `APIFY_GOOGLE_ACTOR_ID` (and optionally `APIFY_YELP_ACTOR_ID` if `LEAD_INTAKE_ENABLE_YELP=1`). **Variables**: `LEAD_INTAKE_MAX_REVIEWS` (default 50), `SCORING_TIMEZONE` (default `America/New_York`), optional `APIFY_GOOGLE_START_URL` for testing a fixed Maps URL. Supabase Auth invite email is controlled by `LEAD_INTAKE_INVITE_PORTAL_USERS`. Optional **Secret** `LEAD_INTAKE_SUCCESS_WEBHOOK_URL` receives a JSON POST when a lead reaches `converted`.
+
 ---
 
 # Deploying Project CARE to projectcare.life

@@ -5,6 +5,7 @@
 #
 # Immediate run (no wait for schedule): GitHub → Actions → this workflow → "Run workflow".
 # Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub.
+# repository_dispatch type `lead_intake_process` with JSON body `{ "lead_id": "<uuid>" }` (optional) also runs this job.
 # If the job succeeds but logs "No pending lead_intake_submissions", open the run's **Summary** tab: the script
 # writes diagnostics there (counts + recent rows). The Action does **not** emit a .sql file — data is in Supabase.
 # The job log also prints the same. Typical causes: submission
@@ -24,6 +25,8 @@ on:
         description: Optional UUID of a single lead_intake_submissions row
         required: false
         type: string
+  repository_dispatch:
+    types: [lead_intake_process]
   schedule:
     # Every 10 minutes (was hourly) so restaurant + snapshot + membership land sooner without manual dispatch.
     - cron: "*/10 * * * *"
@@ -61,9 +64,15 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_GOOGLE_ACTOR_ID: ${{ secrets.APIFY_GOOGLE_ACTOR_ID || vars.APIFY_GOOGLE_ACTOR_ID }}
           APIFY_YELP_ACTOR_ID: ${{ secrets.APIFY_YELP_ACTOR_ID }}
           LEAD_INTAKE_APIFY_YELP_URL: ${{ vars.LEAD_INTAKE_APIFY_YELP_URL }}
-          LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id }}
+          LEAD_INTAKE_ENABLE_YELP: ${{ vars.LEAD_INTAKE_ENABLE_YELP || '0' }}
+          LEAD_INTAKE_MAX_REVIEWS: ${{ vars.LEAD_INTAKE_MAX_REVIEWS || '50' }}
+          SCORING_TIMEZONE: ${{ vars.SCORING_TIMEZONE || 'America/New_York' }}
+          APIFY_GOOGLE_START_URL: ${{ vars.APIFY_GOOGLE_START_URL }}
+          LEAD_INTAKE_SUCCESS_WEBHOOK_URL: ${{ secrets.LEAD_INTAKE_SUCCESS_WEBHOOK_URL }}
+          LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id || github.event.client_payload.lead_id }}
           LEAD_INTAKE_INVITE_PORTAL_USERS: ${{ vars.LEAD_INTAKE_INVITE_PORTAL_USERS || '1' }}
           LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}
           FORCE_REPROCESS: ${{ vars.FORCE_REPROCESS || '0' }}

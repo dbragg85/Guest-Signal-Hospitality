@@ -94,6 +94,35 @@ export function lastCompletedMonthWindow() {
   return { start, end };
 }
 
+/**
+ * Prior completed calendar month in a named IANA timezone (default America/New_York).
+ * Date boundaries are calendar dates in that zone, returned as UTC midnight instants for {start,end}.
+ */
+export function lastCompletedMonthWindowInTimeZone(tz = "America/New_York") {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+  const parts = formatter.formatToParts(new Date());
+  const y = Number(parts.find((p) => p.type === "year")?.value);
+  const mo = Number(parts.find((p) => p.type === "month")?.value);
+  if (!Number.isFinite(y) || !Number.isFinite(mo)) {
+    return lastCompletedMonthWindow();
+  }
+  let prevM = mo - 1;
+  let prevY = y;
+  if (prevM <= 0) {
+    prevM = 12;
+    prevY = y - 1;
+  }
+  const start = new Date(Date.UTC(prevY, prevM - 1, 1));
+  const lastDay = new Date(Date.UTC(prevY, prevM, 0)).getUTCDate();
+  const end = new Date(Date.UTC(prevY, prevM - 1, lastDay));
+  return { start, end };
+}
+
 export function monthLabelFromDate(date) {
   return date.toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
 }
@@ -258,7 +287,7 @@ export function confidenceLevelFromReviewCount(totalReviews) {
   return "low";
 }
 
-export function normalizeApifyItem(item) {
+export function normalizeApifyItem(item, reviewSource = "yelp") {
   if (!item || typeof item !== "object") return null;
   const reviewText = firstNonEmptyString(item, [
     "text",
@@ -312,8 +341,10 @@ export function normalizeApifyItem(item) {
     ]) ?? `${reviewText.slice(0, 32)}:${dateRaw ?? ""}`
   );
 
+  const source = reviewSource === "google" ? "google" : "yelp";
+
   return {
-    source: "yelp",
+    source,
     external_review_id: externalReviewId,
     review_date: reviewDate ? toIsoDate(reviewDate) : null,
     rating,
@@ -326,7 +357,7 @@ export function normalizeApifyItem(item) {
  * Fifteen synthetic Yelp-shaped reviews (diverse rubric coverage) when Apify is unavailable.
  * Dates are spread across [periodStartIso, periodEndIso] (inclusive).
  */
-export function buildFifteenMockApifyItems(periodStartIso, periodEndIso) {
+export function buildFifteenMockApifyItems(periodStartIso, periodEndIso, reviewSource = "yelp") {
   const start = new Date(`${periodStartIso}T12:00:00.000Z`).getTime();
   const end = new Date(`${periodEndIso}T12:00:00.000Z`).getTime();
   const dayMs = 86400000;
@@ -355,11 +386,13 @@ export function buildFifteenMockApifyItems(periodStartIso, periodEndIso) {
     { text: "Average experience: decent food, slow wait, clean enough restroom.", rating: 3 },
   ];
 
+  const prefix = reviewSource === "google" ? "mock-google-intake" : "mock-intake";
+
   return texts.map((row, i) => ({
     text: row.text,
     rating: row.rating,
     publishedDate: pickDay(i),
-    reviewId: `mock-intake-${i + 1}`,
+    reviewId: `${prefix}-${i + 1}`,
     demo: true,
     mock_fallback: true,
   }));
