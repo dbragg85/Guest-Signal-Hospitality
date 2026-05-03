@@ -20,6 +20,8 @@
     "pipeline:google:apify-ingest-all": "node scripts/run-google-apify-monthly-ingest.mjs",
     "pipeline:google:monthly-all": "node scripts/run-google-apify-monthly-ingest.mjs && node scripts/run-google-gss-monthly.mjs",
     "pipeline:period:google-yelp-gss": "node scripts/run-period-google-yelp-gss.mjs",
+    "pipeline:period:google-yelp-rubric": "node scripts/run-period-google-yelp-rubric.mjs",
+    "pipeline:rebuild:rubric-from-observations": "node scripts/rebuild-rubric-scorecard-from-observations.mjs",
     "audit:scorecard-reviews": "node scripts/audit-scorecard-reviews.mjs",
     "build:profile-seed": "node scripts/build-google-profile-seed.mjs"
   },
