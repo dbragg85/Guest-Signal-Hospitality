@@ -801,7 +801,12 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
   if (token && googleActor) {
     try {
       console.log("Attempting Apify Google pull…");
-      const rawGoogle = await pullGoogleReviewsViaApify({ lead, token, actorId: googleActor });
+      const rawGoogle = await pullGoogleReviewsViaApify({
+        lead,
+        token,
+        actorId: googleActor,
+        reviewWindow: { startIso: periodStartIso, endIso: periodEndIso },
+      });
       const sliced = rawGoogle.slice(0, maxTotal);
       const parsedG = sliced.map((item) => normalizeApifyItem(item, "google")).filter(Boolean);
       combined.push(...parsedG);

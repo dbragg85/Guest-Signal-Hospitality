@@ -12,6 +12,10 @@
 # Optional `restaurant_slugs`: comma-separated slugs. Leave empty for all rows.
 # Step 1 upserts only reviews whose dates fall inside the window; step 2 skips restaurants
 # with zero observations in that window (see script logs).
+#
+# Ingest passes PERIOD_* to Apify as `reviewsStartDate` (when vars.APIFY_GOOGLE_SCORING_PERIOD_FILTER != 0)
+# so the actor does not spend maxReviews on months before the scoring window. Each slug = one Apify run.
+# Raise vars.GOOGLE_INGEST_MAX_APIFY_REVIEWS (default 250) if a venue has more reviews in-window than the cap.
 
 name: Google Apify ingest + GSS monthly
 
@@ -89,6 +93,8 @@ jobs:
           APIFY_GOOGLE_START_URL: ${{ vars.APIFY_GOOGLE_START_URL }}
           APIFY_GOOGLE_INPUT_TEMPLATE_JSON: ${{ vars.APIFY_GOOGLE_INPUT_TEMPLATE_JSON }}
           LEAD_INTAKE_MAX_REVIEWS: ${{ vars.LEAD_INTAKE_MAX_REVIEWS || '50' }}
+          GOOGLE_INGEST_MAX_APIFY_REVIEWS: ${{ vars.GOOGLE_INGEST_MAX_APIFY_REVIEWS || '250' }}
+          APIFY_GOOGLE_SCORING_PERIOD_FILTER: ${{ vars.APIFY_GOOGLE_SCORING_PERIOD_FILTER || '1' }}
           GOOGLE_INGEST_THROTTLE_MS: ${{ vars.GOOGLE_INGEST_THROTTLE_MS || '2500' }}
           PERIOD_START: ${{ github.event.inputs.period_start }}
           PERIOD_END: ${{ github.event.inputs.period_end }}

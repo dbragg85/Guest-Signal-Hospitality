@@ -10,8 +10,11 @@
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, APIFY_TOKEN, APIFY_GOOGLE_ACTOR_ID,
  *      PERIOD_START, PERIOD_END (optional; default = prior completed calendar month UTC),
  *      optional PERIOD_LABEL (for logs only), RESTAURANT_SLUGS, DRY_RUN=1,
- *      LEAD_INTAKE_MAX_REVIEWS, GOOGLE_INGEST_THROTTLE_MS (default 2500),
- *      APIFY_GOOGLE_START_URL, APIFY_GOOGLE_INPUT_TEMPLATE_JSON (see apify-google-reviews.mjs)
+ *      GOOGLE_INGEST_MAX_APIFY_REVIEWS (default 250, cap 500) — actor pull budget for the month window;
+ *      LEAD_INTAKE_MAX_REVIEWS used only if unset. GOOGLE_INGEST_THROTTLE_MS (default 2500),
+ *      APIFY_GOOGLE_SCORING_PERIOD_FILTER=1|0 — when 1 and PERIOD_* set, passes reviewsStartDate to Apify
+ *      so newest-first runs do not fill maxReviews with prior months (see apify-google-reviews.mjs).
+ *      APIFY_GOOGLE_START_URL, APIFY_GOOGLE_INPUT_TEMPLATE_JSON (placeholders {{PERIOD_START}}, {{PERIOD_END}})
  */
 import { createClient } from "@supabase/supabase-js";
 import { pullGoogleReviewsViaApify } from "./lib/apify-google-reviews.mjs";
@@ -85,7 +88,18 @@ async function main() {
       .filter(Boolean),
   );
 
-  const maxTotal = Math.min(500, Math.max(1, Number(getEnv("LEAD_INTAKE_MAX_REVIEWS", { fallback: "50" }))));
+  const maxApify = getEnv("GOOGLE_INGEST_MAX_APIFY_REVIEWS", { fallback: "" });
+  const maxTotal = Math.min(
+    500,
+    Math.max(
+      1,
+      Number(
+        maxApify && String(maxApify).trim()
+          ? maxApify
+          : getEnv("LEAD_INTAKE_MAX_REVIEWS", { fallback: "250" }),
+      ),
+    ),
+  );
   const throttleMs = Math.max(0, Number(getEnv("GOOGLE_INGEST_THROTTLE_MS", { fallback: "2500" })) || 0);
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -104,7 +118,7 @@ async function main() {
   });
 
   console.log(
-    `Google Apify bulk ingest — ${periodLabel} (${periodStartIso} → ${periodEndIso} UTC), ${candidates.length} restaurant(s), dryRun=${dryRun}`,
+    `Google Apify bulk ingest — ${periodLabel} (${periodStartIso} → ${periodEndIso} UTC), ${candidates.length} restaurant(s), dryRun=${dryRun}, maxApifyReviews=${maxTotal} (each restaurant = separate Apify run)`,
   );
 
   let upserted = 0;
@@ -124,8 +138,16 @@ async function main() {
     }
 
     try {
-      console.log(`[${slug}] Apify Google pull…`);
-      const rawGoogle = await pullGoogleReviewsViaApify({ lead, token, actorId: googleActor });
+      console.log(
+        `[${slug}] Apify Google pull (window ${periodStartIso}…${periodEndIso} → reviewsStartDate sent when APIFY_GOOGLE_SCORING_PERIOD_FILTER=1)…`,
+      );
+      const rawGoogle = await pullGoogleReviewsViaApify({
+        lead,
+        token,
+        actorId: googleActor,
+        reviewWindow: { startIso: periodStartIso, endIso: periodEndIso },
+        maxReviewsOverride: maxTotal,
+      });
       const sliced = rawGoogle.slice(0, maxTotal);
       const parsed = sliced.map((item) => normalizeApifyItem(item, "google")).filter(Boolean);
       const inWindow = parsed.filter((review) => {
