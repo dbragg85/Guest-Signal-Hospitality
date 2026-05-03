@@ -20,7 +20,9 @@
  *   DRY_RUN=1 — no writes
  *   FORCE_REPROCESS=1 — re-run even if restaurant_id is set
  *   LEAD_INTAKE_INVITE_PORTAL_USERS=1 — invite lead email via Supabase Auth + upsert memberships (viewer)
- *   LEAD_INTAKE_INVITE_REDIRECT_URL — defaults to https://guestsignalhospitality.com/portal
+ *   LEAD_INTAKE_INVITE_REDIRECT_URL — where Supabase sends the user after "Accept invite" (default: SITE/portal/welcome/)
+ *   LEAD_INTAKE_PORTAL_BASE_URL — sign-in + magic link base (default: SITE/portal); welcome email links use this
+ *   NEXT_PUBLIC_SITE_URL — used for the two defaults above when unset (fallback https://guestsignalhospitality.com)
  *   RESEND_API_KEY + RESEND_FROM — after conversion + portal membership, send the submitter a welcome email
  *     (portal URLs + optional one-click magic link). See https://resend.com — verify sending domain in Resend.
  */
@@ -51,6 +53,24 @@ const SERVICE_INQUIRY_PLANS = [
   "signal_growth",
   "signal_elevate",
 ];
+
+function siteOrigin() {
+  return getEnv("NEXT_PUBLIC_SITE_URL", { fallback: "https://guestsignalhospitality.com" }).replace(/\/+$/, "");
+}
+
+/** Public portal sign-in root (no trailing slash), e.g. https://example.com/portal */
+function portalBaseUrl() {
+  const explicit = getEnv("LEAD_INTAKE_PORTAL_BASE_URL", { fallback: "" }).trim();
+  if (explicit) return explicit.replace(/\/+$/, "");
+  return `${siteOrigin()}/portal`;
+}
+
+/** Supabase Auth invite "redirectTo" — must be listed under Supabase → Auth → URL configuration → Redirect URLs */
+function inviteAcceptRedirectUrl() {
+  const explicit = getEnv("LEAD_INTAKE_INVITE_REDIRECT_URL", { fallback: "" }).trim();
+  if (explicit) return explicit;
+  return `${siteOrigin()}/portal/welcome/`;
+}
 
 function appendGithubJobSummary(markdown) {
   const path = process.env.GITHUB_STEP_SUMMARY;
@@ -335,9 +355,7 @@ async function ensurePortalUser(supabase, email, displayName) {
   const e = String(email || "").trim().toLowerCase();
   if (!e || !e.includes("@")) return null;
 
-  const redirectTo = getEnv("LEAD_INTAKE_INVITE_REDIRECT_URL", {
-    fallback: "https://guestsignalhospitality.com/portal",
-  });
+  const redirectTo = inviteAcceptRedirectUrl();
 
   const { data: invited, error: invErr } = await supabase.auth.admin.inviteUserByEmail(e, {
     data: { full_name: String(displayName || "").trim() || e },
@@ -447,38 +465,55 @@ async function sendPortalWelcomeEmailResend({
 
   const subject = "Your Guest Signal client portal is ready";
   const greeting = displayName?.trim() ? `Hi ${displayName.trim()},` : "Hi,";
+  const welcomeUrl = `${String(portalBase).replace(/\/+$/, "")}/welcome/`;
   const textLines = [
     greeting,
     "",
     "Your snapshot is ready in the Guest Signal client portal.",
     "",
-    `Sign in: ${portalBase}/`,
-    `Your dashboard for ${String(restaurantName || "your location").trim()}: ${dashboardUrl}`,
+    "WHICH EMAIL TO USE",
+    `Always use this exact address for sign-in and magic links: ${to}`,
+    "It is the same email you entered on the intake form.",
     "",
-    `Use this same email address to sign in: ${to}`,
+    "STEP 1 — SUPABASE INVITE (SET YOUR PASSWORD)",
+    "You should have a separate email from Supabase titled like \"You have been invited\".",
+    `Open that message and click Accept invitation. You will be taken to our secure page to create your password:`,
+    welcomeUrl,
+    "Stay on that page until you finish — the address bar may contain a long token; that is normal.",
+    "",
+    "STEP 2 — SIGN IN ANY TIME AFTER THAT",
+    `Portal sign-in: ${portalBase}/`,
+    `Your dashboard (${String(restaurantName || "your location").trim()}): ${dashboardUrl}`,
+    "",
+    "OPTIONAL — ONE-CLICK MAGIC LINK (NO PASSWORD NEEDED ONCE)",
     magicLink
-      ? `One-time sign-in link (expires): ${magicLink}`
-      : "If you need a sign-in link, open the portal and choose “Magic link” on the sign-in page.",
+      ? `If you prefer not to use a password right now, you can use this one-time link (expires): ${magicLink}`
+      : "On the portal sign-in page you can also choose \"Email me a magic link\" using the same email address.",
     "",
-    "If you also received an account invite from Supabase, you can set your password from that message first.",
+    "If anything fails, reply to this thread or contact your Guest Signal operator.",
     "",
     "— Guest Signal Hospitality",
   ];
   const text = textLines.join("\n");
 
   const magicBlock = magicLink
-    ? `<p><a href="${escapeHtml(magicLink)}">One-click sign in</a> <span style="color:#64748b">(expires; use Magic link on the portal if it stops working.)</span></p>`
-    : `<p>Use <strong>Magic link</strong> on the sign-in page with the email above if you need a fresh link.</p>`;
+    ? `<p><strong>Optional — one-click sign-in</strong> (expires):<br/><a href="${escapeHtml(magicLink)}">Open magic link</a> <span style="color:#64748b">If it stops working, use password or Magic link on the portal.</span></p>`
+    : `<p>You can also use <strong>Magic link</strong> on the <a href="${escapeHtml(`${portalBase}/`)}">portal sign-in</a> page with the email above.</p>`;
 
   const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;line-height:1.5;color:#0f172a;max-width:36rem">
 <p>${escapeHtml(greeting)}</p>
 <p>Your snapshot is ready in the <strong>Guest Signal</strong> client portal.</p>
-<p><a href="${escapeHtml(`${portalBase}/`)}">Open portal sign-in</a></p>
-<p><strong>Your dashboard</strong> (${escapeHtml(String(restaurantName || "").trim() || restaurantSlug)}):<br/>
-<a href="${escapeHtml(dashboardUrl)}">${escapeHtml(dashboardUrl)}</a></p>
-<p>Sign in with: <strong>${escapeHtml(to)}</strong></p>
+<h2 style="font-size:1rem;margin-top:1.25rem">Which email to use</h2>
+<p>Always sign in with: <strong style="word-break:break-all">${escapeHtml(to)}</strong> — the same address you used on the intake form.</p>
+<h2 style="font-size:1rem;margin-top:1.25rem">Step 1 — Create your password</h2>
+<p>You should have a separate message from <strong>Supabase</strong> (invitation). Open it and click <strong>Accept invitation</strong>. You will land on our page to choose your password:</p>
+<p><a href="${escapeHtml(welcomeUrl)}">${escapeHtml(welcomeUrl)}</a></p>
+<p style="font-size:0.875rem;color:#64748b">If the address bar shows a long fragment after you click the invite link, leave it in place until you finish.</p>
+<h2 style="font-size:1rem;margin-top:1.25rem">Step 2 — Your dashboard</h2>
+<p><a href="${escapeHtml(dashboardUrl)}">Open your location dashboard</a> (${escapeHtml(String(restaurantName || "").trim() || restaurantSlug)})</p>
+<p>After password setup, you can always return via <a href="${escapeHtml(`${portalBase}/`)}">portal sign-in</a>.</p>
 ${magicBlock}
-<p style="font-size:0.875rem;color:#64748b">If you received a separate Supabase invite, you can set your password from that email first.</p>
+<p style="margin-top:1.5rem;font-size:0.875rem;color:#64748b">Questions? Reply to your operator or Guest Signal Hospitality.</p>
 <p>— Guest Signal Hospitality</p>
 </body></html>`;
 
@@ -993,9 +1028,7 @@ async function main() {
       }
 
       if (portalMembershipOk) {
-        const portalBase = getEnv("LEAD_INTAKE_INVITE_REDIRECT_URL", {
-          fallback: "https://guestsignalhospitality.com/portal",
-        }).replace(/\/+$/, "");
+        const portalBase = portalBaseUrl();
         const dashboardUrl = `${portalBase}/dashboard/${restaurant.slug}/`;
         const magicLink = await tryGenerateMagicLink(supabase, lead.email, dashboardUrl);
         await sendPortalWelcomeEmailResend({

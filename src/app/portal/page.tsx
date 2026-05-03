@@ -20,7 +20,12 @@ export default function PortalPage() {
           Access Your Guest Signal Snapshot
         </h1>
         <p className="mt-4 text-slate-600 leading-relaxed">
-          Sign in with the email address your operator invited.
+          Sign in with the <strong>same email</strong> you used on your intake form (or the one your operator
+          invited). If you just accepted a Supabase invitation,{" "}
+          <Link href="/portal/welcome/" className="font-semibold text-amber-900 underline-offset-2 hover:underline">
+            finish creating your password here
+          </Link>{" "}
+          first when the link sends you to this site.
         </p>
         <Suspense
           fallback={

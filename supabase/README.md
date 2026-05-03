@@ -110,7 +110,7 @@ Use the Edge Function **`github-dispatch-lead-intake`** plus a **Database Webhoo
 | Setting | Value |
 |--------|--------|
 | **Site URL** | `http://localhost:3000` for dev; your production URL when live |
-| **Redirect URLs** | Add `http://localhost:3000/portal/dashboard/` and your production `https://YOUR_DOMAIN/portal/dashboard/` |
+| **Redirect URLs** | Add `http://localhost:3000/portal/welcome/`, `http://localhost:3000/portal/dashboard/`, and production `https://YOUR_DOMAIN/portal/welcome/` plus `https://YOUR_DOMAIN/portal/dashboard/` (invite links land on **welcome** first) |
 
 ---
 

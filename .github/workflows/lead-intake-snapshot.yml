@@ -78,6 +78,8 @@ jobs:
           RESEND_FROM: ${{ vars.RESEND_FROM }}
           LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id || github.event.client_payload.lead_id }}
           LEAD_INTAKE_INVITE_PORTAL_USERS: ${{ vars.LEAD_INTAKE_INVITE_PORTAL_USERS || '1' }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          LEAD_INTAKE_PORTAL_BASE_URL: ${{ vars.LEAD_INTAKE_PORTAL_BASE_URL }}
           LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}
           FORCE_REPROCESS: ${{ vars.FORCE_REPROCESS || '0' }}
         run: npm run pipeline:lead-intake
