@@ -1,5 +1,23 @@
 -- Per-period scoring batch + per-review GSS breakdown (Google monthly pipeline).
 -- Service_role jobs write; portal clients use RLS like review_observations.
+--
+-- If a legacy or partial table named review_batches already exists without period_label,
+-- CREATE TABLE IF NOT EXISTS would be skipped and CREATE INDEX would error (42703).
+do $repair$
+begin
+  if to_regclass('public.review_batches') is not null
+     and not exists (
+       select 1
+       from information_schema.columns c
+       where c.table_schema = 'public'
+         and c.table_name = 'review_batches'
+         and c.column_name = 'period_label'
+     ) then
+    execute 'drop table if exists public.review_scores cascade';
+    execute 'drop table public.review_batches cascade';
+  end if;
+end;
+$repair$;
 
 create table if not exists public.review_batches (
   id uuid primary key default gen_random_uuid(),
