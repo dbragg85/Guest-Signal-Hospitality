@@ -8,14 +8,17 @@
  * 2. Pulls Google Maps reviews via Apify when APIFY_TOKEN + APIFY_GOOGLE_ACTOR_ID are set (see
  *    scripts/lib/apify-google-reviews.mjs). Uses prior completed calendar month in SCORING_TIMEZONE
  *    (default America/New_York) and caps total reviews at LEAD_INTAKE_MAX_REVIEWS (default 50).
- * 3. Optional Yelp: set LEAD_INTAKE_ENABLE_YELP=1 plus APIFY_YELP_ACTOR_ID + LEAD_INTAKE_APIFY_YELP_URL.
+ * 3. Optional Yelp: set LEAD_INTAKE_ENABLE_YELP=1 plus APIFY_YELP_ACTOR_ID. Yelp URL: set LEAD_INTAKE_APIFY_YELP_URL
+ *    for a fixed test URL, or set YELP_FUSION_API_KEY so the script resolves https://www.yelp.com/biz/... from
+ *    business name + city/state/zip on the lead (no customer Yelp field required).
  * 4. On failure / empty in-window reviews: uses 15 synthetic reviews (same rubric) as google-sourced mocks.
  *
  * Env:
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (required)
  *   LEAD_INTAKE_ID — process a single row
  *   LEAD_INTAKE_FREE_SNAPSHOT_ONLY=1 — restrict to free_snapshot only (default processes all service plans)
- *   LEAD_INTAKE_APIFY_YELP_URL — Yelp biz URL used when testing Apify (intake form has no Yelp field)
+ *   LEAD_INTAKE_APIFY_YELP_URL — optional override Yelp biz URL (otherwise YELP_FUSION_API_KEY resolves from lead)
+ *   YELP_FUSION_API_KEY — Yelp Fusion v3 key; business search by lead business + location → Yelp URL for Apify
  *   APIFY_TOKEN, APIFY_YELP_ACTOR_ID — same as monthly pipeline
  *   DRY_RUN=1 — no writes
  *   FORCE_REPROCESS=1 — re-run even if restaurant_id is set
@@ -29,6 +32,7 @@
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { pullYelpReviewsViaApify } from "./lib/apify-yelp-actor.mjs";
+import { resolveYelpBusinessUrlFromLead } from "./lib/yelp-fusion-resolve-url.mjs";
 import { pullGoogleReviewsViaApify } from "./lib/apify-google-reviews.mjs";
 import {
   buildFifteenMockApifyItems,
@@ -784,7 +788,7 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
   const token = getEnv("APIFY_TOKEN", { fallback: "" });
   const googleActor = getEnv("APIFY_GOOGLE_ACTOR_ID", { fallback: "" });
   const yelpActor = getEnv("APIFY_YELP_ACTOR_ID", { fallback: "" });
-  const yelpUrl = getEnv("LEAD_INTAKE_APIFY_YELP_URL", { fallback: "" });
+  const yelpUrlOverride = getEnv("LEAD_INTAKE_APIFY_YELP_URL", { fallback: "" }).trim();
   const enableYelp = ["1", "true", "yes"].includes(
     (getEnv("LEAD_INTAKE_ENABLE_YELP", { fallback: "0" }) || "").toLowerCase(),
   );
@@ -792,6 +796,7 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
 
   const sourceBits = [];
   const combined = [];
+  let yelpUrlUsed = null;
 
   if (token && googleActor) {
     try {
@@ -809,10 +814,23 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
     sourceBits.push("google_skipped_missing_token_or_actor");
   }
 
-  if (enableYelp && token && yelpActor && yelpUrl) {
+  let effectiveYelpUrl = yelpUrlOverride;
+  if (enableYelp && token && yelpActor && !effectiveYelpUrl) {
+    const resolved = await resolveYelpBusinessUrlFromLead(lead);
+    if (resolved) {
+      effectiveYelpUrl = resolved;
+      sourceBits.push("yelp_url_auto=fusion_search");
+      console.log("Yelp: resolved business URL via Fusion API for Apify pull.");
+    } else {
+      sourceBits.push("yelp_skipped_no_url_set_YELP_FUSION_API_KEY_or_LEAD_INTAKE_APIFY_YELP_URL");
+    }
+  }
+
+  if (enableYelp && token && yelpActor && effectiveYelpUrl) {
     try {
       console.log("Attempting Apify Yelp pull…");
-      const rawYelp = await pullYelpReviewsViaApify({ yelpUrl, token, actorId: yelpActor });
+      const rawYelp = await pullYelpReviewsViaApify({ yelpUrl: effectiveYelpUrl, token, actorId: yelpActor });
+      yelpUrlUsed = effectiveYelpUrl;
       const room = Math.max(0, maxTotal - combined.length);
       const sliced = rawYelp.slice(0, room || maxTotal);
       const parsedY = sliced.map((item) => normalizeApifyItem(item, "yelp")).filter(Boolean);
@@ -846,7 +864,7 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
     sourceNote = sourceNote.includes("live_") ? `empty_or_unparsed_mock_15;${sourceNote}` : "mock_15_rubric_fallback";
   }
 
-  return { periodReviews, sourceNote };
+  return { periodReviews, sourceNote, yelpUrlUsed };
 }
 
 async function main() {
@@ -958,7 +976,7 @@ async function main() {
       }
     }
 
-    const { periodReviews, sourceNote } = await loadReviewsForLead(lead, periodStartIso, periodEndIso);
+    const { periodReviews, sourceNote, yelpUrlUsed } = await loadReviewsForLead(lead, periodStartIso, periodEndIso);
 
     const persisted = await persistSnapshotFromReviews({
       supabase,
@@ -974,12 +992,13 @@ async function main() {
 
     if (!dryRun && persisted) {
       const planNorm = normalizeInquiryPlan(lead.inquiry_plan);
-      const { error: planErr } = await supabase
-        .from("restaurants")
-        .update({ intake_inquiry_plan: planNorm })
-        .eq("id", restaurant.id);
+      const updates = { intake_inquiry_plan: planNorm };
+      if (yelpUrlUsed) {
+        updates.yelp_url = yelpUrlUsed;
+      }
+      const { error: planErr } = await supabase.from("restaurants").update(updates).eq("id", restaurant.id);
       if (planErr) {
-        console.warn("Could not set restaurants.intake_inquiry_plan (migration 012 applied?):", planErr.message);
+        console.warn("Could not update restaurants after snapshot (intake_inquiry_plan / yelp_url):", planErr.message);
       }
 
       let portalMembershipOk = false;

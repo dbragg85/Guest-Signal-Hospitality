@@ -120,6 +120,7 @@ await upsertVariable("NEXT_PUBLIC_SUPABASE_ANON_KEY", key);
 /** Optional repository Variables (non-secret); only synced when set in .env.local and not placeholders. */
 const OPTIONAL_VARS = [
   "APIFY_GOOGLE_ACTOR_ID",
+  "APIFY_YELP_ACTOR_ID",
   "LEAD_INTAKE_MAX_REVIEWS",
   "SCORING_TIMEZONE",
   "LEAD_INTAKE_ENABLE_YELP",

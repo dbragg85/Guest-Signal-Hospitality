@@ -23,6 +23,7 @@ const envPath = path.join(root, ".env.local");
 const SECRET_NAMES = [
   "SUPABASE_SERVICE_ROLE_KEY",
   "APIFY_TOKEN",
+  "YELP_FUSION_API_KEY",
   "LEAD_INTAKE_SUCCESS_WEBHOOK_URL",
   "RESEND_API_KEY",
 ];
