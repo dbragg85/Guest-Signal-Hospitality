@@ -30,6 +30,19 @@ const SERVICE_PLANS = new Set([
 
 const DEFAULT_REPO = "dbragg85/Guest-Signal-Hospitality";
 
+/** Normalize `record.id` from Database Webhooks (Postgres uuid is almost always a JSON string). */
+function normalizeLeadId(raw: unknown): string | null {
+  if (typeof raw === "string") {
+    const s = raw.trim();
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s)
+    ) {
+      return s;
+    }
+  }
+  return null;
+}
+
 function json(res: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(res), {
     status,
@@ -41,6 +54,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
+
+  console.info("[github-dispatch-lead-intake] POST received");
 
   const secret = Deno.env.get("LEAD_INTAKE_DISPATCH_WEBHOOK_SECRET");
   const token = Deno.env.get("GITHUB_DISPATCH_TOKEN");
@@ -54,8 +69,10 @@ Deno.serve(async (req) => {
 
   const headerSecret = req.headers.get("x-lead-intake-dispatch-secret");
   if (headerSecret !== secret) {
+    console.warn("[github-dispatch-lead-intake] unauthorized: header secret mismatch");
     return json({ error: "unauthorized" }, 401);
   }
+  console.info("[github-dispatch-lead-intake] shared secret OK");
 
   let body: Record<string, unknown>;
   try {
@@ -70,7 +87,7 @@ Deno.serve(async (req) => {
     return json({ error: "missing_record", skipped: true }, 200);
   }
 
-  const leadId = typeof record.id === "string" ? record.id : null;
+  const leadId = normalizeLeadId(record.id);
   const inquiryPlan =
     typeof record.inquiry_plan === "string" ? record.inquiry_plan : null;
   const status =
@@ -79,10 +96,17 @@ Deno.serve(async (req) => {
       : null;
 
   if (!leadId) {
+    console.warn("[github-dispatch-lead-intake] skip: missing or invalid record.id", {
+      id_type: typeof record.id,
+    });
     return json({ error: "missing_id", skipped: true }, 200);
   }
 
   if (!inquiryPlan || !SERVICE_PLANS.has(inquiryPlan)) {
+    console.info("[github-dispatch-lead-intake] skip: not_service_plan", {
+      inquiry_plan: inquiryPlan,
+      lead_id: leadId,
+    });
     return json(
       { skipped: true, reason: "not_service_plan", inquiry_plan: inquiryPlan },
       200,
@@ -90,11 +114,20 @@ Deno.serve(async (req) => {
   }
 
   if (status && status !== "pending") {
+    console.info("[github-dispatch-lead-intake] skip: not_pending", {
+      processing_status: status,
+      lead_id: leadId,
+    });
     return json(
       { skipped: true, reason: "not_pending", processing_status: status },
       200,
     );
   }
+
+  console.info("[github-dispatch-lead-intake] dispatching to GitHub", {
+    lead_id: leadId,
+    inquiry_plan: inquiryPlan,
+  });
 
   const ghRes = await fetch(
     `https://api.github.com/repos/${repo}/dispatches`,
@@ -115,12 +148,16 @@ Deno.serve(async (req) => {
 
   if (!ghRes.ok) {
     const text = await ghRes.text();
-    console.error("GitHub dispatches failed:", ghRes.status, text);
+    console.error("[github-dispatch-lead-intake] GitHub dispatches failed:", ghRes.status, text);
     return json(
       { error: "github_dispatch_failed", status: ghRes.status, detail: text },
       502,
     );
   }
 
+  console.info("[github-dispatch-lead-intake] repository_dispatch ok", {
+    lead_id: leadId,
+    repository: repo,
+  });
   return json({ ok: true, lead_id: leadId, repository: repo }, 200);
 });

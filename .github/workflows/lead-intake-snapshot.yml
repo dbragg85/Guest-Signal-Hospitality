@@ -8,6 +8,7 @@
 # Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub;
 # use repository_dispatch (e.g. from Supabase Edge Function `github-dispatch-lead-intake` + Database Webhook).
 # repository_dispatch type `lead_intake_process` with JSON body `{ "lead_id": "<uuid>" }` (optional) also runs this job.
+# Timing: INSERT webhook → Edge Function → immediate dispatch (when configured). Scheduled fallback: every 5 minutes (GitHub max frequency for schedule).
 # If the job succeeds but logs "No pending lead_intake_submissions", open the run's **Summary** tab: the script
 # writes diagnostics there (counts + recent rows). The Action does **not** emit a .sql file — data is in Supabase.
 # The job log also prints the same. Typical causes: submission
@@ -30,12 +31,13 @@ on:
   repository_dispatch:
     types: [lead_intake_process]
   schedule:
-    # Every 10 minutes (was hourly) so restaurant + snapshot + membership land sooner without manual dispatch.
-    - cron: "*/10 * * * *"
+    # GitHub allows at most one scheduled run per 5 minutes — use Database Webhook + Edge for near-instant dispatch.
+    - cron: "*/5 * * * *"
 
 concurrency:
   group: lead-intake-snapshot
-  cancel-in-progress: true
+  # Do not cancel a run still doing Apify + DB writes; overlapping dispatches queue instead.
+  cancel-in-progress: false
 
 jobs:
   run:
@@ -84,4 +86,6 @@ jobs:
           LEAD_INTAKE_PORTAL_BASE_URL: ${{ vars.LEAD_INTAKE_PORTAL_BASE_URL }}
           LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}
           FORCE_REPROCESS: ${{ vars.FORCE_REPROCESS || '0' }}
+          # Milliseconds after snapshot + portal membership before Resend welcome email (default 5m; override via repo Variable).
+          LEAD_INTAKE_WELCOME_EMAIL_DELAY_MS: ${{ vars.LEAD_INTAKE_WELCOME_EMAIL_DELAY_MS || '300000' }}
         run: npm run pipeline:lead-intake

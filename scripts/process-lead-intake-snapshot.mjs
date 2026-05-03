@@ -28,6 +28,8 @@
  *   NEXT_PUBLIC_SITE_URL — used for the two defaults above when unset (fallback https://guestsignalhospitality.com)
  *   RESEND_API_KEY + RESEND_FROM — after conversion + portal membership, send the submitter a welcome email
  *     (portal URLs + optional one-click magic link). See https://resend.com — verify sending domain in Resend.
+ *   LEAD_INTAKE_WELCOME_EMAIL_DELAY_MS — optional wait (ms) after DB conversion + portal membership before the
+ *     welcome email (default 0 locally; GitHub Actions defaults 300000 = 5m). Max 2h.
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -294,6 +296,19 @@ function formatAddress(lead) {
 
 function envFlag(name, fallback = "0") {
   return ["1", "true", "yes"].includes((getEnv(name, { fallback }) || "").toLowerCase());
+}
+
+const MAX_WELCOME_EMAIL_DELAY_MS = 2 * 60 * 60 * 1000;
+
+function envNonNegativeIntMs(name, fallbackMs) {
+  const raw = (getEnv(name, { fallback: String(fallbackMs) }) || "").trim();
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 0) return fallbackMs;
+  return Math.min(n, MAX_WELCOME_EMAIL_DELAY_MS);
+}
+
+function delayMs(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -606,6 +621,12 @@ async function main() {
   );
   const invitePortalUsers = envFlag("LEAD_INTAKE_INVITE_PORTAL_USERS", "0");
   const singleId = getEnv("LEAD_INTAKE_ID", { fallback: "" });
+  const welcomeEmailDelayMs = envNonNegativeIntMs("LEAD_INTAKE_WELCOME_EMAIL_DELAY_MS", 0);
+  if (welcomeEmailDelayMs > 0) {
+    console.log(
+      `Welcome email delay: ${welcomeEmailDelayMs}ms (${Math.round(welcomeEmailDelayMs / 60000)} min) after conversion before Resend.`,
+    );
+  }
 
   const tz = getEnv("SCORING_TIMEZONE", { fallback: "America/New_York" });
   const { start, end } = lastCompletedMonthWindowInTimeZone(tz);
@@ -778,6 +799,12 @@ async function main() {
       if (portalMembershipOk) {
         const portalBase = portalBaseUrl();
         const dashboardUrl = `${portalBase}/dashboard/${restaurant.slug}/`;
+        if (welcomeEmailDelayMs > 0) {
+          console.log(
+            `Waiting ${welcomeEmailDelayMs}ms before magic link + welcome email (${restaurant.slug})…`,
+          );
+          await delayMs(welcomeEmailDelayMs);
+        }
         const magicLink = await tryGenerateMagicLink(supabase, lead.email, dashboardUrl);
         await sendPortalWelcomeEmailResend({
           toEmail: lead.email,

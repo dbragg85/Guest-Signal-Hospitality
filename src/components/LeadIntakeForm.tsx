@@ -170,16 +170,34 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
         operatingHoursNote,
         message,
       });
-      if (supabaseResult.attempted && supabaseResult.insertErrorMessage) {
-        console.warn(
-          "[contact] Supabase lead_intake_submissions insert failed:",
-          supabaseResult.insertErrorMessage,
+
+      if (supabaseResult.blockedDuplicate) {
+        const dupMsg =
+          supabaseResult.blockedDuplicateCode === "active_venue_profile"
+            ? `We already have an intake in progress for this restaurant name, contact name, and location (city / state / ZIP). If you submitted earlier, please wait for processing to finish. For help, email ${brand.email}.`
+            : `This email address already has an intake in progress. Please wait for our team to finish setting up your snapshot (or check your inbox). To reach us directly, email ${brand.email}.`;
+        setSubmitError(dupMsg);
+        trackEvent("lead_intake_duplicate_blocked", {
+          planKey: planKey ?? "general",
+          code: supabaseResult.blockedDuplicateCode ?? "active_email",
+        });
+        return;
+      }
+
+      if (supabaseResult.attempted && !supabaseResult.rowInserted) {
+        setSubmitError(
+          supabaseResult.insertErrorMessage?.trim()
+            ? `We could not save your submission: ${supabaseResult.insertErrorMessage}`
+            : "We could not save your submission. Please try again or email audit@guestsignalhospitality.com.",
         );
         trackEvent("lead_intake_supabase_insert_fail", {
           planKey: planKey ?? "general",
-          message: supabaseResult.insertErrorMessage,
+          message: supabaseResult.insertErrorMessage ?? "unknown",
         });
-      } else if (supabaseResult.rowInserted && supabaseResult.lookupErrorMessage) {
+        return;
+      }
+
+      if (supabaseResult.rowInserted && supabaseResult.lookupErrorMessage) {
         console.warn(
           "[contact] lead_intake id lookup failed (apply migration 011?):",
           supabaseResult.lookupErrorMessage,

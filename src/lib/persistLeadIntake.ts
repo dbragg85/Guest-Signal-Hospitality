@@ -27,6 +27,8 @@ export type LeadIntakePayload = {
   message: string;
 };
 
+export type LeadIntakeDuplicateCode = "active_email" | "active_venue_profile";
+
 export type PersistLeadIntakeResult = {
   attempted: boolean;
   /** True when a row was inserted into lead_intake_submissions. */
@@ -35,6 +37,9 @@ export type PersistLeadIntakeResult = {
   insertErrorMessage: string | null;
   /** Set when INSERT succeeded but RPC id lookup failed (e.g. migration 011 not applied). */
   lookupErrorMessage: string | null;
+  /** Another row is already in the automation queue with the same email or venue profile (migration 025). */
+  blockedDuplicate?: boolean;
+  blockedDuplicateCode?: LeadIntakeDuplicateCode | null;
   /** Primary key — copy into FormSubmit email for SQL join. */
   leadIntakeId?: string;
   /** Stored on row; inbox can match this column if id is missing. */
@@ -56,6 +61,44 @@ export async function persistLeadIntakeToSupabase(
   }
 
   const submissionClientKey = crypto.randomUUID();
+
+  const { data: blockData, error: blockErr } = await supabase.rpc(
+    "check_lead_intake_submission_blocked",
+    {
+      p_email: payload.email.trim(),
+      p_business: payload.business.trim(),
+      p_name: payload.name.trim(),
+      p_city: payload.city?.trim() ?? "",
+      p_state: payload.state?.trim() ?? "",
+      p_zip: payload.zip?.trim() ?? "",
+    },
+  );
+
+  let blockPayload: unknown = blockData;
+  if (!blockErr && typeof blockData === "string") {
+    try {
+      blockPayload = JSON.parse(blockData) as unknown;
+    } catch {
+      blockPayload = null;
+    }
+  }
+
+  if (!blockErr && blockPayload && typeof blockPayload === "object" && "blocked" in blockPayload) {
+    const o = blockPayload as { blocked?: boolean; code?: string };
+    if (o.blocked === true) {
+      const code =
+        o.code === "active_venue_profile" ? "active_venue_profile" : "active_email";
+      return {
+        attempted: true,
+        rowInserted: false,
+        insertErrorMessage: null,
+        lookupErrorMessage: null,
+        blockedDuplicate: true,
+        blockedDuplicateCode: code,
+        submissionClientKey,
+      };
+    }
+  }
 
   const { error: insertError } = await supabase.from("lead_intake_submissions").insert({
     inquiry_plan: payload.inquiryPlan.trim(),

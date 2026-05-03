@@ -52,6 +52,7 @@
    - `migrations/013_lead_intake_social_presence.sql`
    - `migrations/014_lead_intake_snapshot_context.sql` — optional venue phone, website, and hours for faster snapshot matching  
    - `migrations/016_lead_intake_policies_idempotent.sql` — **only if** SQL Editor errors with **`42710` policy already exists** on `lead_intake_*` (usually from running `010`’s policy block twice or pasting `010` into `011`). Run `016`, then run **`011`** (and onward) using the **unmerged** files from GitHub.
+   - `migrations/025_lead_intake_submission_duplicate_check.sql` — blocks duplicate form submits while the same email or the same name+business+city+state+ZIP is still **pending** or **processing** (`check_lead_intake_submission_blocked` RPC for anon).
 
    **`010` vs `011`:** keep **both**. `010` creates the table and RLS; **`011` adds `submission_client_key` plus the RPC `fetch_lead_intake_id_by_client_key`** so the browser can learn the new row’s `id` after an anon **INSERT** (anon still cannot `SELECT` the table). The website **`persistLeadIntakeToSupabase`** calls that RPC — **do not delete `011` from the repo or omit it in SQL Editor**. Replacing `010` with one giant script is only a greenfield convenience; on an existing project, run **`011` after `010`** and never drop the column or function.
 
@@ -68,7 +69,7 @@
 
 #### Run the snapshot workflow right after a test (easiest — no Supabase webhook)
 
-The GitHub job also runs on a **10-minute schedule**. To start it **immediately** from your computer:
+The GitHub job also runs on a **5-minute schedule** (GitHub’s maximum frequency for `schedule`). For **~1 minute or faster** after insert, fix the **Database Webhook → Edge Function** path (see below); do not rely on cron alone. To start it **immediately** from your computer:
 
 1. In GitHub: **[Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)** → create a token that can call **`repository_dispatch`** on this repo  
    - **Classic:** enable **`repo`**  
@@ -100,6 +101,13 @@ If you do not set `GITHUB_DISPATCH_TOKEN`, the script tries **`gh auth token`** 
 #### Fully automatic (advanced — insert → run within seconds)
 
 Use the Edge Function **`github-dispatch-lead-intake`** plus a **Database Webhook** on `INSERT` into `lead_intake_submissions`, as documented in the repo under `supabase/functions/github-dispatch-lead-intake/index.ts` and **`DEPLOYMENT.md`**. That path keeps the PAT in **Supabase Edge secrets**, not in your laptop `.env.local`.
+
+**If the row appears in Table Editor but GitHub never runs `lead_intake_process`:**
+
+1. **Supabase → Edge Functions → `github-dispatch-lead-intake` → Logs** — look for `[github-dispatch-lead-intake]` lines (unauthorized = wrong `x-lead-intake-dispatch-secret`; `function_not_configured` = missing `GITHUB_DISPATCH_TOKEN` or `LEAD_INTAKE_DISPATCH_WEBHOOK_SECRET` in Edge secrets).
+2. **Database → Webhooks** — open your `lead_intake_submissions` INSERT webhook → **Recent deliveries** (4xx/5xx = URL, headers, or function crash). Webhook URL must be `https://<project-ref>.supabase.co/functions/v1/github-dispatch-lead-intake` with header **`x-lead-intake-dispatch-secret`** exactly matching Edge secret **`LEAD_INTAKE_DISPATCH_WEBHOOK_SECRET`**.
+3. From the repo (same `.env.local` as the pipeline), run **`npm run test:lead-intake-webhook`** — POSTs a synthetic webhook body to the function; on success you should see a new **Process lead intake snapshots** run with `lead_intake_process`.
+4. Redeploy the function after code changes: **`supabase functions deploy github-dispatch-lead-intake`** (CLI linked to the project).
 
 ---
 
