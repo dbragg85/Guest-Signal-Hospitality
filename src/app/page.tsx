@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { brand, freeSnapshot, pricingPlans } from "@/content/site";
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
@@ -19,13 +20,13 @@ export default function HomePage() {
               Monitor, Improve, and Elevate Your Guest Experience.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
+              <ServicesIntakeLink
                 href="/services/inquiry/?plan=free_snapshot"
                 className="btn-primary"
                 data-track="cta_hero_snapshot"
               >
                 Get Your Free Snapshot
-              </Link>
+              </ServicesIntakeLink>
               <Link href="/portal" className="btn-secondary" data-track="cta_hero_portal">
                 Client Portal
               </Link>
@@ -71,13 +72,13 @@ export default function HomePage() {
             </div>
 
             <div className="text-center">
-              <Link
+              <ServicesIntakeLink
                 href="/services/inquiry/?plan=free_snapshot"
                 className="btn-primary inline-block px-8 py-3"
                 data-track="cta_snapshot_primary"
               >
                 {freeSnapshot.buttonText}
-              </Link>
+              </ServicesIntakeLink>
               <p className="mt-4 text-xs text-slate-500">
                 {freeSnapshot.trustText}
               </p>
@@ -208,7 +209,7 @@ export default function HomePage() {
                 ))}
               </ul>
 
-              <Link
+              <ServicesIntakeLink
                 href={`/services/inquiry/?plan=${plan.inquiryKey}`}
                 className={`block w-full rounded-xl px-5 py-3 text-center text-sm font-semibold transition-all ${
                   plan.popular
@@ -218,7 +219,7 @@ export default function HomePage() {
                 data-track={`plan_select_${plan.name.toLowerCase().replace(/\s+/g, "_")}`}
               >
                 {plan.buttonText}
-              </Link>
+              </ServicesIntakeLink>
             </div>
           ))}
         </div>

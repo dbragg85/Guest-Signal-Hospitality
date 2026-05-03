@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 
 export function CTA({
   title,
@@ -21,6 +22,11 @@ export function CTA({
   className?: string;
 }) {
   const centered = align === "center";
+  const PrimaryLink =
+    typeof primaryHref === "string" && primaryHref.includes("/services/inquiry")
+      ? ServicesIntakeLink
+      : Link;
+
   return (
     <div
       className={`rounded-3xl border border-stone-200 bg-stone-50/80 p-8 shadow-sm ${className || ""}`}
@@ -43,9 +49,9 @@ export function CTA({
               : "flex flex-col gap-3 sm:flex-row"
           }
         >
-          <Link href={primaryHref} className="btn-primary text-center">
+          <PrimaryLink href={primaryHref} className="btn-primary text-center">
             {primaryLabel}
-          </Link>
+          </PrimaryLink>
           <Link href={secondaryHref} className="btn-secondary text-center">
             {secondaryLabel}
           </Link>

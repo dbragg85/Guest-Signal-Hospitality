@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
@@ -99,12 +100,12 @@ export default function RestaurantsIndustryPage() {
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
+                <ServicesIntakeLink
                   href="/services/inquiry/?plan=free_snapshot"
                   className="btn-primary px-6 py-3 text-center"
                 >
                   Get Your Free Snapshot
-                </Link>
+                </ServicesIntakeLink>
                 <Link
                   href="/services"
                   className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 text-center"

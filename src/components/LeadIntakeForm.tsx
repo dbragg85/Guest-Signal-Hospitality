@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
@@ -330,7 +331,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
             <p className="mt-3 max-w-2xl text-slate-600">{subcopy}</p>
 
             <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <Link
+              <ServicesIntakeLink
                 href={`${serviceRouteBase}?plan=${freeSnapshot.inquiryKey}`}
                 className="rounded-3xl border-2 border-stone-200 bg-white p-8 shadow-sm transition hover:border-amber-500/40 hover:shadow-md"
               >
@@ -341,9 +342,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
                 <span className="mt-4 inline-block text-sm font-semibold text-amber-800">
                   Start intake →
                 </span>
-              </Link>
+              </ServicesIntakeLink>
               {pricingPlans.map((p) => (
-                <Link
+                <ServicesIntakeLink
                   key={p.inquiryKey}
                   href={`${serviceRouteBase}?plan=${p.inquiryKey}`}
                   className={`rounded-3xl border-2 p-8 shadow-sm transition hover:shadow-md ${
@@ -363,7 +364,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
                   <span className="mt-4 inline-block text-sm font-semibold text-amber-800">
                     Plan-specific questions →
                   </span>
-                </Link>
+                </ServicesIntakeLink>
               ))}
             </div>
 
@@ -386,9 +387,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
         <div className="mx-auto max-w-3xl px-4 py-14">
           {mode === "service" ? (
             <p className="text-sm font-medium text-slate-500">
-              <Link href="/services/inquiry/" className="text-slate-700 hover:underline">
+              <ServicesIntakeLink href="/services/inquiry/" className="text-slate-700 hover:underline">
                 ← Choose a different plan
-              </Link>
+              </ServicesIntakeLink>
               <span className="mx-2 text-slate-300">·</span>
               <Link href="/services" className="text-slate-700 hover:underline">
                 Plans overview

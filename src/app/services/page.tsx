@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { freeSnapshot, pricingPlans, servicesPricingContext } from "@/content/site";
 import { Section } from "@/components/Section";
 
@@ -54,13 +55,13 @@ export default function ServicesPage() {
             </div>
 
             <div className="text-center">
-              <Link
+              <ServicesIntakeLink
                 href={`/services/inquiry/?plan=${freeSnapshot.inquiryKey}`}
                 className="btn-primary inline-block px-8 py-3"
                 data-track="services_cta_free_snapshot"
               >
                 {freeSnapshot.buttonText}
-              </Link>
+              </ServicesIntakeLink>
               <p className="mt-4 text-xs text-slate-500">
                 {freeSnapshot.trustText}
               </p>
@@ -124,7 +125,7 @@ export default function ServicesPage() {
                 ))}
               </ul>
 
-              <Link
+              <ServicesIntakeLink
                 href={`/services/inquiry/?plan=${plan.inquiryKey}`}
                 className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold ${
                   plan.popular
@@ -134,7 +135,7 @@ export default function ServicesPage() {
                 data-track={`services_cta_${plan.inquiryKey}`}
               >
                 {plan.buttonText}
-              </Link>
+              </ServicesIntakeLink>
             </div>
           ))}
         </div>
