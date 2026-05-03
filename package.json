@@ -17,6 +17,7 @@
     "pipeline:yelp:monthly": "node scripts/run-monthly-yelp-pipeline.mjs",
     "pipeline:lead-intake": "node scripts/process-lead-intake-snapshot.mjs",
     "dispatch:lead-intake": "node scripts/dispatch-github-lead-intake.mjs",
+    "resend:portal-invites": "node scripts/resend-portal-invites.mjs",
     "test:lead-intake-webhook": "node scripts/test-lead-intake-webhook-edge.mjs",
     "pipeline:google:gss": "node scripts/run-google-gss-monthly.mjs",
     "pipeline:google:apify-ingest-all": "node scripts/run-google-apify-monthly-ingest.mjs",
