@@ -440,6 +440,9 @@ async function main() {
   const apifyToken = mockDataset ? null : getEnv("APIFY_TOKEN", { required: true });
   const apifyActorId = mockDataset ? null : getEnv("APIFY_YELP_ACTOR_ID", { required: true });
   const dryRun = ["1", "true", "yes"].includes((getEnv("DRY_RUN", { fallback: "0" }) || "").toLowerCase());
+  const ingestOnly = ["1", "true", "yes"].includes(
+    (getEnv("YELP_MONTHLY_INGEST_ONLY", { fallback: "0" }) || "").toLowerCase(),
+  );
 
   const providedStart = getEnv("PERIOD_START", { fallback: "" });
   const providedEnd = getEnv("PERIOD_END", { fallback: "" });
@@ -490,7 +493,9 @@ async function main() {
     console.log("Running in mock Yelp dataset mode (no live Apify actor calls).");
   }
 
-  console.log(`Running period ${periodLabel} (${periodStartIso} → ${periodEndIso}) for ${candidates.length} restaurants`);
+  console.log(
+    `Running period ${periodLabel} (${periodStartIso} → ${periodEndIso}) for ${candidates.length} restaurant(s)${ingestOnly ? " — YELP_MONTHLY_INGEST_ONLY (review_observations only)" : ""}`,
+  );
 
   for (const restaurant of candidates) {
     let rawItems = [];
@@ -539,6 +544,22 @@ async function main() {
         .from("review_observations")
         .upsert(inserts, { onConflict: "restaurant_id,source,external_review_id", ignoreDuplicates: false });
       if (insertError) throw insertError;
+      console.log(`[${restaurant.slug}] Upserted ${inserts.length} Yelp review_observations row(s).`);
+    }
+
+    if (ingestOnly) {
+      if (dryRun && periodReviews.length) {
+        console.log(`[${restaurant.slug}] DRY_RUN (ingest-only): would upsert ${periodReviews.length} Yelp review(s) in window.`);
+        console.table(rubricReviewPreviewRows(periodReviews));
+      } else if (dryRun) {
+        console.log(`[${restaurant.slug}] DRY_RUN (ingest-only): 0 Yelp reviews in window.`);
+      } else if (!periodReviews.length) {
+        console.warn(`[${restaurant.slug}] Ingest-only: 0 Yelp reviews in window; nothing upserted.`);
+      }
+      console.log(
+        `[${restaurant.slug}] YELP_MONTHLY_INGEST_ONLY=1 — skipped rubric snapshot/scorecard (run pipeline:google:gss with GSS_REVIEW_SOURCES=google,yelp).`,
+      );
+      continue;
     }
 
     const yelpScores = computeRubricCategoryScores(periodReviews);

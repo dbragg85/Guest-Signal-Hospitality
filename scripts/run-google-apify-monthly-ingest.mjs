@@ -88,15 +88,14 @@ async function main() {
       .filter(Boolean),
   );
 
-  const maxApify = getEnv("GOOGLE_INGEST_MAX_APIFY_REVIEWS", { fallback: "" });
   const maxTotal = Math.min(
     500,
     Math.max(
       1,
       Number(
-        maxApify && String(maxApify).trim()
-          ? maxApify
-          : getEnv("LEAD_INTAKE_MAX_REVIEWS", { fallback: "250" }),
+        getEnv("GOOGLE_INGEST_MAX_APIFY_REVIEWS", {
+          fallback: getEnv("LEAD_INTAKE_MAX_REVIEWS", { fallback: "250" }),
+        }),
       ),
     ),
   );
