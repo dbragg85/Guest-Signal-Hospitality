@@ -1,6 +1,21 @@
 #!/usr/bin/env node
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
+import {
+  buildApifyInput,
+  startApifyRun,
+  waitForApifyRun,
+  fetchApifyDatasetItems,
+  yelpMaxItemsPerRun,
+} from "./lib/apify-yelp-actor.mjs";
+import {
+  normalizeApifyItem,
+  computeRubricCategoryScores,
+  computeBlendedRubricDisplay,
+  splitWrittenAndStarOnlyReviews,
+  RUBRIC_ALLOWED_REVIEW_SOURCES,
+} from "./lib/guest-signal-rubric.mjs";
+import { replaceRubricReviewAttributionsForSnapshot } from "./lib/rubric-scorecard-persist.mjs";
 
 // Guest Signal Hospitality rubric (board): score only mentioned categories; scale
 // 95 / 85 / 70 / 50 / 30. Pillars: Experience (Food+Service), Operational (Speed+Cleanliness),
@@ -181,34 +196,6 @@ function singleCategoryScore(map, cat) {
   return row.score;
 }
 
-function computeRubricCategoryScores(reviews) {
-  const sums = new Map();
-  for (const review of reviews) {
-    const text = review.review_text ?? "";
-    const rating = review.rating;
-    const mentioned = detectMentionedCategories(text);
-    for (const cat of mentioned) {
-      let score;
-      if (cat === "return_intent") {
-        score = scoreReturnIntent(text, rating);
-        if (score == null) continue;
-      } else {
-        score = starToRubricScore(rating);
-      }
-      const cur = sums.get(cat) ?? { sum: 0, count: 0 };
-      cur.sum += score;
-      cur.count += 1;
-      sums.set(cat, cur);
-    }
-  }
-  const result = new Map();
-  for (const [cat, { sum, count }] of sums.entries()) {
-    if (!count) continue;
-    result.set(cat, { score: Math.round(sum / count), mentions: count });
-  }
-  return result;
-}
-
 function rubricReviewPreviewRows(reviews, limit = 8) {
   return reviews.slice(0, limit).map((review) => {
     const mentioned = [...detectMentionedCategories(review.review_text ?? "")];
@@ -279,68 +266,6 @@ function confidenceLevelFromReviewCount(totalReviews) {
   return "low";
 }
 
-function buildApifyInput(yelpUrl) {
-  const rawTemplate = getEnv("APIFY_YELP_INPUT_TEMPLATE_JSON", { fallback: "" });
-  if (!rawTemplate) {
-    return {
-      startUrls: [{ url: yelpUrl }],
-      maxReviews: Number(getEnv("MAX_REVIEWS_PER_LOCATION", { fallback: "250" })),
-      sortBy: "newest",
-    };
-  }
-
-  const templated = rawTemplate
-    .replaceAll("{{YELP_URL}}", yelpUrl)
-    .replaceAll("{{yelp_url}}", yelpUrl);
-
-  return JSON.parse(templated);
-}
-
-async function startApifyRun({ token, actorId, input }) {
-  const response = await fetch(
-    `https://api.apify.com/v2/acts/${encodeURIComponent(actorId)}/runs?token=${encodeURIComponent(token)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Apify run start failed (${response.status}): ${await response.text()}`);
-  }
-
-  const body = await response.json();
-  return body.data;
-}
-
-async function waitForApifyRun({ token, runId }) {
-  for (;;) {
-    const response = await fetch(
-      `https://api.apify.com/v2/actor-runs/${encodeURIComponent(runId)}?token=${encodeURIComponent(token)}`
-    );
-    if (!response.ok) {
-      throw new Error(`Apify run poll failed (${response.status}): ${await response.text()}`);
-    }
-    const body = await response.json();
-    const status = body.data?.status;
-    if (["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
-      return body.data;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-  }
-}
-
-async function fetchApifyDatasetItems({ token, datasetId }) {
-  const response = await fetch(
-    `https://api.apify.com/v2/datasets/${encodeURIComponent(datasetId)}/items?token=${encodeURIComponent(token)}&clean=true&format=json`
-  );
-  if (!response.ok) {
-    throw new Error(`Apify dataset fetch failed (${response.status}): ${await response.text()}`);
-  }
-  return response.json();
-}
-
 function loadMockDatasetFromEnv() {
   const rawJson = getEnv("APIFY_MOCK_DATASET_JSON", { fallback: "" });
   const filePath = getEnv("APIFY_MOCK_DATASET_FILE", { fallback: "" });
@@ -367,70 +292,6 @@ function loadMockDatasetFromEnv() {
     throw new Error("Mock dataset object must include either items[] or bySlug{slug:[]}.");
   }
   return { bySlug };
-}
-
-function normalizeApifyItem(item) {
-  if (!item || typeof item !== "object") return null;
-  const reviewText = firstNonEmptyString(item, [
-    "text",
-    "reviewText",
-    "review.text",
-    "comment",
-    "review",
-    "content",
-    "reviewDescription",
-    "review_data.text",
-    "payload.text",
-  ]);
-  if (!reviewText) return null;
-
-  const rating = parseRating(
-    firstNonNull(item, [
-      "rating",
-      "stars",
-      "starRating",
-      "reviewRating",
-      "score",
-      "review.rating",
-      "review.stars",
-      "review_data.rating",
-      "payload.rating",
-    ])
-  );
-
-  const dateRaw = firstNonNull(item, [
-    "publishedDate",
-    "date",
-    "createdAt",
-    "time",
-    "publishedAt",
-    "review.date",
-    "review_data.date",
-    "payload.date",
-  ]);
-  const reviewDate = parseDateOnly(dateRaw);
-
-  const externalReviewId = String(
-    firstNonNull(item, [
-      "reviewId",
-      "id",
-      "reviewUrl",
-      "url",
-      "review.id",
-      "review.url",
-      "review_data.id",
-      "payload.id",
-    ]) ?? `${reviewText.slice(0, 32)}:${dateRaw ?? ""}`
-  );
-
-  return {
-    source: "yelp",
-    external_review_id: externalReviewId,
-    review_date: reviewDate ? toIsoDate(reviewDate) : null,
-    rating,
-    review_text: reviewText,
-    raw: item,
-  };
 }
 
 async function main() {
@@ -504,36 +365,81 @@ async function main() {
       console.log(`\n[${restaurant.slug}] Loaded ${rawItems.length} mock Yelp review rows.`);
     } else {
       console.log(`\n[${restaurant.slug}] Pulling Yelp reviews from Apify...`);
-      const input = buildApifyInput(restaurant.yelp_url);
-      const run = await startApifyRun({ token: apifyToken, actorId: apifyActorId, input });
+      const input = buildApifyInput(restaurant.yelp_url, {
+        periodStartIso,
+        periodEndIso,
+        actorId: apifyActorId,
+      });
+      const cap = yelpMaxItemsPerRun();
+      const addRunMaxQuery = !["0", "false", "no"].includes(
+        (getEnv("APIFY_YELP_RUN_MAX_ITEMS_QUERY", { fallback: "1" }) || "").toLowerCase(),
+      );
+      const run = await startApifyRun({
+        token: apifyToken,
+        actorId: apifyActorId,
+        input,
+        runQuery: addRunMaxQuery ? { maxItems: cap } : {},
+      });
       const finalRun = await waitForApifyRun({ token: apifyToken, runId: run.id });
       if (finalRun.status !== "SUCCEEDED") {
         throw new Error(`[${restaurant.slug}] Apify run ${run.id} ended with status ${finalRun.status}`);
       }
-      rawItems = await fetchApifyDatasetItems({ token: apifyToken, datasetId: finalRun.defaultDatasetId });
+      const datasetClean = !["0", "false", "no"].includes(
+        (getEnv("YELP_DATASET_CLEAN", { fallback: "false" }) || "").toLowerCase(),
+      );
+      rawItems = await fetchApifyDatasetItems({
+        token: apifyToken,
+        datasetId: finalRun.defaultDatasetId,
+        clean: datasetClean,
+      });
     }
-    const parsed = rawItems.map(normalizeApifyItem).filter(Boolean);
-    if (rawItems.length > 0 && parsed.length === 0) {
-      const sample = rawItems[0] ?? {};
+    const rawFiltered = (rawItems ?? []).filter(
+      (row) => row && typeof row === "object" && !row.demo && !row.isDemo && !row.demoMode,
+    );
+    const parsed = rawFiltered.map((row) => normalizeApifyItem(row, "yelp")).filter(Boolean);
+    if ((rawItems ?? []).length > 0 && parsed.length === 0) {
+      const sample = rawFiltered[0] ?? rawItems[0] ?? {};
       const sampleKeys = Object.keys(sample).slice(0, 20);
       const demoFlag = Boolean(sample.demo || sample.isDemo || sample.demoMode);
-      throw new Error(
-        [
-          `[${restaurant.slug}] Apify dataset returned ${rawItems.length} row(s) but none matched expected review fields.`,
-          `Sample keys: ${sampleKeys.join(", ") || "(none)"}`,
-          demoFlag ? "Sample row indicates demo mode; actor output contract/quota must be fixed." : "",
-        ]
-          .filter(Boolean)
-          .join(" ")
-      );
+      const msg = [
+        `[${restaurant.slug}] Apify dataset returned ${rawItems.length} row(s) but none matched expected review fields.`,
+        `Sample keys: ${sampleKeys.join(", ") || "(none)"}`,
+        demoFlag ? "Sample row indicates demo mode; check APIFY_YELP_ACTOR_ID / Yelp access or set APIFY_YELP_INPUT_TEMPLATE_JSON." : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      if (ingestOnly) {
+        console.warn(msg);
+        if (demoFlag) {
+          console.warn(
+            `[${restaurant.slug}] Apify returned demo placeholder rows only (typical on Free plan). Subscribe for live Yelp data: https://apify.com/pricing`,
+          );
+        }
+        console.warn(
+          `[${restaurant.slug}] YELP_MONTHLY_INGEST_ONLY: continuing with 0 Yelp rows (rubric/GSS can use Google only).`,
+        );
+        continue;
+      }
+      throw new Error(msg);
     }
 
-    const periodReviews = parsed.filter((review) => {
-      if (!review.review_date) return false;
-      return review.review_date >= periodStartIso && review.review_date <= periodEndIso;
-    });
+    // Apify may return maxItems (e.g. 10 newest) wider than the scoring month — only rows with
+    // review_date in [PERIOD_START, PERIOD_END] are upserted and used in rubric/GSS.
+    const inScoringMonth = (review) =>
+      Boolean(
+        review.review_date &&
+          review.review_date >= periodStartIso &&
+          review.review_date <= periodEndIso,
+      );
+    const periodReviews = parsed.filter(inScoringMonth);
+    const droppedOutsideMonth = parsed.filter(
+      (r) => r.review_date && !inScoringMonth(r),
+    ).length;
+    const droppedNoDate = parsed.filter((r) => !r.review_date).length;
 
-    console.log(`[${restaurant.slug}] ${periodReviews.length} Yelp reviews in period`);
+    console.log(
+      `[${restaurant.slug}] Yelp: normalized ${parsed.length} from Apify; kept ${periodReviews.length} in scoring month [${periodStartIso}…${periodEndIso}] (${droppedOutsideMonth} discarded outside window, ${droppedNoDate} no parseable date).`,
+    );
 
     if (!dryRun && periodReviews.length) {
       const inserts = periodReviews.map((review) => ({
@@ -562,7 +468,8 @@ async function main() {
       continue;
     }
 
-    const yelpScores = computeRubricCategoryScores(periodReviews);
+    const { written, starOnly } = splitWrittenAndStarOnlyReviews(periodReviews);
+    const yelpScores = computeRubricCategoryScores(written);
 
     const { data: existingSnapshot, error: snapshotFetchError } = await supabase
       .from("snapshots")
@@ -621,13 +528,10 @@ async function main() {
     const totalReviews = googleCount + yelpCount;
     const confidenceLevel = confidenceLevelFromReviewCount(totalReviews);
 
-    const pillarScores = {
-      experience_quality: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.experience_quality),
-      operational_reliability: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.operational_reliability),
-      emotional_connection: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.emotional_connection),
-    };
-
-    const overallScore = overallGuestSignalFromPillars(pillarScores);
+    const { displayScores, overallScore, pillarScoresRaw, starOnlyCount, starOnlyAvg } = computeBlendedRubricDisplay(
+      merged,
+      starOnly,
+    );
     const existingOverallScore = parseNumber(existingSnapshot?.guest_signal_score);
     const effectiveOverallScore = overallScore ?? existingOverallScore;
     const canPersistSnapshot = effectiveOverallScore != null;
@@ -645,11 +549,11 @@ async function main() {
       total_reviews_analyzed: totalReviews,
       google_reviews_analyzed: googleCount,
       yelp_reviews_analyzed: yelpCount,
-      experience_quality: pillarScores.experience_quality,
-      service_hospitality: singleCategoryScore(merged, "service"),
-      food_beverage: singleCategoryScore(merged, "food"),
-      operational_reliability: pillarScores.operational_reliability,
-      emotional_connection: pillarScores.emotional_connection,
+      experience_quality: displayScores.experience_quality,
+      service_hospitality: displayScores.service_hospitality,
+      food_beverage: displayScores.food_beverage,
+      operational_reliability: displayScores.operational_reliability,
+      emotional_connection: displayScores.emotional_connection,
       total_score_breakdown: {
         scorecard_total_score: overallScore,
         category_average:
@@ -659,9 +563,14 @@ async function main() {
         category_count: categoryScoresPayload.length,
         variance: null,
         source:
-          "Guest Signal rubric v1 — mentioned categories only; star-mapped 95/85/70/50/30; pillar weights per board spec",
+          "Guest Signal rubric v1 — written reviews drive mention+star category scores; pillar/tile scores blend 80% written + 20% star-only only when that pillar/tile has a written score; unmentioned dimensions stay null. Overall falls back to mean star→rubric if only star-only reviews exist.",
+        pillar_written_weight: 0.8,
+        pillar_star_only_weight: 0.2,
+        written_review_count_rubric: written.length,
+        star_only_review_count: starOnlyCount,
+        star_only_rubric_avg: starOnlyAvg != null ? Number(starOnlyAvg.toFixed(2)) : null,
+        pillar_scores_written_leg: pillarScoresRaw,
       },
-      ...pillarScores,
     };
 
     if (dryRun) {
@@ -676,7 +585,10 @@ async function main() {
         totalReviews,
         googleCount,
         yelpCount,
-        pillars: pillarScores,
+        pillarScoresWrittenLeg: pillarScoresRaw,
+        pillarScoresDisplay: displayScores,
+        starOnlyCount,
+        starOnlyAvg,
         categories: categoryScoresPayload,
       }, null, 2));
       continue;
@@ -702,9 +614,9 @@ async function main() {
         total_reviews_analyzed: totalReviews,
         google_reviews_analyzed: googleCount,
         yelp_reviews_analyzed: yelpCount,
-        pillar_experience_quality: pillarScores.experience_quality,
-        pillar_operational_reliability: pillarScores.operational_reliability,
-        pillar_emotional_connection: pillarScores.emotional_connection,
+        pillar_experience_quality: displayScores.experience_quality,
+        pillar_operational_reliability: displayScores.operational_reliability,
+        pillar_emotional_connection: displayScores.emotional_connection,
       });
       if (snapshotInsertError) throw snapshotInsertError;
     } else {
@@ -719,9 +631,9 @@ async function main() {
           total_reviews_analyzed: totalReviews,
           google_reviews_analyzed: googleCount,
           yelp_reviews_analyzed: yelpCount,
-          pillar_experience_quality: pillarScores.experience_quality,
-          pillar_operational_reliability: pillarScores.operational_reliability,
-          pillar_emotional_connection: pillarScores.emotional_connection,
+          pillar_experience_quality: displayScores.experience_quality,
+          pillar_operational_reliability: displayScores.operational_reliability,
+          pillar_emotional_connection: displayScores.emotional_connection,
         })
         .eq("id", snapshotId);
       if (snapshotUpdateError) throw snapshotUpdateError;
@@ -773,6 +685,21 @@ async function main() {
         })
         .eq("id", existingScorecard.id);
       if (scorecardUpdateError) throw scorecardUpdateError;
+    }
+
+    try {
+      const n = await replaceRubricReviewAttributionsForSnapshot({
+        supabase,
+        snapshotId,
+        restaurantId: restaurant.id,
+        periodLabel,
+        periodStartIso,
+        periodEndIso,
+        reviewSources: RUBRIC_ALLOWED_REVIEW_SOURCES,
+      });
+      console.log(`[${restaurant.slug}] rubric_review_attributions rows=${n}`);
+    } catch (e) {
+      console.warn(`[${restaurant.slug}] rubric_review_attributions:`, e?.message || e);
     }
 
     console.log(`[${restaurant.slug}] Updated snapshot + scorecard with Yelp source coverage.`);

@@ -764,6 +764,13 @@ export function RestaurantSnapshotTemplate({
                   Derived from total reviews in the snapshot window (high ≥50, medium ≥20, else low).
                 </p>
               ) : null}
+              <p className="mt-2 text-xs text-slate-600">
+                Google and Yelp counts are reviews stored for this period in Guest Signal (deduped by
+                source and id), not the raw size of your last Apify run. Rows need a parsable review date
+                inside the window. Yelp stays at zero until Yelp ingest persists{" "}
+                <span className="font-mono text-[11px]">source=yelp</span> rows (venue needs{" "}
+                <span className="font-mono text-[11px]">yelp_url</span> and a successful pull).
+              </p>
             </div>
           ) : null}
         </div>

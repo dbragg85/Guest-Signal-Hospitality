@@ -6,6 +6,7 @@
  *
  * Usage: node scripts/run-period-google-yelp-rubric.mjs [slug]
  * Env: same as run-google-apify-monthly-ingest + Yelp actor; PERIOD_* optional (defaults Apr 2026).
+ * Yelp: `APIFY_YELP_ACTOR_ID=c7MfRDqfYvZWOtMrJ` uses [agents/yelp-reviews](https://apify.com/agents/yelp-reviews) input (`maxItems`, `sortBy`, string `startUrls`). Month window is applied when saving observations, not in actor input. `YELP_MAX_ITEMS` (default 10) caps each run.
  */
 import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -27,6 +28,11 @@ function loadDotEnvLocal() {
     "GOOGLE_INGEST_MAX_APIFY_REVIEWS",
     "APIFY_GOOGLE_SCORING_PERIOD_FILTER",
     "GOOGLE_INGEST_THROTTLE_MS",
+    "YELP_MAX_ITEMS",
+    "YELP_SORT_BY",
+    "YELP_INPUT_STYLE",
+    "APIFY_YELP_RUN_MAX_ITEMS_QUERY",
+    "YELP_DATASET_CLEAN",
   ]);
   const text = readFileSync(ENV_FILE, "utf8");
   for (const line of text.split("\n")) {

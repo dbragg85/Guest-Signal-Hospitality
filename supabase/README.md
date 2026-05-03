@@ -192,8 +192,10 @@ Optional env vars:
 
 - `PERIOD_START` and `PERIOD_END` (`YYYY-MM-DD`) and/or `PERIOD_LABEL` (`Mar 2026`)
 - `RESTAURANT_SLUGS` (comma-separated subset)
-- `MAX_REVIEWS_PER_LOCATION` (default `250`)
-- `APIFY_YELP_INPUT_TEMPLATE_JSON` (JSON template with `{{YELP_URL}}` placeholder)
+- `YELP_MAX_ITEMS` (default `10`) — `maxItems` for [agents/yelp-reviews](https://apify.com/agents/yelp-reviews), `maxReviewsPerUrl` for [tri_angle/yelp-review-scraper](https://apify.com/tri_angle/yelp-review-scraper); Apify run query `maxItems` when `APIFY_YELP_RUN_MAX_ITEMS_QUERY` is on (default)
+- `YELP_SORT_BY` (default `newest`) — agents actor only; tri_angle uses its own sort when using custom template
+- `YELP_INPUT_STYLE` — `auto` (default), `agents`, or `tri_angle` to force input shape (`auto` maps actor `c7MfRDqfYvZWOtMrJ` / `agents~yelp-reviews` to agents format)
+- `APIFY_YELP_INPUT_TEMPLATE_JSON` (JSON template with `{{YELP_URL}}`, `{{PERIOD_START}}`, `{{PERIOD_END}}`, `{{MAX_ITEMS}}`, `{{SORT_BY}}`)
 - `DRY_RUN=1` for a no-write preview
 - `APIFY_MOCK_DATASET_FILE` (path to local JSON fixture) or `APIFY_MOCK_DATASET_JSON` (inline JSON string) to bypass live Apify calls for non-live validation
 

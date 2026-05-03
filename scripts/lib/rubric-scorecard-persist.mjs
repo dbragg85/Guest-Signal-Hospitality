@@ -5,12 +5,13 @@
 import { randomUUID } from "node:crypto";
 import {
   computeRubricCategoryScores,
+  computeBlendedRubricDisplay,
   confidenceLevelFromReviewCount,
-  overallGuestSignalFromPillars,
   parseNumber,
-  singleCategoryScore,
-  weightedPillarFromMerged,
-  RUBRIC_SUBWEIGHTS,
+  splitWrittenAndStarOnlyReviews,
+  RUBRIC_ALLOWED_REVIEW_SOURCES,
+  RUBRIC_SCORING_MODEL_V1,
+  buildRubricReviewAttributionRows,
 } from "./guest-signal-rubric.mjs";
 
 export const SERVICE_INQUIRY_PLANS = [
@@ -24,6 +25,54 @@ export function normalizeInquiryPlan(raw) {
   const s = String(raw ?? "").trim();
   if (SERVICE_INQUIRY_PLANS.includes(s)) return s;
   return "free_snapshot";
+}
+
+/**
+ * Replace `rubric_review_attributions` for a snapshot from live `review_observations` in the scoring window.
+ * Call after snapshot + category scores are saved. Uses DB rows (all sources in window) so callers
+ * that only pass Yelp-shaped `periodReviews` still persist full audit coverage.
+ *
+ * @param {string[]} [params.reviewSources] - Defaults to `RUBRIC_ALLOWED_REVIEW_SOURCES`.
+ * @returns {number} rows inserted
+ */
+export async function replaceRubricReviewAttributionsForSnapshot({
+  supabase,
+  snapshotId,
+  restaurantId,
+  periodLabel,
+  periodStartIso,
+  periodEndIso,
+  reviewSources,
+}) {
+  const sources = (reviewSources?.length ? reviewSources : RUBRIC_ALLOWED_REVIEW_SOURCES).map(String);
+  const { data: obs, error } = await supabase
+    .from("review_observations")
+    .select("id, source, external_review_id, review_date, rating, review_text")
+    .eq("restaurant_id", restaurantId)
+    .gte("review_date", periodStartIso)
+    .lte("review_date", periodEndIso)
+    .in("source", sources);
+  if (error) throw error;
+
+  const built = buildRubricReviewAttributionRows(obs ?? []);
+  const { error: delErr } = await supabase.from("rubric_review_attributions").delete().eq("snapshot_id", snapshotId);
+  if (delErr) throw delErr;
+  if (!built.length) return 0;
+
+  const rows = built.map((b) => ({
+    snapshot_id: snapshotId,
+    restaurant_id: restaurantId,
+    period_label: periodLabel,
+    scoring_model: RUBRIC_SCORING_MODEL_V1,
+    ...b,
+  }));
+  const chunk = 200;
+  for (let i = 0; i < rows.length; i += chunk) {
+    const slice = rows.slice(i, i + chunk);
+    const { error: insErr } = await supabase.from("rubric_review_attributions").insert(slice);
+    if (insErr) throw insErr;
+  }
+  return rows.length;
 }
 
 export function intakePlanPresentation(planKey) {
@@ -73,6 +122,7 @@ export function intakePlanPresentation(planKey) {
  * @param {object} params
  * @param {boolean} [params.skipObservationUpsert] - Do not write review_observations (already persisted).
  * @param {boolean} [params.ignoreExistingCategoryScores] - Ignore snapshot_category_scores rows; rubric-only merge.
+ * @param {string[]} [params.rubricAttributionReviewSources] - Sources included in `rubric_review_attributions` (default all allowed).
  */
 export async function persistRubricSnapshotFromPeriodReviews({
   supabase,
@@ -86,13 +136,14 @@ export async function persistRubricSnapshotFromPeriodReviews({
   inquiryPlan,
   skipObservationUpsert = false,
   ignoreExistingCategoryScores = false,
+  rubricAttributionReviewSources,
 }) {
   const planPresentation = intakePlanPresentation(inquiryPlan);
   const scorecardHeadline = `Guest Signal snapshot (${periodLabel})${planPresentation.headlineTag}`;
 
   const googleCount = periodReviews.filter((r) => r.source === "google").length;
   const yelpCount = periodReviews.filter((r) => r.source === "yelp").length;
-  const totalReviews = googleCount + yelpCount;
+  const totalReviews = periodReviews.length;
   const confidenceLevel = confidenceLevelFromReviewCount(totalReviews);
 
   if (!skipObservationUpsert && !dryRun && periodReviews.length) {
@@ -106,7 +157,8 @@ export async function persistRubricSnapshotFromPeriodReviews({
     if (insertError) throw insertError;
   }
 
-  const rubricScores = computeRubricCategoryScores(periodReviews);
+  const { written, starOnly } = splitWrittenAndStarOnlyReviews(periodReviews);
+  const rubricScores = computeRubricCategoryScores(written);
 
   const { data: existingSnapshot, error: snapshotFetchError } = await supabase
     .from("snapshots")
@@ -161,13 +213,10 @@ export async function persistRubricSnapshotFromPeriodReviews({
     mentions: row.mentions,
   }));
 
-  const pillarScores = {
-    experience_quality: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.experience_quality),
-    operational_reliability: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.operational_reliability),
-    emotional_connection: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.emotional_connection),
-  };
-
-  const overallScore = overallGuestSignalFromPillars(pillarScores);
+  const { displayScores, overallScore, pillarScoresRaw, starOnlyCount, starOnlyAvg } = computeBlendedRubricDisplay(
+    merged,
+    starOnly,
+  );
   const existingOverallScore = parseNumber(existingSnapshot?.guest_signal_score);
   const effectiveOverallScore = overallScore ?? existingOverallScore;
   const canPersistSnapshot = effectiveOverallScore != null;
@@ -185,11 +234,11 @@ export async function persistRubricSnapshotFromPeriodReviews({
     total_reviews_analyzed: totalReviews,
     google_reviews_analyzed: googleCount,
     yelp_reviews_analyzed: yelpCount,
-    experience_quality: pillarScores.experience_quality,
-    service_hospitality: singleCategoryScore(merged, "service"),
-    food_beverage: singleCategoryScore(merged, "food"),
-    operational_reliability: pillarScores.operational_reliability,
-    emotional_connection: pillarScores.emotional_connection,
+    experience_quality: displayScores.experience_quality,
+    service_hospitality: displayScores.service_hospitality,
+    food_beverage: displayScores.food_beverage,
+    operational_reliability: displayScores.operational_reliability,
+    emotional_connection: displayScores.emotional_connection,
     intake_automation: true,
     intake_inquiry_plan: normalizeInquiryPlan(inquiryPlan),
     intake_plan_label: planPresentation.humanLabel,
@@ -210,13 +259,33 @@ export async function persistRubricSnapshotFromPeriodReviews({
       category_count: categoryScoresPayload.length,
       variance: null,
       source:
-        "Guest Signal rubric v1 — mentioned categories only; star-mapped 95/85/70/50/30; pillar weights per board spec",
+        "Guest Signal rubric v1 — written reviews drive mention+star category scores per category; each pillar/tile blends 80% mention-based leg + 20% mean star→rubric from textless reviews only when that pillar/tile has a written score; unmentioned dimensions stay null. Overall uses pillar weights on non-null pillars; if all pillars are null but textless reviews exist, overall falls back to mean star→rubric.",
+      pillar_written_weight: 0.8,
+      pillar_star_only_weight: 0.2,
+      written_review_count_rubric: written.length,
+      star_only_review_count: starOnlyCount,
+      star_only_rubric_avg: starOnlyAvg != null ? Number(starOnlyAvg.toFixed(2)) : null,
+      pillar_scores_written_leg: pillarScoresRaw,
     },
-    ...pillarScores,
   };
 
   if (dryRun) {
-    console.log(JSON.stringify({ snapshotId, effectiveOverallScore, pillarScores, categoryScoresPayload, reviewSourceNote }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          snapshotId,
+          effectiveOverallScore,
+          pillarScoresWrittenLeg: pillarScoresRaw,
+          pillarScoresDisplay: displayScores,
+          starOnlyCount,
+          starOnlyAvg,
+          categoryScoresPayload,
+          reviewSourceNote,
+        },
+        null,
+        2,
+      ),
+    );
     return Boolean(canPersistSnapshot);
   }
 
@@ -238,9 +307,9 @@ export async function persistRubricSnapshotFromPeriodReviews({
       total_reviews_analyzed: totalReviews,
       google_reviews_analyzed: googleCount,
       yelp_reviews_analyzed: yelpCount,
-      pillar_experience_quality: pillarScores.experience_quality,
-      pillar_operational_reliability: pillarScores.operational_reliability,
-      pillar_emotional_connection: pillarScores.emotional_connection,
+      pillar_experience_quality: displayScores.experience_quality,
+      pillar_operational_reliability: displayScores.operational_reliability,
+      pillar_emotional_connection: displayScores.emotional_connection,
     });
     if (snapshotInsertError) throw snapshotInsertError;
   } else {
@@ -255,9 +324,9 @@ export async function persistRubricSnapshotFromPeriodReviews({
         total_reviews_analyzed: totalReviews,
         google_reviews_analyzed: googleCount,
         yelp_reviews_analyzed: yelpCount,
-        pillar_experience_quality: pillarScores.experience_quality,
-        pillar_operational_reliability: pillarScores.operational_reliability,
-        pillar_emotional_connection: pillarScores.emotional_connection,
+        pillar_experience_quality: displayScores.experience_quality,
+        pillar_operational_reliability: displayScores.operational_reliability,
+        pillar_emotional_connection: displayScores.emotional_connection,
       })
       .eq("id", snapshotId);
     if (snapshotUpdateError) throw snapshotUpdateError;
@@ -319,6 +388,25 @@ export async function persistRubricSnapshotFromPeriodReviews({
       })
       .eq("id", existingScorecard.id);
     if (scorecardUpdateError) throw scorecardUpdateError;
+  }
+
+  if (!dryRun && canPersistSnapshot && snapshotId) {
+    const attrSources =
+      rubricAttributionReviewSources?.length > 0 ? rubricAttributionReviewSources : RUBRIC_ALLOWED_REVIEW_SOURCES;
+    try {
+      const n = await replaceRubricReviewAttributionsForSnapshot({
+        supabase,
+        snapshotId,
+        restaurantId: restaurant.id,
+        periodLabel,
+        periodStartIso,
+        periodEndIso,
+        reviewSources: attrSources,
+      });
+      console.log(`[${restaurant.slug}] rubric_review_attributions rows=${n} (${reviewSourceNote}).`);
+    } catch (e) {
+      console.warn(`[${restaurant.slug}] rubric_review_attributions skipped:`, e?.message || e);
+    }
   }
 
   console.log(`[${restaurant.slug}] Rubric snapshot + scorecard saved (${reviewSourceNote}).`);

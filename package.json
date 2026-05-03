@@ -18,6 +18,7 @@
     "dispatch:lead-intake": "node scripts/dispatch-github-lead-intake.mjs",
     "pipeline:google:gss": "node scripts/run-google-gss-monthly.mjs",
     "pipeline:google:apify-ingest-all": "node scripts/run-google-apify-monthly-ingest.mjs",
+    "pipeline:aggregator:apify-ingest-all": "node scripts/run-restaurant-aggregator-ingest.mjs",
     "pipeline:google:monthly-all": "node scripts/run-google-apify-monthly-ingest.mjs && node scripts/run-google-gss-monthly.mjs",
     "pipeline:period:google-yelp-gss": "node scripts/run-period-google-yelp-gss.mjs",
     "pipeline:period:google-yelp-rubric": "node scripts/run-period-google-yelp-rubric.mjs",

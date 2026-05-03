@@ -1,23 +1,26 @@
 #!/usr/bin/env node
 /**
- * Pull Google Maps reviews via Apify for every restaurant (or RESTAURANT_SLUGS filter)
- * and upsert rows into review_observations for reviews whose review_date falls in
- * PERIOD_START..PERIOD_END (inclusive, YYYY-MM-DD UTC).
+ * Pull reviews via Apify [Restaurant Review Aggregator](https://apify.com/tri_angle/restaurant-review-aggregator)
+ * (Google Maps place discovery, then Yelp / Google / TripAdvisor / Facebook / DoorDash / Uber Eats).
+ * Upserts `review_observations` for rows whose `review_date` falls in PERIOD_START..PERIOD_END (UTC).
  *
- * Does not use mock data — requires APIFY_TOKEN + APIFY_GOOGLE_ACTOR_ID.
- * Run `npm run pipeline:google:gss` afterward (same PERIOD_*) to rebuild snapshots/scorecards.
+ * Requires migration 023 (extended `source` check). Normalize with `normalizeApifyItem(_, "restaurant-aggregator")`.
  *
- * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, APIFY_TOKEN, APIFY_GOOGLE_ACTOR_ID,
- *      PERIOD_START, PERIOD_END (optional; default = prior completed calendar month UTC),
- *      optional PERIOD_LABEL (for logs only), RESTAURANT_SLUGS, DRY_RUN=1,
- *      GOOGLE_INGEST_MAX_APIFY_REVIEWS (default 250, cap 500) — actor pull budget for the month window;
- *      LEAD_INTAKE_MAX_REVIEWS used only if unset. GOOGLE_INGEST_THROTTLE_MS (default 2500),
- *      APIFY_GOOGLE_SCORING_PERIOD_FILTER=1|0 — when 1 and PERIOD_* set, passes reviewsStartDate to Apify
- *      so newest-first runs do not fill maxReviews with prior months (see apify-google-reviews.mjs).
- *      APIFY_GOOGLE_START_URL, APIFY_GOOGLE_INPUT_TEMPLATE_JSON (placeholders {{PERIOD_START}}, {{PERIOD_END}})
+ * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, APIFY_TOKEN,
+ *      APIFY_RESTAURANT_AGGREGATOR_ACTOR_ID (optional; default tri_angle~restaurant-review-aggregator),
+ *      PERIOD_START, PERIOD_END (optional; prior completed month), RESTAURANT_SLUGS, DRY_RUN=1,
+ *      Optional: pass a single slug as argv[2] (e.g. `node …/run-restaurant-aggregator-ingest.mjs west-shine-family-restaurant`)
+ *      — same as RESTAURANT_SLUGS with one entry; without either, all restaurants are processed (alphabetical order).
+ *      APIFY_GOOGLE_START_URL (optional global override per run — same as Google monthly ingest),
+ *      AGGREGATOR_MAX_REVIEWS_PER_PLACE_PROVIDER (default 15, max 100),
+ *      APIFY_AGGREGATOR_PROVIDERS — comma list; omit for all six providers,
+ *      APIFY_AGGREGATOR_INPUT_TEMPLATE_JSON — optional full JSON template ({{MAPS_URL}}, {{PERIOD_START}}, …),
+ *      AGGREGATOR_INGEST_THROTTLE_MS (default 3000) — delay between restaurants.
+ *
+ * Rubric rebuild: set RUBRIC_REVIEW_SOURCES to include platforms you ingested (default rebuild is still google,yelp).
  */
 import { createClient } from "@supabase/supabase-js";
-import { pullGoogleReviewsViaApify } from "./lib/apify-google-reviews.mjs";
+import { pullRestaurantAggregatorReviewsViaApify } from "./lib/apify-restaurant-aggregator.mjs";
 import { getEnv, normalizeApifyItem } from "./lib/guest-signal-rubric.mjs";
 
 function parseDateOnly(value) {
@@ -66,7 +69,7 @@ async function main() {
   const dryRun = ["1", "true", "yes"].includes((getEnv("DRY_RUN", { fallback: "0" }) || "").toLowerCase());
 
   const token = getEnv("APIFY_TOKEN", { required: !dryRun });
-  const googleActor = getEnv("APIFY_GOOGLE_ACTOR_ID", { required: !dryRun });
+  const actorId = getEnv("APIFY_RESTAURANT_AGGREGATOR_ACTOR_ID", { fallback: "" }).trim();
 
   const providedStart = getEnv("PERIOD_START", { fallback: "" });
   const providedEnd = getEnv("PERIOD_END", { fallback: "" });
@@ -80,7 +83,8 @@ async function main() {
   const periodEndIso = toIsoDate(periodEnd);
   const periodLabel = getEnv("PERIOD_LABEL", { fallback: monthLabelFromDate(periodStart) });
 
-  const slugFilterRaw = getEnv("RESTAURANT_SLUGS", { fallback: "" });
+  const slugArg = process.argv[2]?.trim();
+  const slugFilterRaw = slugArg || getEnv("RESTAURANT_SLUGS", { fallback: "" });
   const slugFilter = new Set(
     slugFilterRaw
       .split(",")
@@ -88,27 +92,13 @@ async function main() {
       .filter(Boolean),
   );
 
-  const maxTotal = Math.min(
-    500,
-    Math.max(
-      1,
-      Number(
-        getEnv("GOOGLE_INGEST_MAX_APIFY_REVIEWS", {
-          fallback: getEnv("LEAD_INTAKE_MAX_REVIEWS", { fallback: "250" }),
-        }),
-      ),
-    ),
-  );
-  const throttleMs = Math.max(0, Number(getEnv("GOOGLE_INGEST_THROTTLE_MS", { fallback: "2500" })) || 0);
+  const throttleMs = Math.max(0, Number(getEnv("AGGREGATOR_INGEST_THROTTLE_MS", { fallback: "3000" })) || 0);
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: restaurants, error: rErr } = await supabase
-    .from("restaurants")
-    .select("id, slug, name, address")
-    .order("name");
+  const { data: restaurants, error: rErr } = await supabase.from("restaurants").select("id, slug, name, address").order("name");
   if (rErr) throw rErr;
 
   const candidates = (restaurants ?? []).filter((row) => {
@@ -117,7 +107,7 @@ async function main() {
   });
 
   console.log(
-    `Google Apify bulk ingest — ${periodLabel} (${periodStartIso} → ${periodEndIso} UTC), ${candidates.length} restaurant(s), dryRun=${dryRun}, maxApifyReviews=${maxTotal} (each restaurant = separate Apify run)`,
+    `Restaurant Review Aggregator ingest — ${periodLabel} (${periodStartIso} → ${periodEndIso} UTC), ${candidates.length} restaurant(s)${slugFilter.size ? ` [slugs: ${[...slugFilter].join(", ")}]` : " (all — set RESTAURANT_SLUGS or pass slug as argv[2])"}, dryRun=${dryRun}`,
   );
 
   let upserted = 0;
@@ -131,24 +121,20 @@ async function main() {
     const slug = String(row.slug);
 
     if (dryRun) {
-      console.log(`[dry-run] [${slug}] would pull Google for "${lead.business}" (${lead.street_address || "no address"})`);
+      console.log(`[dry-run] [${slug}] would run aggregator for "${lead.business}" (${lead.street_address || "no address"})`);
       dryListed += 1;
       continue;
     }
 
     try {
-      console.log(
-        `[${slug}] Apify Google pull (window ${periodStartIso}…${periodEndIso} → reviewsStartDate sent when APIFY_GOOGLE_SCORING_PERIOD_FILTER=1)…`,
-      );
-      const rawGoogle = await pullGoogleReviewsViaApify({
+      console.log(`[${slug}] Apify Restaurant Review Aggregator pull (reviewsFromDate=${periodStartIso} when set)…`);
+      const raw = await pullRestaurantAggregatorReviewsViaApify({
         lead,
         token,
-        actorId: googleActor,
+        actorId: actorId || undefined,
         reviewWindow: { startIso: periodStartIso, endIso: periodEndIso },
-        maxReviewsOverride: maxTotal,
       });
-      const sliced = rawGoogle.slice(0, maxTotal);
-      const parsed = sliced.map((item) => normalizeApifyItem(item, "google")).filter(Boolean);
+      const parsed = raw.map((item) => normalizeApifyItem(item, "restaurant-aggregator")).filter(Boolean);
       const inWindow = parsed.filter((review) => {
         if (!review.review_date) return false;
         return review.review_date >= periodStartIso && review.review_date <= periodEndIso;
@@ -158,19 +144,19 @@ async function main() {
       ).length;
       const droppedNoDate = parsed.filter((r) => !r.review_date).length;
 
+      const bySource = new Map();
+      for (const r of inWindow) {
+        bySource.set(r.source, (bySource.get(r.source) ?? 0) + 1);
+      }
+      const bySourceStr = [...bySource.entries()].map(([k, v]) => `${k}=${v}`).join(", ") || "none";
+
       console.log(
-        `[${slug}] raw=${rawGoogle.length} parsed=${parsed.length} in_window=${inWindow.length} (cap ${maxTotal}; ${droppedOutside} outside [${periodStartIso}, ${periodEndIso}], ${droppedNoDate} no date)`,
+        `[${slug}] raw=${raw.length} parsed=${parsed.length} in_window=${inWindow.length} (${bySourceStr}; ${droppedOutside} outside window, ${droppedNoDate} no date)`,
       );
 
       if (!inWindow.length) {
         skipped += 1;
         console.warn(`[${slug}] No reviews in scoring window; nothing upserted.`);
-        if (parsed.length) {
-          console.warn(
-            `[${slug}] Parsed ${parsed.length} row(s) but dates outside [${periodStartIso}, ${periodEndIso}] — sample:`,
-            parsed.slice(0, 5).map((r) => ({ review_date: r.review_date, id: r.external_review_id })),
-          );
-        }
       } else {
         const inserts = inWindow.map((review) => ({
           restaurant_id: row.id,

@@ -3,6 +3,29 @@
  * Score only mentioned categories; scale 95 / 85 / 70 / 50 / 30.
  */
 
+/** DB `review_observations.source` + `RUBRIC_REVIEW_SOURCES` allow-list (see migration 023). */
+export const RUBRIC_ALLOWED_REVIEW_SOURCES = [
+  "google",
+  "yelp",
+  "tripadvisor",
+  "facebook",
+  "doordash",
+  "ubereats",
+];
+
+/**
+ * tri_angle/restaurant-review-aggregator dataset `provider` → our `source` slug.
+ * @see https://apify.com/tri_angle/restaurant-review-aggregator
+ */
+export const AGGREGATOR_PROVIDER_TO_SOURCE = {
+  "google-maps": "google",
+  yelp: "yelp",
+  tripadvisor: "tripadvisor",
+  facebook: "facebook",
+  "door-dash": "doordash",
+  "uber-eats": "ubereats",
+};
+
 export const CATEGORY_KEYWORDS = {
   food: [
     "food",
@@ -208,6 +231,149 @@ export function singleCategoryScore(map, cat) {
   return row.score;
 }
 
+/** When a pillar/tile has a mention-based score, display blends 80% that score + 20% mean star→rubric from textless reviews; pillars with no mention signal stay null (no star imputation). */
+export const RUBRIC_WRITTEN_PILLAR_WEIGHT = 0.8;
+export const RUBRIC_STAR_ONLY_PILLAR_WEIGHT = 0.2;
+
+export function hasWrittenReviewText(review) {
+  return String(review?.review_text ?? "").trim().length > 0;
+}
+
+export function splitWrittenAndStarOnlyReviews(reviews) {
+  const written = [];
+  const starOnly = [];
+  for (const r of reviews ?? []) {
+    if (hasWrittenReviewText(r)) written.push(r);
+    else if (parseRating(r?.rating) != null) starOnly.push(r);
+  }
+  return { written, starOnly };
+}
+
+/** Mean rubric band score (95/85/70/50/30) from star ratings alone. */
+export function averageStarRubricScore(reviews) {
+  const vals = [];
+  for (const r of reviews ?? []) {
+    const s = starToRubricScore(parseRating(r?.rating));
+    if (Number.isFinite(s)) vals.push(s);
+  }
+  if (!vals.length) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+/**
+ * Blend one pillar/tile score: when there is a written (mention-based) component, mix 80% written + 20% mean
+ * star→rubric from textless reviews. When there is **no** written component for that pillar/tile, return
+ * **null** — we do not impute the global star-only average into missing dimensions (that produced uniform
+ * pillar scores whenever operational or emotional had zero keyword hits).
+ */
+export function blendPillarWithStarOnlyRubric(writtenComponent, starOnlyAverage, starOnlyReviewCount) {
+  const n = Number(starOnlyReviewCount) || 0;
+  if (writtenComponent == null || !Number.isFinite(writtenComponent)) {
+    return null;
+  }
+  if (!n || starOnlyAverage == null || !Number.isFinite(starOnlyAverage)) {
+    return Math.round(writtenComponent);
+  }
+  return Math.round(
+    RUBRIC_WRITTEN_PILLAR_WEIGHT * writtenComponent + RUBRIC_STAR_ONLY_PILLAR_WEIGHT * starOnlyAverage,
+  );
+}
+
+export function blendAllPillarDisplayScores(pillarScoresRaw, serviceScore, foodScore, starOnlyAvg, starOnlyCount) {
+  const blend = (w) => blendPillarWithStarOnlyRubric(w, starOnlyAvg, starOnlyCount);
+  return {
+    experience_quality: blend(pillarScoresRaw.experience_quality),
+    operational_reliability: blend(pillarScoresRaw.operational_reliability),
+    emotional_connection: blend(pillarScoresRaw.emotional_connection),
+    service_hospitality: blend(serviceScore),
+    food_beverage: blend(foodScore),
+  };
+}
+
+/**
+ * Written leg = category map merge; star-only nudges pillars **that already have** a written score (80/20).
+ * Overall = weighted mean of non-null display pillars; if none, fall back to mean star→rubric when only
+ * star-only reviews exist (headline score without fabricating per-pillar breakdown).
+ */
+export function computeBlendedRubricDisplay(merged, starOnlyReviews) {
+  const pillarScoresRaw = {
+    experience_quality: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.experience_quality),
+    operational_reliability: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.operational_reliability),
+    emotional_connection: weightedPillarFromMerged(merged, RUBRIC_SUBWEIGHTS.emotional_connection),
+  };
+  const serviceScore = singleCategoryScore(merged, "service");
+  const foodScore = singleCategoryScore(merged, "food");
+  const starAvg = averageStarRubricScore(starOnlyReviews);
+  const starOnlyCount = (starOnlyReviews ?? []).length;
+  const displayScores = blendAllPillarDisplayScores(pillarScoresRaw, serviceScore, foodScore, starAvg, starOnlyCount);
+  let overallScore = overallGuestSignalFromPillars({
+    experience_quality: displayScores.experience_quality,
+    operational_reliability: displayScores.operational_reliability,
+    emotional_connection: displayScores.emotional_connection,
+  });
+  if (overallScore == null && starAvg != null && Number.isFinite(starAvg) && starOnlyCount > 0) {
+    overallScore = Math.round(starAvg);
+  }
+  return {
+    displayScores,
+    overallScore,
+    pillarScoresRaw,
+    starOnlyCount,
+    starOnlyAvg: starAvg,
+  };
+}
+
+export const RUBRIC_SCORING_MODEL_V1 = "guest_signal_rubric_v1";
+
+/**
+ * One row per `review_observations` row for `rubric_review_attributions` (frozen audit).
+ * @param {Array<{ id: string, source?: string, external_review_id?: string, review_date?: string, rating?: unknown, review_text?: string }>} observations
+ * @returns {Array<object>}
+ */
+export function buildRubricReviewAttributionRows(observations) {
+  const rows = [];
+  for (const rev of observations ?? []) {
+    if (!rev?.id) continue;
+    const text = rev.review_text ?? "";
+    const hasText = hasWrittenReviewText(rev);
+    const cats = hasText ? [...detectMentionedCategories(text)] : [];
+    const rubricByCat = {};
+    const mentioned = [];
+    const rating = parseRating(rev.rating);
+    for (const cat of cats) {
+      let sc;
+      if (cat === "return_intent") {
+        sc = scoreReturnIntent(text, rating);
+        if (sc == null) continue;
+      } else {
+        sc = starToRubricScore(rating);
+      }
+      rubricByCat[cat] = sc;
+      mentioned.push(cat);
+    }
+    let rubric_role;
+    if (!hasText && rating != null && Number.isFinite(Number(rating))) {
+      rubric_role = "star_only";
+    } else if (hasText && !mentioned.length) {
+      rubric_role = "written_uncategorized";
+    } else {
+      rubric_role = "mention_scored";
+    }
+    rows.push({
+      review_observation_id: rev.id,
+      source: String(rev.source ?? ""),
+      external_review_id: String(rev.external_review_id ?? ""),
+      review_date: rev.review_date ?? null,
+      rating,
+      review_text_snapshot: String(text).slice(0, 20000),
+      categories_mentioned: mentioned,
+      rubric_score_by_category: rubricByCat,
+      rubric_role,
+    });
+  }
+  return rows;
+}
+
 export function computeRubricCategoryScores(reviews) {
   const sums = new Map();
   for (const review of reviews) {
@@ -289,19 +455,6 @@ export function confidenceLevelFromReviewCount(totalReviews) {
 
 export function normalizeApifyItem(item, reviewSource = "yelp") {
   if (!item || typeof item !== "object") return null;
-  const reviewText = firstNonEmptyString(item, [
-    "text",
-    "reviewText",
-    "review.text",
-    "comment",
-    "review",
-    "content",
-    "reviewDescription",
-    "review_data.text",
-    "payload.text",
-  ]);
-  if (!reviewText) return null;
-
   const rating = parseRating(
     firstNonNull(item, [
       "rating",
@@ -316,19 +469,67 @@ export function normalizeApifyItem(item, reviewSource = "yelp") {
     ])
   );
 
+  let reviewText = firstNonEmptyString(item, [
+    "text",
+    "message",
+    "reviewText",
+    "review.text",
+    "comment",
+    "content",
+    "reviewDescription",
+    "review_data.text",
+    "payload.text",
+    "fullText",
+    "reviewContent",
+    "body",
+    "reviewTitle",
+  ]);
+  if (!reviewText && typeof item.review === "string" && item.review.trim()) {
+    reviewText = item.review.trim();
+  }
+  if (!reviewText) {
+    if (rating == null || !Number.isFinite(Number(rating))) return null;
+    reviewText = "";
+  }
+
+  // Prefer machine-parseable dates first; Compass/Google uses publishAt (relative) + publishedAtDate (ISO).
   const dateRaw = firstNonNull(item, [
+    "publishedAtDate",
     "publishedDate",
+    "datePublished",
+    "publishedAt",
     "date",
     "createdAt",
     "time",
-    "publishedAt",
+    "publishAt",
+    "reviewDate",
     "review.date",
     "review_data.date",
     "payload.date",
   ]);
-  const reviewDate = parseDateOnly(dateRaw);
+  let reviewDate = parseDateOnly(dateRaw);
+  if (!reviewDate) {
+    const ts = firstNonNull(item, ["publishedAtTimestamp", "reviewTimestamp", "timestamp"]);
+    if (typeof ts === "number" && Number.isFinite(ts)) {
+      const ms = ts > 1e12 ? ts : ts * 1000;
+      reviewDate = parseDateOnly(new Date(ms).toISOString());
+    } else if (typeof ts === "string" && /^\d{10,13}$/.test(ts.trim())) {
+      const n = Number(ts);
+      const ms = n > 1e12 ? n : n * 1000;
+      reviewDate = parseDateOnly(new Date(ms).toISOString());
+    }
+  }
 
-  const externalReviewId = String(
+  const providerRaw = typeof item.provider === "string" ? item.provider.trim() : "";
+  const sourceFromAggregator =
+    reviewSource === "restaurant-aggregator" && providerRaw
+      ? AGGREGATOR_PROVIDER_TO_SOURCE[providerRaw] ?? null
+      : null;
+  if (reviewSource === "restaurant-aggregator" && !sourceFromAggregator) {
+    return null;
+  }
+
+  const baseExternalId =
     firstNonNull(item, [
       "reviewId",
       "id",
@@ -338,10 +539,21 @@ export function normalizeApifyItem(item, reviewSource = "yelp") {
       "review.url",
       "review_data.id",
       "payload.id",
-    ]) ?? `${reviewText.slice(0, 32)}:${dateRaw ?? ""}`
-  );
+    ]) ??
+    (reviewText.trim()
+      ? `${reviewText.slice(0, 32)}:${dateRaw ?? ""}`
+      : `rating-only:${String(rating ?? "")}:${dateRaw ?? "nodate"}`);
 
-  const source = reviewSource === "google" ? "google" : "yelp";
+  const externalReviewId =
+    reviewSource === "restaurant-aggregator" && providerRaw
+      ? `${providerRaw}:${String(baseExternalId)}`
+      : String(baseExternalId);
+
+  let source;
+  if (reviewSource === "google") source = "google";
+  else if (reviewSource === "yelp") source = "yelp";
+  else if (sourceFromAggregator) source = sourceFromAggregator;
+  else source = "yelp";
 
   return {
     source,

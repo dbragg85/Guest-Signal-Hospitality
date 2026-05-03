@@ -541,7 +541,13 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
   if (enableYelp && token && yelpActor && effectiveYelpUrl) {
     try {
       console.log("Attempting Apify Yelp pull…");
-      const rawYelp = await pullYelpReviewsViaApify({ yelpUrl: effectiveYelpUrl, token, actorId: yelpActor });
+      const rawYelp = await pullYelpReviewsViaApify({
+        yelpUrl: effectiveYelpUrl,
+        token,
+        actorId: yelpActor,
+        periodStartIso,
+        periodEndIso,
+      });
       yelpUrlUsed = effectiveYelpUrl;
       const room = Math.max(0, maxTotal - combined.length);
       const sliced = rawYelp.slice(0, room || maxTotal);
@@ -558,6 +564,17 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
     if (!review.review_date) return false;
     return review.review_date >= periodStartIso && review.review_date <= periodEndIso;
   });
+  if (combined.length) {
+    const outside = combined.filter(
+      (r) =>
+        r.review_date &&
+        (r.review_date < periodStartIso || r.review_date > periodEndIso),
+    ).length;
+    const noDate = combined.filter((r) => !r.review_date).length;
+    console.log(
+      `Scoring month [${periodStartIso}…${periodEndIso}]: kept ${periodReviews.length} / ${combined.length} reviews (${outside} before/after month excluded from rubric, ${noDate} unparsed date).`,
+    );
+  }
 
   periodReviews.sort((a, b) => String(b.review_date).localeCompare(String(a.review_date)));
   periodReviews = periodReviews.slice(0, maxTotal);

@@ -5,12 +5,12 @@
  *
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PERIOD_START, PERIOD_END, PERIOD_LABEL,
  *      RESTAURANT_SLUGS (one slug or comma list — first used),
- *      RUBRIC_REVIEW_SOURCES (default google,yelp), DRY_RUN=1,
+ *      RUBRIC_REVIEW_SOURCES (default google,yelp; optional tripadvisor,facebook,doordash,ubereats), DRY_RUN=1,
  *      RUBRIC_INQUIRY_PLAN (optional; default free_snapshot),
  *      RUBRIC_REVIEW_SOURCE_NOTE (optional).
  */
 import { createClient } from "@supabase/supabase-js";
-import { getEnv, parseRating } from "./lib/guest-signal-rubric.mjs";
+import { getEnv, parseRating, RUBRIC_ALLOWED_REVIEW_SOURCES } from "./lib/guest-signal-rubric.mjs";
 import { persistRubricSnapshotFromPeriodReviews } from "./lib/rubric-scorecard-persist.mjs";
 
 function parseDateOnly(value) {
@@ -68,9 +68,9 @@ async function main() {
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
-  const allowed = new Set(["google", "yelp"]);
+  const allowed = new Set(RUBRIC_ALLOWED_REVIEW_SOURCES);
   for (const s of reviewSources) {
-    if (!allowed.has(s)) throw new Error(`RUBRIC_REVIEW_SOURCES: unknown "${s}"`);
+    if (!allowed.has(s)) throw new Error(`RUBRIC_REVIEW_SOURCES: unknown "${s}" (allowed: ${RUBRIC_ALLOWED_REVIEW_SOURCES.join(",")})`);
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -89,7 +89,7 @@ async function main() {
 
   const { data: rows, error: oErr } = await supabase
     .from("review_observations")
-    .select("source, review_text, rating, review_date, external_review_id")
+    .select("id, source, review_text, rating, review_date, external_review_id")
     .eq("restaurant_id", restaurant.id)
     .in("source", reviewSources)
     .gte("review_date", periodStartIso)
@@ -98,6 +98,7 @@ async function main() {
 
   if (oErr) throw oErr;
   const periodReviews = (rows ?? []).map((r) => ({
+    id: r.id,
     source: String(r.source ?? ""),
     review_text: r.review_text,
     rating: parseRating(r.rating),
@@ -125,6 +126,7 @@ async function main() {
     inquiryPlan: getEnv("RUBRIC_INQUIRY_PLAN", { fallback: "free_snapshot" }),
     skipObservationUpsert: true,
     ignoreExistingCategoryScores: true,
+    rubricAttributionReviewSources: reviewSources,
   });
 
   if (!ok && !dryRun) {

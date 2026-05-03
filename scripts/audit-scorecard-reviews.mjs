@@ -7,13 +7,22 @@
  * Env:
  *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (required)
  *   RESTAURANT_SLUG (required)
- *   PERIOD_LABEL (required unless PERIOD_START+PERIOD_END set), e.g. "Q1 2026"
- *   PERIOD_START, PERIOD_END (optional YYYY-MM-DD) — skip snapshot lookup if both set
+ *   PERIOD_LABEL (required unless PERIOD_START+PERIOD_END set), e.g. "Apr 2026"
+ *   PERIOD_START, PERIOD_END (optional YYYY-MM-DD) — skip snapshot lookup if both set (then set PERIOD_LABEL to match scorecards.period)
  *
  * Usage:
  *   RESTAURANT_SLUG=boca PERIOD_LABEL="Q1 2026" node scripts/audit-scorecard-reviews.mjs
+ *
+ * End of run: prints rubric v1 re-aggregate from review_observations vs scorecards.score (verify pipeline).
+ * When migration 024 is applied, prints `rubric_review_attributions` frozen rows for the snapshot (audit trail).
  */
 import { createClient } from "@supabase/supabase-js";
+import {
+  computeRubricCategoryScores,
+  computeBlendedRubricDisplay,
+  parseRating,
+  splitWrittenAndStarOnlyReviews,
+} from "./lib/guest-signal-rubric.mjs";
 
 const CATEGORY_KEYWORDS = {
   food: [
@@ -194,9 +203,10 @@ async function main() {
   let periodStart = forcedStart || null;
   let periodEnd = forcedEnd || null;
   let label = periodLabel || `${periodStart}–${periodEnd}`;
+  let snapshotIdForAudit = null;
 
   if (!periodStart || !periodEnd) {
-    if (!periodLabel) {
+    if (!periodLabel?.trim()) {
       throw new Error("Set PERIOD_LABEL or both PERIOD_START and PERIOD_END");
     }
     const { data: snap, error: sErr } = await supabase
@@ -214,7 +224,31 @@ async function main() {
     periodStart = snap.period_start;
     periodEnd = snap.period_end;
     label = snap.period_label ?? periodLabel;
+    snapshotIdForAudit = snap.id;
     console.log(`Snapshot ${snap.id} guest_signal_score=${snap.guest_signal_score ?? "null"}`);
+  }
+
+  if (forcedStart && forcedEnd && !periodLabel?.trim()) {
+    console.warn(
+      "# Tip: set PERIOD_LABEL (e.g. Apr 2026) to match scorecards.period so the script can verify scorecards.score.",
+    );
+  }
+
+  if (!snapshotIdForAudit && periodStart && periodEnd) {
+    const { data: snapOverlap, error: ovErr } = await supabase
+      .from("snapshots")
+      .select("id, period_label")
+      .eq("restaurant_id", restaurant.id)
+      .lte("period_start", periodEnd)
+      .gte("period_end", periodStart)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (ovErr) throw ovErr;
+    if (snapOverlap?.id) {
+      snapshotIdForAudit = snapOverlap.id;
+      console.log(`# Matched snapshot ${snapshotIdForAudit} by overlapping period (${snapOverlap.period_label ?? ""}).`);
+    }
   }
 
   const { data: reviews, error: oErr } = await supabase
@@ -255,6 +289,113 @@ async function main() {
 
   if (!list.length) {
     console.log("No rows — check source ingests and that dates fall inside the snapshot window.");
+    return;
+  }
+
+  const googleN = list.filter((r) => r.source === "google").length;
+  const yelpN = list.filter((r) => r.source === "yelp").length;
+  console.log("");
+  console.log("# Summary — counts are rows in review_observations inside the window (not Apify raw batch size).");
+  console.log(`# total=${list.length} google=${googleN} yelp=${yelpN}`);
+  if (yelpN === 0) {
+    console.log(
+      "# Yelp=0: no source=yelp rows in-window (set restaurants.yelp_url, run Yelp ingest, check review_date parsing).",
+    );
+  }
+
+  const periodReviews = list.map((r) => ({
+    source: String(r.source ?? ""),
+    review_text: r.review_text,
+    rating: parseRating(r.rating),
+    review_date: r.review_date,
+    external_review_id: r.external_review_id,
+  }));
+  const { written, starOnly } = splitWrittenAndStarOnlyReviews(periodReviews);
+  const rubricMap = computeRubricCategoryScores(written);
+  const merged = new Map(rubricMap);
+  const { displayScores, overallScore: overallRecomputed, pillarScoresRaw, starOnlyCount, starOnlyAvg } =
+    computeBlendedRubricDisplay(merged, starOnly);
+  console.log("");
+  console.log(
+    "# Rubric v1 (pipeline parity): categories from written reviews only; pillars/tiles blend star-only only when a written pillar/tile score exists.",
+  );
+  console.log(
+    JSON.stringify(
+      {
+        overall: overallRecomputed,
+        pillars_display: {
+          experience_quality: displayScores.experience_quality,
+          operational_reliability: displayScores.operational_reliability,
+          emotional_connection: displayScores.emotional_connection,
+          service_hospitality: displayScores.service_hospitality,
+          food_beverage: displayScores.food_beverage,
+        },
+        pillars_written_leg_only: pillarScoresRaw,
+        star_only_review_count: starOnlyCount,
+        star_only_rubric_avg: starOnlyAvg != null ? Number(starOnlyAvg.toFixed(2)) : null,
+        written_review_count_for_categories: written.length,
+        category_rows: [...merged.entries()].map(([category, row]) => ({ category, ...row })),
+      },
+      null,
+      2,
+    ),
+  );
+
+  const scorecardPeriod = periodLabel?.trim() || label;
+  const { data: scRow, error: scErr } = await supabase
+    .from("scorecards")
+    .select("id, period, score, data")
+    .eq("restaurant_id", restaurant.id)
+    .eq("period", scorecardPeriod)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (scErr) {
+    console.warn("Scorecard lookup skipped:", scErr.message);
+    return;
+  }
+  if (!scRow) {
+    console.log(`# No scorecard row for period "${scorecardPeriod}" (set PERIOD_LABEL to match scorecards.period).`);
+    return;
+  }
+  console.log("");
+  console.log(`# Scorecard on file: period=${scRow.period} score=${scRow.score} model=${scRow.data?.review_scoring_model ?? "—"}`);
+  if (overallRecomputed != null && scRow.score != null && overallRecomputed !== scRow.score) {
+    console.warn(`# MISMATCH: rubric recompute overall=${overallRecomputed} vs scorecards.score=${scRow.score}`);
+  } else if (overallRecomputed != null && scRow.score != null) {
+    console.log("# OK: recomputed overall matches scorecards.score.");
+  }
+
+  if (snapshotIdForAudit) {
+    const { data: attrRows, error: attrErr } = await supabase
+      .from("rubric_review_attributions")
+      .select(
+        "source, review_date, rating, rubric_role, categories_mentioned, rubric_score_by_category, external_review_id, review_text_snapshot",
+      )
+      .eq("snapshot_id", snapshotIdForAudit)
+      .order("review_date", { ascending: true });
+    if (attrErr) {
+      console.warn("# rubric_review_attributions lookup:", attrErr.message);
+    } else if (attrRows?.length) {
+      console.log("");
+      console.log(`# Frozen DB audit: rubric_review_attributions snapshot_id=${snapshotIdForAudit} (${attrRows.length} row(s))`);
+      attrRows.forEach((row, i) => {
+        console.log(`---`);
+        console.log(
+          `## ${i + 1}. ${row.source} · ${row.review_date ?? "—"} · ${row.rubric_role} · rating ${row.rating ?? "—"} · ext=${row.external_review_id ?? "—"}`,
+        );
+        console.log(`categories_mentioned: ${(row.categories_mentioned ?? []).join(", ") || "(none)"}`);
+        console.log(`rubric_score_by_category: ${JSON.stringify(row.rubric_score_by_category ?? {})}`);
+        const snap = String(row.review_text_snapshot ?? "").trim();
+        console.log(`review_text_snapshot (${snap.length} chars):`);
+        console.log(snap || "(empty)");
+      });
+    } else {
+      console.log("");
+      console.log(
+        `# No rubric_review_attributions rows for snapshot_id=${snapshotIdForAudit} — run pipeline:rebuild:rubric-from-observations (or lead intake / monthly Yelp) after migration 024.`,
+      );
+    }
   }
 }
 

@@ -29,6 +29,11 @@ function loadDotEnvLocal() {
     "GOOGLE_INGEST_MAX_APIFY_REVIEWS",
     "APIFY_GOOGLE_SCORING_PERIOD_FILTER",
     "GOOGLE_INGEST_THROTTLE_MS",
+    "YELP_MAX_ITEMS",
+    "YELP_SORT_BY",
+    "YELP_INPUT_STYLE",
+    "APIFY_YELP_RUN_MAX_ITEMS_QUERY",
+    "YELP_DATASET_CLEAN",
   ]);
   const text = readFileSync(ENV_FILE, "utf8");
   for (const line of text.split("\n")) {
