@@ -222,6 +222,36 @@ type SwotBlock = {
 
 type CategoryScoreRow = { category: string; score: number; mentions: number | null };
 
+/** Merge duplicate category keys (case-insensitive) from hydration / legacy payloads. */
+function dedupeCategoryScoreRows(rows: CategoryScoreRow[]): CategoryScoreRow[] {
+  const map = new Map<string, CategoryScoreRow>();
+  for (const row of rows) {
+    const k = row.category.trim().toLowerCase();
+    const prev = map.get(k);
+    if (!prev) {
+      map.set(k, {
+        category: row.category.trim(),
+        score: row.score,
+        mentions: row.mentions,
+      });
+      continue;
+    }
+    const mPrev = prev.mentions != null && prev.mentions > 0 ? prev.mentions : 0;
+    const mNew = row.mentions != null && row.mentions > 0 ? row.mentions : 0;
+    if (mPrev + mNew > 0) {
+      const score = Math.round((prev.score * mPrev + row.score * mNew) / (mPrev + mNew));
+      map.set(k, { category: prev.category, score, mentions: mPrev + mNew });
+    } else {
+      map.set(k, {
+        category: prev.category,
+        score: Math.round((prev.score + row.score) / 2),
+        mentions: prev.mentions ?? row.mentions ?? null,
+      });
+    }
+  }
+  return [...map.values()];
+}
+
 type Props = {
   restaurant: RestaurantProfile;
   scorecards: ScorecardRow[];
@@ -396,10 +426,11 @@ export function RestaurantSnapshotTemplate({
     data?.breakdown,
     gradeCategorySource,
   ];
-  const categoryBreakdown =
+  const categoryBreakdownRaw =
     categorySources
       .map((source) => parseCategoryScoreRows(source))
       .find((rows) => rows.length > 0) ?? [];
+  const categoryBreakdown = dedupeCategoryScoreRows(categoryBreakdownRaw);
 
   const categoryScoreMap = new Map<string, { score: number; mentions: number | null }>(
     categoryBreakdown.map((row) => [
@@ -431,6 +462,20 @@ export function RestaurantSnapshotTemplate({
     (totalScoreForBreakdown != null && categoryAverageForBreakdown != null
       ? Number((totalScoreForBreakdown - categoryAverageForBreakdown).toFixed(1))
       : null);
+
+  const reviewScoringModel = parseOptionalString(data?.review_scoring_model) ?? "";
+  const isRubricV1 = reviewScoringModel === "guest_signal_rubric_v1";
+  /** Rubric already documents methodology in JSON; table + pillars cover the story — hide legacy GSS-style derivation. */
+  const hideTotalScoreDerivation = isRubricV1 && categoryBreakdown.length > 0;
+  const showCategoryMentionsColumn = categoryBreakdown.some(
+    (r) => r.mentions != null && Number.isFinite(r.mentions) && r.mentions > 0,
+  );
+  const uniformCategoryScores =
+    categoryBreakdown.length > 1 &&
+    new Set(categoryBreakdown.map((r) => r.score)).size === 1;
+
+  const inquiryPlanKey = parseOptionalString(data?.intake_inquiry_plan) ?? "free_snapshot";
+  const isFreeSnapshotPlan = inquiryPlanKey === "free_snapshot";
 
   function normalizePeriodLabel(input: string): string {
     return input
@@ -785,8 +830,29 @@ export function RestaurantSnapshotTemplate({
             Category score breakdown
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Score components for the selected period.
+            Mention-based rubric categories for the selected period. Each score maps star level to a
+            band (5★ → 95, 4★ → 85, …) for reviews that mention that category.
           </p>
+          {uniformCategoryScores ? (
+            <p className="mt-2 max-w-2xl text-xs text-slate-600">
+              Every category shows the same band when all scored mentions share the same star rating
+              in-window (for example only 5★ mentions → 95 across categories). That reflects the
+              rubric, not a display bug.
+            </p>
+          ) : null}
+          {isFreeSnapshotPlan ? (
+            <p className="mt-3 max-w-2xl rounded-xl border border-stone-200 bg-stone-50/80 px-3 py-2 text-xs text-slate-700">
+              <strong className="text-slate-900">Free snapshot:</strong> you see the full pillar and
+              category methodology so the headline score is explainable. Paid tiers add recurring
+              runs, competitor tracking, alerts, and deeper operational workflows—upgrade for cadence
+              and coverage, not because the core math is withheld here.
+            </p>
+          ) : (
+            <p className="mt-3 max-w-2xl text-xs text-slate-600">
+              Plan tier: <strong className="text-slate-800">{inquiryPlanKey.replace(/_/g, " ")}</strong>
+              — see your agreement or account manager for what is included beyond this snapshot view.
+            </p>
+          )}
           <div className="mt-6 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
             <table className="min-w-full text-left text-sm">
               <thead>
@@ -797,21 +863,29 @@ export function RestaurantSnapshotTemplate({
                   <th className="px-4 py-3 font-semibold text-slate-900">
                     Score
                   </th>
+                  {showCategoryMentionsColumn ? (
+                    <th className="px-4 py-3 font-semibold text-slate-900">Mentions</th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
                 {categoryBreakdown
                   .slice()
                   .sort((a, b) => b.score - a.score)
-                  .map((row) => (
+                  .map((row, idx) => (
                     <tr
-                      key={`${row.category}:${row.score}`}
+                      key={`${row.category}:${idx}`}
                       className="border-b border-stone-100"
                     >
                       <td className="px-4 py-3 font-medium capitalize text-slate-800">
                         {row.category.replace(/_/g, " ")}
                       </td>
                       <td className="px-4 py-3 text-slate-700">{row.score}</td>
+                      {showCategoryMentionsColumn ? (
+                        <td className="px-4 py-3 text-slate-700">
+                          {row.mentions != null && row.mentions > 0 ? Math.round(row.mentions) : "—"}
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
               </tbody>
@@ -820,7 +894,8 @@ export function RestaurantSnapshotTemplate({
         </section>
       ) : null}
 
-      {totalScoreForBreakdown != null || categoryAverageForBreakdown != null ? (
+      {(totalScoreForBreakdown != null || categoryAverageForBreakdown != null) &&
+      !hideTotalScoreDerivation ? (
         <section aria-labelledby="total-derivation-heading">
           <h2
             id="total-derivation-heading"
@@ -938,9 +1013,12 @@ export function RestaurantSnapshotTemplate({
           </div>
         </section>
       ) : (
-        <section aria-labelledby="monthly-heading" className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/50 px-6 py-8">
+        <section
+          aria-labelledby="monthly-empty-heading"
+          className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/50 px-6 py-8"
+        >
           <h2
-            id="monthly-heading"
+            id="monthly-empty-heading"
             className="text-lg font-semibold text-slate-900"
           >
             Monthly score breakdown
