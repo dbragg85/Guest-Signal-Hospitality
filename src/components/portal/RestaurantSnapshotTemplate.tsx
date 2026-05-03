@@ -249,7 +249,7 @@ function dedupeCategoryScoreRows(rows: CategoryScoreRow[]): CategoryScoreRow[] {
       });
     }
   }
-  return [...map.values()];
+  return Array.from(map.values());
 }
 
 type Props = {
