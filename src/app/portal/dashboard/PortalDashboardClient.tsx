@@ -469,16 +469,33 @@ export function PortalDashboardClient({ initialSlug }: Props) {
             source: "Hydrated from scorecards + snapshot_category_scores",
           };
         }
-        PILLAR_FIELD_ALIASES.forEach(({ dataKey, snapshotFields }) => {
-          if (Object.prototype.hasOwnProperty.call(nextData, dataKey) || !snapshotForPillars) {
-            return;
-          }
-          const value =
-            snapshotFields
-              .map((field) => parseNumeric(snapshotForPillars[field]))
-              .find((v): v is number => v != null) ?? null;
-          if (value != null) nextData[dataKey] = value;
-        });
+        const categoryScoresRaw = nextData.category_scores;
+        const hasStructuredCategoryScores =
+          Array.isArray(categoryScoresRaw) &&
+          categoryScoresRaw.length > 0 &&
+          categoryScoresRaw.every(
+            (x) =>
+              x &&
+              typeof x === "object" &&
+              typeof (x as Record<string, unknown>).category === "string" &&
+              (x as Record<string, unknown>).score != null,
+          );
+        // Rubric (and GSS) category rows: derive pillar tiles from `category_scores` + explicit
+        // `experience_quality` / … on the scorecard JSON. Do **not** back-fill missing pillar keys
+        // from `snapshots` — those rows only store three meta-pillars and often match overall
+        // (e.g. 82), which made every portal tile look identical when scorecard omitted a key.
+        if (!hasStructuredCategoryScores) {
+          PILLAR_FIELD_ALIASES.forEach(({ dataKey, snapshotFields }) => {
+            if (Object.prototype.hasOwnProperty.call(nextData, dataKey) || !snapshotForPillars) {
+              return;
+            }
+            const value =
+              snapshotFields
+                .map((field) => parseNumeric(snapshotForPillars[field]))
+                .find((v): v is number => v != null) ?? null;
+            if (value != null) nextData[dataKey] = value;
+          });
+        }
         if (
           !Object.prototype.hasOwnProperty.call(nextData, "total_reviews_analyzed") &&
           snapshotForPillars

@@ -24,6 +24,7 @@
     "pipeline:period:google-yelp-rubric": "node scripts/run-period-google-yelp-rubric.mjs",
     "pipeline:rebuild:rubric-from-observations": "node scripts/rebuild-rubric-scorecard-from-observations.mjs",
     "audit:scorecard-reviews": "node scripts/audit-scorecard-reviews.mjs",
+    "dedupe:review-observations-window": "node scripts/dedupe-review-observations-window.mjs",
     "build:profile-seed": "node scripts/build-google-profile-seed.mjs"
   },
   "dependencies": {
