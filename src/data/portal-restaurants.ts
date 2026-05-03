@@ -17,6 +17,7 @@ export const PORTAL_RESTAURANTS = [
   { slug: "mazunte-taqueria", name: "Mazunte Taqueria" },
   { slug: "the-bakers-table", name: "The Baker's Table" },
   { slug: "the-park-diner", name: "The Park Diner" },
+  { slug: "west-shine-family-restaurant", name: "West Shine Family Restaurant" },
 ] as const;
 
 export type PortalRestaurantSlug = (typeof PORTAL_RESTAURANTS)[number]["slug"];
