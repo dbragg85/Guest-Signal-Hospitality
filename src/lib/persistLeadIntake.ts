@@ -1,4 +1,4 @@
-import { createClientIfConfigured } from "@/lib/supabase/client";
+import { createAnonClientForLeadIntake } from "@/lib/supabase/client";
 
 function cleanField(v: string): string | null {
   const t = v?.trim();
@@ -45,7 +45,7 @@ export type PersistLeadIntakeResult = {
 export async function persistLeadIntakeToSupabase(
   payload: LeadIntakePayload,
 ): Promise<PersistLeadIntakeResult> {
-  const supabase = createClientIfConfigured();
+  const supabase = createAnonClientForLeadIntake();
   if (!supabase) {
     return {
       attempted: false,

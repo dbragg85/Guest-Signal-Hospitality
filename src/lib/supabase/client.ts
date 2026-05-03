@@ -1,5 +1,13 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** Prevents sharing auth storage with the portal session (see createAnonClientForLeadIntake). */
+const noopAuthStorage = {
+  getItem: (_key: string) => null,
+  setItem: (_key: string, _value: string) => {},
+  removeItem: (_key: string) => {},
+};
 
 function browserSupabaseEnv(): { url: string; key: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
@@ -23,4 +31,22 @@ export function createClientIfConfigured(): SupabaseClient | null {
   const env = browserSupabaseEnv();
   if (!env) return null;
   return createBrowserClient(env.url, env.key);
+}
+
+/**
+ * Public website inserts (`lead_intake_submissions`) must use the anon JWT only.
+ * `createBrowserClient` shares cookie storage with the portal; logged-in users
+ * would otherwise send `authenticated` and hit RLS 42501 (policies are `TO anon`).
+ */
+export function createAnonClientForLeadIntake(): SupabaseClient | null {
+  const env = browserSupabaseEnv();
+  if (!env) return null;
+  return createSupabaseJsClient(env.url, env.key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storage: noopAuthStorage,
+    },
+  });
 }
