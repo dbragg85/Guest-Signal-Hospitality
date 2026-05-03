@@ -190,6 +190,70 @@ function trendModifier(delta) {
   return -3;
 }
 
+const GSS_SCORING_MODEL = "guest_signal_google_gss_v1";
+
+async function upsertReviewBatchRow({
+  supabase,
+  restaurantId,
+  periodLabel,
+  periodStartIso,
+  periodEndIso,
+  snapshotId,
+  meta,
+}) {
+  const { data, error } = await supabase
+    .from("review_batches")
+    .upsert(
+      {
+        restaurant_id: restaurantId,
+        period_label: periodLabel,
+        period_start: periodStartIso,
+        period_end: periodEndIso,
+        scoring_model: GSS_SCORING_MODEL,
+        snapshot_id: snapshotId,
+        meta,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "restaurant_id,period_label,scoring_model" },
+    )
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
+
+async function replaceReviewScoresForBatch(supabase, batchId, reviews) {
+  const { error: delErr } = await supabase.from("review_scores").delete().eq("review_batch_id", batchId);
+  if (delErr) throw delErr;
+
+  const scoreRows = reviews.map((rev) => {
+    const categories_mentioned = [];
+    const sentiment_by_category = {};
+    for (const cat of GSS_CATEGORY_KEYS) {
+      if (mentionsCategory(rev.review_text, cat)) {
+        categories_mentioned.push(cat);
+        sentiment_by_category[cat] = starToSentiment(rev.rating);
+      }
+    }
+    return {
+      review_batch_id: batchId,
+      review_observation_id: rev.id,
+      source: rev.source,
+      review_date: rev.review_date,
+      rating: rev.rating,
+      categories_mentioned,
+      sentiment_by_category,
+    };
+  });
+
+  const chunk = 200;
+  for (let i = 0; i < scoreRows.length; i += chunk) {
+    const slice = scoreRows.slice(i, i + chunk);
+    const { error } = await supabase.from("review_scores").insert(slice);
+    if (error) throw error;
+  }
+}
+
 function legacyPillarsFromGssCategories(c) {
   const food = c.food;
   const service = c.service;
@@ -279,7 +343,7 @@ async function main() {
   for (const restaurant of candidates) {
     const { data: rows, error: oErr } = await supabase
       .from("review_observations")
-      .select("source, review_text, rating, review_date, external_review_id")
+      .select("id, source, review_text, rating, review_date, external_review_id")
       .eq("restaurant_id", restaurant.id)
       .in("source", reviewSources)
       .gte("review_date", periodStartIso)
@@ -288,6 +352,7 @@ async function main() {
 
     if (oErr) throw oErr;
     const reviews = (rows ?? []).map((r) => ({
+      id: r.id,
       source: String(r.source ?? ""),
       review_text: r.review_text,
       rating: parseRating(r.rating),
@@ -503,6 +568,32 @@ async function main() {
       if (uErr) throw uErr;
     }
 
+    const reviewBatchMeta = {
+      scoring_model: GSS_SCORING_MODEL,
+      gss_google_base: gssBase,
+      gss_google_final: gssFinal,
+      gss_google_trend_modifier: trend,
+      gss_google_trend_delta_vs_prior: prevBase == null ? null : Number(delta.toFixed(2)),
+      total_reviews_in_window: totalReviews,
+      google_reviews_in_window: googleInWindow,
+      yelp_reviews_in_window: yelpInWindow,
+      gss_review_sources_used: reviewSources,
+    };
+
+    const reviewBatchId = await upsertReviewBatchRow({
+      supabase,
+      restaurantId: restaurant.id,
+      periodLabel,
+      periodStartIso,
+      periodEndIso,
+      snapshotId,
+      meta: reviewBatchMeta,
+    });
+
+    await replaceReviewScoresForBatch(supabase, reviewBatchId, reviews);
+
+    const scorecardPayload = { ...scorecardData, review_batch_id: reviewBatchId };
+
     const { data: existingScorecard, error: scErr } = await supabase
       .from("scorecards")
       .select("id, data")
@@ -524,7 +615,7 @@ async function main() {
             : `Guest Signal Score™ (${periodLabel}, ${reviewSources.join("+")} window)`,
         data: {
           snapshot_id: snapshotId,
-          ...scorecardData,
+          ...scorecardPayload,
         },
       });
       if (sciErr) throw sciErr;
@@ -538,14 +629,16 @@ async function main() {
           data: {
             ...existingData,
             snapshot_id: snapshotId,
-            ...scorecardData,
+            ...scorecardPayload,
           },
         })
         .eq("id", existingScorecard.id);
       if (scuErr) throw scuErr;
     }
 
-    console.log(`[${restaurant.slug}] Updated snapshot + scorecard (Google GSS). Final=${gssFinal} base=${gssBase} trend=${trend}`);
+    console.log(
+      `[${restaurant.slug}] Updated snapshot + review_batch + review_scores + scorecard (Google GSS). Final=${gssFinal} base=${gssBase} trend=${trend}`,
+    );
   }
 
   console.log("\nGoogle GSS pipeline complete.");
