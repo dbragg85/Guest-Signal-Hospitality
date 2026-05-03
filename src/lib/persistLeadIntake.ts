@@ -27,7 +27,10 @@ export type LeadIntakePayload = {
   message: string;
 };
 
-export type LeadIntakeDuplicateCode = "active_email" | "active_venue_profile";
+export type LeadIntakeDuplicateCode =
+  | "active_email"
+  | "active_venue_profile"
+  | "recent_converted_email";
 
 export type PersistLeadIntakeResult = {
   attempted: boolean;
@@ -83,11 +86,19 @@ export async function persistLeadIntakeToSupabase(
     }
   }
 
+  if (blockErr) {
+    console.warn(
+      "[lead-intake] check_lead_intake_submission_blocked failed (duplicate guard skipped):",
+      blockErr.message,
+    );
+  }
+
   if (!blockErr && blockPayload && typeof blockPayload === "object" && "blocked" in blockPayload) {
     const o = blockPayload as { blocked?: boolean; code?: string };
     if (o.blocked === true) {
-      const code =
-        o.code === "active_venue_profile" ? "active_venue_profile" : "active_email";
+      let code: LeadIntakeDuplicateCode = "active_email";
+      if (o.code === "active_venue_profile") code = "active_venue_profile";
+      else if (o.code === "recent_converted_email") code = "recent_converted_email";
       return {
         attempted: true,
         rowInserted: false,
@@ -98,6 +109,11 @@ export async function persistLeadIntakeToSupabase(
         submissionClientKey,
       };
     }
+  }
+
+  function isActiveEmailUniqueViolation(err: { message?: string; details?: string }): boolean {
+    const text = `${err.message ?? ""} ${(err as { details?: string }).details ?? ""}`;
+    return /lead_intake_active_email_pending_uidx/i.test(text);
   }
 
   const { error: insertError } = await supabase.from("lead_intake_submissions").insert({
@@ -123,10 +139,22 @@ export async function persistLeadIntakeToSupabase(
   });
 
   if (insertError) {
+    const msg = insertError.message ?? "";
+    if (insertError.code === "23505" && isActiveEmailUniqueViolation(insertError)) {
+      return {
+        attempted: true,
+        rowInserted: false,
+        insertErrorMessage: null,
+        lookupErrorMessage: null,
+        blockedDuplicate: true,
+        blockedDuplicateCode: "active_email",
+        submissionClientKey,
+      };
+    }
     return {
       attempted: true,
       rowInserted: false,
-      insertErrorMessage: insertError.message,
+      insertErrorMessage: msg,
       lookupErrorMessage: null,
       submissionClientKey,
     };

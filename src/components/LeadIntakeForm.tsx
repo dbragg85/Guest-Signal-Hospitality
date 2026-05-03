@@ -175,7 +175,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
         const dupMsg =
           supabaseResult.blockedDuplicateCode === "active_venue_profile"
             ? `We already have an intake in progress for this restaurant name, contact name, and location (city / state / ZIP). If you submitted earlier, please wait for processing to finish. For help, email ${brand.email}.`
-            : `This email address already has an intake in progress. Please wait for our team to finish setting up your snapshot (or check your inbox). To reach us directly, email ${brand.email}.`;
+            : supabaseResult.blockedDuplicateCode === "recent_converted_email"
+              ? `We already processed an intake for this email address in the last few days. Check your inbox for the portal invite, or email ${brand.email} if you need a new link or another location onboarded.`
+              : `This email address already has an intake in progress. Please wait for our team to finish setting up your snapshot (or check your inbox). To reach us directly, email ${brand.email}.`;
         setSubmitError(dupMsg);
         trackEvent("lead_intake_duplicate_blocked", {
           planKey: planKey ?? "general",

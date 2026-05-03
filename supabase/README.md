@@ -53,6 +53,7 @@
    - `migrations/014_lead_intake_snapshot_context.sql` — optional venue phone, website, and hours for faster snapshot matching  
    - `migrations/016_lead_intake_policies_idempotent.sql` — **only if** SQL Editor errors with **`42710` policy already exists** on `lead_intake_*` (usually from running `010`’s policy block twice or pasting `010` into `011`). Run `016`, then run **`011`** (and onward) using the **unmerged** files from GitHub.
    - `migrations/025_lead_intake_submission_duplicate_check.sql` — blocks duplicate form submits while the same email or the same name+business+city+state+ZIP is still **pending** or **processing** (`check_lead_intake_submission_blocked` RPC for anon).
+   - `migrations/026_lead_intake_active_email_guard.sql` — partial unique index on normalized email for in-flight rows + extends the RPC to block the same email within **72 hours** of a **converted** intake (stops silent second rows after Ivory-style runs).
 
    **`010` vs `011`:** keep **both**. `010` creates the table and RLS; **`011` adds `submission_client_key` plus the RPC `fetch_lead_intake_id_by_client_key`** so the browser can learn the new row’s `id` after an anon **INSERT** (anon still cannot `SELECT` the table). The website **`persistLeadIntakeToSupabase`** calls that RPC — **do not delete `011` from the repo or omit it in SQL Editor**. Replacing `010` with one giant script is only a greenfield convenience; on an existing project, run **`011` after `010`** and never drop the column or function.
 
