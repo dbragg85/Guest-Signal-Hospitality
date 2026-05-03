@@ -1,9 +1,64 @@
 "use client";
 
 import { createClientIfConfigured } from "@/lib/supabase/client";
+import type { EmailOtpType, SupabaseClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+
+const EMAIL_OTP_TYPES = new Set<string>([
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+]);
+
+/**
+ * Supabase email links land with either `?token_hash=&type=invite` (SSR-style) or
+ * `#access_token=&refresh_token=` (implicit). `createBrowserClient` uses PKCE and does not
+ * apply those automatically on a static site — we must verify or setSession before getSession().
+ */
+async function consumeInviteFromUrl(supabase: SupabaseClient) {
+  if (typeof window === "undefined") return;
+
+  const { search, hash, pathname } = window.location;
+  const query = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const tokenHash = query.get("token_hash");
+  const typeRaw = query.get("type");
+
+  if (tokenHash && typeRaw && EMAIL_OTP_TYPES.has(typeRaw)) {
+    const { error: vErr } = await supabase.auth.verifyOtp({
+      type: typeRaw as EmailOtpType,
+      token_hash: tokenHash,
+    });
+    if (vErr) {
+      throw new Error(vErr.message || "Could not verify invite link.");
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete("token_hash");
+    url.searchParams.delete("type");
+    const nextSearch = url.searchParams.toString();
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}${url.hash}`,
+    );
+    return;
+  }
+
+  const hp = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+  const access_token = hp.get("access_token");
+  const refresh_token = hp.get("refresh_token");
+  if (access_token && refresh_token) {
+    const { error: sErr } = await supabase.auth.setSession({ access_token, refresh_token });
+    if (sErr) {
+      throw new Error(sErr.message || "Could not activate session from invite link.");
+    }
+    window.history.replaceState(window.history.state, "", pathname + search);
+  }
+}
 
 /**
  * First-time portal access after Supabase inviteUserByEmail: consume session from
@@ -39,11 +94,21 @@ export function PortalWelcomePasswordForm() {
       );
     };
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    void (async () => {
+      try {
+        await consumeInviteFromUrl(supabase);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      }
       if (cancelled) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session?.user) setError(null);
       sync(session?.user ?? null);
       setLoading(false);
-    });
+    })();
 
     const {
       data: { subscription },
@@ -151,25 +216,35 @@ export function PortalWelcomePasswordForm() {
 
   if (!email) {
     return (
-      <div className="mt-8 space-y-4 rounded-2xl border border-amber-200 bg-amber-50/90 p-6 text-sm text-amber-950">
-        <p className="font-semibold">We could not activate your invite on this page.</p>
-        <ul className="list-disc space-y-2 pl-5 text-amber-950/95">
-          <li>
-            Open the <strong>Accept invitation</strong> link from the email Supabase sent to the address you used on
-            the intake form (check spam).
-          </li>
-          <li>
-            You should land on this page with a long URL fragment in the address bar — do not remove it before
-            submitting.
-          </li>
-          <li>
-            Already finished setup?{" "}
-            <Link href="/portal/" className="font-semibold underline">
-              Sign in at the portal
-            </Link>
-            .
-          </li>
-        </ul>
+      <div className="mt-8 space-y-4">
+        {error ? (
+          <p
+            className="rounded-2xl border border-red-200 bg-red-50/90 p-4 text-sm text-red-900"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-6 text-sm text-amber-950">
+          <p className="font-semibold">We could not activate your invite on this page.</p>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-amber-950/95">
+            <li>
+              Open the <strong>Accept invitation</strong> link from the email Supabase sent to the address you used on
+              the intake form (check spam). Use one tap — do not open the site first in another tab without the link.
+            </li>
+            <li>
+              The link should include a long <strong>query string</strong> or <strong>URL fragment</strong> — do not
+              strip it before the page finishes loading.
+            </li>
+            <li>
+              Already finished setup?{" "}
+              <Link href="/portal/" className="font-semibold underline">
+                Sign in at the portal
+              </Link>
+              .
+            </li>
+          </ul>
+        </div>
       </div>
     );
   }
