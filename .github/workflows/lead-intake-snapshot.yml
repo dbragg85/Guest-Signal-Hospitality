@@ -2,7 +2,8 @@
 # Uses prior completed calendar month for scoring; see scripts/process-lead-intake-snapshot.mjs.
 # Creates restaurant, review_observations, snapshots, scorecards; then invites + memberships when enabled;
 # optional Resend welcome email to the submitter (RESEND_API_KEY + RESEND_FROM).
-# Apify optional; on failure or missing credits uses 15 mock reviews + same rubric.
+# Apify: lead intake only calls Apify when BOTH APIFY_TOKEN (secret) and APIFY_GOOGLE_ACTOR_ID (secret or var) are set.
+# If either is missing, no Google actor runs in Apify for that intake — the script uses 15 mock reviews (same rubric).
 #
 # Immediate run (no wait for schedule): GitHub → Actions → this workflow → "Run workflow".
 # Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub;
@@ -62,6 +63,17 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Apify Google (lead intake) env check
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_GOOGLE_ACTOR_ID: ${{ secrets.APIFY_GOOGLE_ACTOR_ID || vars.APIFY_GOOGLE_ACTOR_ID }}
+        run: |
+          if [ -n "${APIFY_TOKEN}" ] && [ -n "${APIFY_GOOGLE_ACTOR_ID}" ]; then
+            echo "Lead intake: Apify Google enabled (APIFY_TOKEN + APIFY_GOOGLE_ACTOR_ID are set)."
+          else
+            echo "::warning::Lead intake will not start any Google Maps Apify runs — APIFY_TOKEN and/or APIFY_GOOGLE_ACTOR_ID is empty. Snapshots still complete using mock reviews. Set both in repo Secrets (same as monthly Google pipeline) for live review pulls."
+          fi
 
       - name: Process pending leads
         env:

@@ -507,9 +507,9 @@ ${magicBlock}
 }
 
 async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
-  const token = getEnv("APIFY_TOKEN", { fallback: "" });
-  const googleActor = getEnv("APIFY_GOOGLE_ACTOR_ID", { fallback: "" });
-  const yelpActor = getEnv("APIFY_YELP_ACTOR_ID", { fallback: "" });
+  const token = getEnv("APIFY_TOKEN", { fallback: "" }).trim();
+  const googleActor = getEnv("APIFY_GOOGLE_ACTOR_ID", { fallback: "" }).trim();
+  const yelpActor = getEnv("APIFY_YELP_ACTOR_ID", { fallback: "" }).trim();
   const yelpUrlOverride = getEnv("LEAD_INTAKE_APIFY_YELP_URL", { fallback: "" }).trim();
   const enableYelp = ["1", "true", "yes"].includes(
     (getEnv("LEAD_INTAKE_ENABLE_YELP", { fallback: "0" }) || "").toLowerCase(),
@@ -519,6 +519,12 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
   const sourceBits = [];
   const combined = [];
   let yelpUrlUsed = null;
+
+  if (!token || !googleActor) {
+    console.warn(
+      "[lead-intake] Apify Google skipped (no Apify runs): set APIFY_TOKEN and APIFY_GOOGLE_ACTOR_ID on the GitHub Actions workflow env (repo Secrets / Variables). Without both, every intake uses mock reviews for the scoring month unless you re-ingest later.",
+    );
+  }
 
   if (token && googleActor) {
     try {
