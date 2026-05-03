@@ -325,35 +325,42 @@ export function PortalDashboardClient({ initialSlug }: Props) {
 
       // Some production scorecards have sparse `data` JSON while category/monthly
       // detail lives in normalized snapshot tables. Hydrate those payloads here.
-      const [
-        { data: categoryRows, error: categoryErr },
-        { data: monthlyRows, error: monthlyErr },
-        { data: snapshotRows, error: snapshotsErr },
-      ] =
-        await Promise.all([
+      // snapshot_category_scores / snapshot_monthly_trends are keyed by snapshot_id only (no restaurant_id).
+      const { data: snapshotRows, error: snapshotsErr } = await supabase
+        .from("snapshots")
+        .select("*")
+        .eq("restaurant_id", selectedId)
+        .order("created_at", { ascending: false });
+
+      if (snapshotsErr) {
+        console.warn("snapshots period hydration skipped:", snapshotsErr.message);
+      }
+
+      const snapshotIds = ((snapshotRows ?? []) as SnapshotPeriodRow[])
+        .map((r) => r.id)
+        .filter((id): id is string => Boolean(id));
+
+      let categoryRows: SnapshotCategoryScoreRow[] | null = null;
+      let monthlyRows: SnapshotMonthlyTrendRow[] | null = null;
+      if (snapshotIds.length > 0) {
+        const [{ data: cat, error: categoryErr }, { data: mon, error: monthlyErr }] = await Promise.all([
           supabase
             .from("snapshot_category_scores")
             .select("snapshot_id, category, score, mentions")
-            .eq("restaurant_id", selectedId),
+            .in("snapshot_id", snapshotIds),
           supabase
             .from("snapshot_monthly_trends")
             .select("snapshot_id, month_label, guest_signal_score, delta_prior, sort_order")
-            .eq("restaurant_id", selectedId),
-          supabase
-            .from("snapshots")
-            .select("*")
-            .eq("restaurant_id", selectedId)
-            .order("created_at", { ascending: false }),
+            .in("snapshot_id", snapshotIds),
         ]);
-
-      if (categoryErr) {
-        console.warn("snapshot_category_scores hydration skipped:", categoryErr.message);
-      }
-      if (monthlyErr) {
-        console.warn("snapshot_monthly_trends hydration skipped:", monthlyErr.message);
-      }
-      if (snapshotsErr) {
-        console.warn("snapshots period hydration skipped:", snapshotsErr.message);
+        if (categoryErr) {
+          console.warn("snapshot_category_scores hydration skipped:", categoryErr.message);
+        }
+        if (monthlyErr) {
+          console.warn("snapshot_monthly_trends hydration skipped:", monthlyErr.message);
+        }
+        categoryRows = (cat ?? []) as SnapshotCategoryScoreRow[];
+        monthlyRows = (mon ?? []) as SnapshotMonthlyTrendRow[];
       }
 
       const categoryBySnapshot = new Map<string, SnapshotCategoryScoreRow[]>();
