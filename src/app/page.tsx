@@ -2,13 +2,14 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { brand, freeSnapshot, pricingPlans } from "@/content/site";
+import { resourceArticles } from "@/content/resources";
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
 import { NewsletterForm } from "@/components/NewsletterForm";
 
 export const metadata: Metadata = {
-  title: "Restaurant Guest Experience Monitoring | Guest Signal Hospitality",
+  title: "Restaurant Guest Experience Monitoring",
   description:
     "Guest Signal Hospitality helps restaurant owners monitor reviews, improve guest experience, and protect reputation with monthly scorecards, sentiment insights, and action plans.",
 };
@@ -276,6 +277,36 @@ export default function HomePage() {
         </div>
       </Section>
 
+      <Section title="Guides for owners" kicker="Resources">
+        <div className="mx-auto max-w-4xl">
+          <p className="mx-auto mb-8 max-w-2xl text-center text-slate-600">
+            Practical reads on review monitoring, Google Reviews, and Cincinnati-area reputation—linked
+            from every page so Google (and guests) can find them easily.
+          </p>
+          <ul className="grid gap-4 md:grid-cols-3">
+            {resourceArticles.map((a) => (
+              <li key={a.slug}>
+                <Link
+                  href={`/resources/${a.slug}/`}
+                  className="flex h-full flex-col rounded-2xl border border-stone-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-amber-200/80"
+                >
+                  <span className="font-semibold text-slate-900">{a.title}</span>
+                  <span className="mt-2 text-sm text-slate-600">{a.description}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-6 text-center">
+            <Link
+              href="/resources/"
+              className="text-sm font-semibold text-amber-900 underline underline-offset-2"
+            >
+              View all resources
+            </Link>
+          </p>
+        </div>
+      </Section>
+
       {/* Newsletter Section */}
       <Section id="newsletter">
         <div className="rounded-3xl border border-amber-200/60 bg-gradient-to-br from-amber-50/40 via-white to-stone-50 p-10 shadow-sm">
@@ -287,7 +318,7 @@ export default function HomePage() {
               Monthly insights into guest experience trends and hospitality performance.
             </p>
             <div className="mt-6">
-              <Link href="/newsletter" className="btn-secondary inline-block">
+              <Link href="/newsletter/" className="btn-secondary inline-block">
                 View Newsletter Page
               </Link>
             </div>

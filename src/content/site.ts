@@ -19,10 +19,11 @@ export const brand = {
 export const nav = [
   { label: "Home", href: "/" },
   { label: "Plans", href: "/services/" },
-  { label: "About", href: "/team" },
-  { label: "Newsletter", href: "/newsletter" },
-  { label: "Client Portal", href: "/portal" },
-  { label: "Contact", href: "/contact" },
+  { label: "Resources", href: "/resources/" },
+  { label: "About", href: "/team/" },
+  { label: "Newsletter", href: "/newsletter/" },
+  { label: "Client Portal", href: "/portal/" },
+  { label: "Contact", href: "/contact/" },
 ];
 
 /** Query param `plan=` on `/services/inquiry/` (or legacy `/contact`) for service-specific intake */

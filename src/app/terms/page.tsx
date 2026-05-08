@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Guest Signal Hospitality",
+  title: "Terms of Service",
   description:
     "Read the Guest Signal Hospitality terms of service for website use, deliverables, and service limitations.",
 };

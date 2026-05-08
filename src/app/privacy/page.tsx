@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Guest Signal Hospitality",
+  title: "Privacy Policy",
   description:
     "Read the Guest Signal Hospitality privacy policy for details about data collection, form submissions, and communication preferences.",
 };

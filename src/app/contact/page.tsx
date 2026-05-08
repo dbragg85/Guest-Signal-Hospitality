@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { LeadIntakeForm } from "@/components/LeadIntakeForm";
 
 export const metadata: Metadata = {
-  title: "Contact Guest Signal Hospitality | Restaurant Intelligence Team",
+  title: "Contact",
   description:
     "Contact Guest Signal Hospitality to request your restaurant guest experience snapshot and discuss review sentiment monitoring, scorecards, and improvement support.",
 };

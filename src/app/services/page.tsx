@@ -5,7 +5,7 @@ import { freeSnapshot, pricingPlans, servicesPricingContext } from "@/content/si
 import { Section } from "@/components/Section";
 
 export const metadata: Metadata = {
-  title: "Restaurant Reputation Monitoring Plans | Guest Signal Hospitality",
+  title: "Restaurant Reputation Monitoring Plans",
   description:
     "Compare Guest Signal Hospitality plans for restaurant reputation monitoring, review sentiment intelligence, competitor benchmarking, and guest experience improvement.",
 };
@@ -26,7 +26,7 @@ export default function ServicesPage() {
             <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-slate-600">
               Each plan opens a dedicated intake with tier-specific questions (address, concept, and priorities)—not the
               same short form as general{" "}
-              <Link href="/contact" className="font-semibold text-slate-800 underline underline-offset-2">
+              <Link href="/contact/" className="font-semibold text-slate-800 underline underline-offset-2">
                 Contact
               </Link>
               .
