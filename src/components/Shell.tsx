@@ -70,6 +70,24 @@ export function Shell({ children }: { children: ReactNode }) {
               <span className="text-slate-700" aria-hidden>
                 |
               </span>
+              <Link
+                href="/privacy"
+                className="font-medium text-slate-400 transition-colors hover:text-amber-400"
+              >
+                Privacy
+              </Link>
+              <span className="text-slate-700" aria-hidden>
+                |
+              </span>
+              <Link
+                href="/terms"
+                className="font-medium text-slate-400 transition-colors hover:text-amber-400"
+              >
+                Terms
+              </Link>
+              <span className="text-slate-700" aria-hidden>
+                |
+              </span>
               <a
                 href={brand.instagram}
                 target="_blank"

@@ -1,7 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { freeSnapshot, pricingPlans, servicesPricingContext } from "@/content/site";
 import { Section } from "@/components/Section";
+
+export const metadata: Metadata = {
+  title: "Restaurant Reputation Monitoring Plans | Guest Signal Hospitality",
+  description:
+    "Compare Guest Signal Hospitality plans for restaurant reputation monitoring, review sentiment intelligence, competitor benchmarking, and guest experience improvement.",
+};
 
 export default function ServicesPage() {
   return (

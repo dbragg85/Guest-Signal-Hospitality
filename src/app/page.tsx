@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { brand, freeSnapshot, pricingPlans } from "@/content/site";
 import { Section } from "@/components/Section";
@@ -6,9 +7,42 @@ import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
 import { NewsletterForm } from "@/components/NewsletterForm";
 
+export const metadata: Metadata = {
+  title: "Restaurant Guest Experience Monitoring | Guest Signal Hospitality",
+  description:
+    "Guest Signal Hospitality helps restaurant owners monitor reviews, improve guest experience, and protect reputation with monthly scorecards, sentiment insights, and action plans.",
+};
+
 export default function HomePage() {
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: brand.name,
+    url: "https://guestsignalhospitality.com",
+    email: brand.email,
+    areaServed: ["Cincinnati, Ohio", "United States"],
+    sameAs: [brand.instagram],
+  };
+
+  const serviceJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    name: brand.name,
+    serviceType: "Restaurant reputation and guest experience monitoring",
+    areaServed: ["Cincinnati, Ohio", "United States"],
+    url: "https://guestsignalhospitality.com/services/",
+  };
+
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
+      />
       {/* Hero Section */}
       <section className="border-b gradient-primary">
         <div className="mx-auto max-w-6xl px-4 py-14 md:py-16">

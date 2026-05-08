@@ -1,22 +1,20 @@
 import type { MetadataRoute } from "next";
-import { PORTAL_RESTAURANTS } from "@/data/portal-restaurants";
 import { getSiteOrigin } from "@/lib/site-url";
 
 const STATIC_PATHS = [
   "",
-  "about",
   "careers",
   "contact",
   "newsletter",
+  "privacy",
   "services",
   "services/inquiry",
   "team",
-  "test",
+  "terms",
   "who-we-serve",
   "industries/restaurants",
   "portal",
   "portal/demo",
-  "portal/dashboard",
 ] as const;
 
 function pathToUrl(origin: string, path: string): string {
@@ -32,15 +30,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: path === "" ? "weekly" : "monthly",
     priority: path === "" ? 1 : 0.7,
   }));
-
-  for (const { slug } of PORTAL_RESTAURANTS) {
-    entries.push({
-      url: `${origin}/portal/dashboard/${slug}/`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.5,
-    });
-  }
 
   return entries;
 }

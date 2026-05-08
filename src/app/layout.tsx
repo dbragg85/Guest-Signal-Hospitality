@@ -16,10 +16,15 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteOrigin()),
-  title:
-    "Guest Signal Hospitality | Operational intelligence for restaurant owners.",
+  title: {
+    default: "Guest Signal Hospitality | Operational intelligence for restaurant owners.",
+    template: "%s | Guest Signal Hospitality",
+  },
   description:
     "We turn Google Reviews into clear, actionable insights—SWOT, reputation signals, competitive positioning, and a prioritized action plan that improves guest experience and profitability.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
