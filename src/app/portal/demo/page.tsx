@@ -251,7 +251,7 @@ export default function PortalDemoPage() {
                 Book a consultation
               </Link>
               <Link
-                href="/services"
+                href="/services/"
                 className="btn-secondary text-center sm:inline-flex"
               >
                 View plans &amp; monthly reporting

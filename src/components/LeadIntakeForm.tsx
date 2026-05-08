@@ -321,7 +321,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
         <section className="border-b bg-slate-50">
           <div className="mx-auto max-w-5xl px-4 py-14">
             <p className="text-sm font-medium text-slate-500">
-              <Link href="/services" className="text-slate-700 hover:underline">
+              <Link href="/services/" className="text-slate-700 hover:underline">
                 ← Plans
               </Link>
             </p>
@@ -391,7 +391,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
                 ← Choose a different plan
               </ServicesIntakeLink>
               <span className="mx-2 text-slate-300">·</span>
-              <Link href="/services" className="text-slate-700 hover:underline">
+              <Link href="/services/" className="text-slate-700 hover:underline">
                 Plans overview
               </Link>
             </p>
@@ -404,7 +404,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
           {mode === "contact" ? (
             <p className="mt-5 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950/90">
               <span className="font-semibold">Choosing a paid plan or free snapshot?</span> Use{" "}
-              <Link href="/services" className="font-semibold underline underline-offset-2">
+              <Link href="/services/" className="font-semibold underline underline-offset-2">
                 Plans
               </Link>{" "}
               → <span className="font-medium">Get started</span> so we can ask the right questions for your tier—we

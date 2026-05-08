@@ -152,7 +152,7 @@ export default function TeamPage() {
             desc="Get a free snapshot of your review signals and see how we help you turn guest feedback into growth."
             primaryHref="/services/inquiry/?plan=free_snapshot"
             primaryLabel="Get Free Snapshot"
-            secondaryHref="/services"
+            secondaryHref="/services/"
             secondaryLabel="View Plans"
           />
         </div>

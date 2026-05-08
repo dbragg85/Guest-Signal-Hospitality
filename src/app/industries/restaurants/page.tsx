@@ -107,7 +107,7 @@ export default function RestaurantsIndustryPage() {
                   Get Your Free Snapshot
                 </ServicesIntakeLink>
                 <Link
-                  href="/services"
+                  href="/services/"
                   className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 text-center"
                 >
                   View All Services
@@ -185,7 +185,7 @@ export default function RestaurantsIndustryPage() {
           primaryHref="/services/inquiry/?plan=free_snapshot"
           primaryLabel="Get Free Snapshot"
           secondaryLabel="Learn More"
-          secondaryHref="/services"
+          secondaryHref="/services/"
         />
       </Section>
     </div>

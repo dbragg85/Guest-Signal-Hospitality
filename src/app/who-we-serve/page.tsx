@@ -204,7 +204,7 @@ export default function WhoWeServePage() {
           desc="Send us your restaurant name and concept type, and we'll recommend the best starting path for your situation."
           primaryLabel="Talk to Us"
           secondaryLabel="View Services"
-          secondaryHref="/services"
+          secondaryHref="/services/"
         />
       </Section>
 

@@ -6,7 +6,7 @@ export function CTA({
   desc,
   primaryHref = "/contact",
   primaryLabel = "Get a Free Snapshot",
-  secondaryHref = "/services",
+  secondaryHref = "/services/",
   secondaryLabel = "See Services",
   align = "start",
   className,
