@@ -1,4 +1,6 @@
 import type { MetadataRoute } from "next";
+import fs from "node:fs";
+import path from "node:path";
 import { getSiteOrigin } from "@/lib/site-url";
 
 const STATIC_PATHS = [
@@ -34,6 +36,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: path === "" ? "weekly" : "monthly",
     priority: path === "" ? 1 : 0.7,
   }));
+
+  const newsletterDir = path.join(process.cwd(), "src", "content", "newsletter");
+  if (fs.existsSync(newsletterDir)) {
+    const files = fs.readdirSync(newsletterDir).filter((file) => file.endsWith(".md"));
+    for (const file of files) {
+      const raw = fs.readFileSync(path.join(newsletterDir, file), "utf8");
+      if (raw.includes("draft: true")) continue;
+      const slugMatch = raw.match(/\nslug:\s*"([^"]+)"/);
+      if (!slugMatch) continue;
+      const slug = slugMatch[1].replace(/^\/+|\/+$/g, "");
+      entries.push({
+        url: `${origin}/newsletter/${slug}/`,
+        lastModified: new Date(),
+        changeFrequency: "weekly",
+        priority: 0.8,
+      });
+    }
+  }
 
   return entries;
 }

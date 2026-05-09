@@ -1,0 +1,71 @@
+name: Weekly hospitality newsletter
+
+on:
+  schedule:
+    # 7:00 AM Eastern during daylight-saving time (11:00 UTC Monday).
+    - cron: "0 11 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-newsletter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Collect Google Trends data
+        run: npm run newsletter:collect-trends
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          GLIMPSE_API_KEY: ${{ secrets.GLIMPSE_API_KEY }}
+          GLIMPSE_API_URL: ${{ vars.GLIMPSE_API_URL }}
+          NEWSLETTER_ALLOW_SCRAPE: ${{ vars.NEWSLETTER_ALLOW_SCRAPE }}
+
+      - name: Collect hospitality articles
+        run: npm run newsletter:collect-articles
+        env:
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+
+      - name: Generate weekly newsletter
+        run: npm run newsletter:generate
+        env:
+          NEWSLETTER_AUTO_PUBLISH: ${{ vars.NEWSLETTER_AUTO_PUBLISH }}
+          NEWSLETTER_EMAIL_PROVIDER: ${{ vars.NEWSLETTER_EMAIL_PROVIDER }}
+          NEWSLETTER_EMAIL_TO: ${{ vars.NEWSLETTER_EMAIL_TO }}
+          NEWSLETTER_EMAIL_FROM: ${{ vars.NEWSLETTER_EMAIL_FROM }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+
+      - name: Build verification
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Commit generated files
+        run: |
+          git add src/data/hospitality-trends src/data/hospitality-articles src/content/newsletter logs || true
+          if git diff --cached --quiet; then
+            echo "No newsletter changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(newsletter): generate weekly hospitality issue"
+          git push origin main
+
+      - name: Optional deploy hook
+        if: ${{ vars.DEPLOY_HOOK_URL != '' }}
+        run: curl -sS -X POST "${{ vars.DEPLOY_HOOK_URL }}"

@@ -164,6 +164,21 @@ export default function ServicesPage() {
           </div>
         </div>
       </Section>
+
+      <Section>
+        <div className="mx-auto max-w-3xl rounded-3xl border border-amber-200/70 bg-amber-50/60 p-8 text-center">
+          <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Weekly operator intelligence</h2>
+          <p className="mt-3 text-slate-700">
+            Read <strong>This Week in Hospitality Signals</strong> for search shifts, guest behavior
+            patterns, and practical restaurant actions.
+          </p>
+          <div className="mt-5">
+            <Link href="/newsletter/" className="btn-secondary inline-block">
+              View weekly newsletter
+            </Link>
+          </div>
+        </div>
+      </Section>
     </div>
   );
 }

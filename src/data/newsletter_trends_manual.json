@@ -1,0 +1,13 @@
+[
+  {
+    "term": "Restaurant value menus",
+    "source": "Manual",
+    "geo": "US",
+    "category": "Food & Drink",
+    "timeWindow": "past 7 days",
+    "searchVolumeLabel": "Manual",
+    "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
+    "collectedAt": "2026-01-01T00:00:00.000Z",
+    "operatorAngle": "Value framing changes are shaping guest expectations around pricing and menu clarity."
+  }
+]
