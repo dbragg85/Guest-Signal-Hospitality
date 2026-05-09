@@ -626,6 +626,7 @@ async function main() {
     (getEnv("LEAD_INTAKE_FREE_SNAPSHOT_ONLY", { fallback: "0" }) || "").toLowerCase(),
   );
   const invitePortalUsers = envFlag("LEAD_INTAKE_INVITE_PORTAL_USERS", "0");
+  const requirePortalProvisioning = invitePortalUsers && envFlag("LEAD_INTAKE_REQUIRE_PORTAL_PROVISIONING", "1");
   const singleId = getEnv("LEAD_INTAKE_ID", { fallback: "" });
   const welcomeEmailDelayMs = envNonNegativeIntMs("LEAD_INTAKE_WELCOME_EMAIL_DELAY_MS", 0);
   if (welcomeEmailDelayMs > 0) {
@@ -645,6 +646,13 @@ async function main() {
   );
   if (invitePortalUsers) {
     console.log("Portal: LEAD_INTAKE_INVITE_PORTAL_USERS enabled — will invite + upsert memberships after snapshot.");
+    if (requirePortalProvisioning) {
+      console.log("Portal: strict mode enabled — lead remains failed unless invite + membership both succeed.");
+    }
+  } else {
+    console.warn(
+      "Portal invites are disabled (LEAD_INTAKE_INVITE_PORTAL_USERS is false). Snapshot conversion will complete without auth user/profile provisioning.",
+    );
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -758,6 +766,7 @@ async function main() {
       }
 
       let portalMembershipOk = false;
+      let portalProvisionError = null;
       if (invitePortalUsers) {
         try {
           const uid = await ensurePortalUser(supabase, lead.email, lead.name);
@@ -765,10 +774,30 @@ async function main() {
             await upsertMembershipViewer(supabase, uid, restaurant.id);
             console.log(`Portal: viewer membership for ${String(lead.email).trim()} → ${restaurant.slug}`);
             portalMembershipOk = true;
+          } else {
+            portalProvisionError =
+              "Portal provisioning could not resolve a user id from inviteUserByEmail/listUsers.";
           }
         } catch (portalErr) {
-          console.warn("Portal invite/membership failed:", portalErr?.message || portalErr);
+          portalProvisionError = String(portalErr?.message || portalErr).slice(0, 500);
+          console.warn("Portal invite/membership failed:", portalProvisionError);
         }
+      }
+
+      if (invitePortalUsers && requirePortalProvisioning && !portalMembershipOk) {
+        const strictPortalError =
+          portalProvisionError || "Portal provisioning failed before membership assignment.";
+        await supabase
+          .from("lead_intake_submissions")
+          .update({
+            processing_status: "failed",
+            pipeline_last_error: strictPortalError,
+          })
+          .eq("id", lead.id);
+        console.warn(
+          `Lead ${lead.id} marked failed (strict portal provisioning): ${strictPortalError}`,
+        );
+        continue;
       }
 
       const { error: upErr } = await supabase
@@ -776,7 +805,7 @@ async function main() {
         .update({
           restaurant_id: restaurant.id,
           processing_status: "converted",
-          pipeline_last_error: null,
+          pipeline_last_error: portalProvisionError,
         })
         .eq("id", lead.id);
       if (upErr) throw upErr;
