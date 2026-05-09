@@ -54,7 +54,7 @@ export default function NewsletterPage() {
                   <img
                     src={item.frontmatter.heroImage}
                     alt={`${item.frontmatter.title} banner`}
-                    className="mb-4 w-full rounded-xl border border-stone-200 bg-white"
+                    className="mb-4 h-44 w-full rounded-xl border border-stone-200 bg-white object-cover object-center"
                   />
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
