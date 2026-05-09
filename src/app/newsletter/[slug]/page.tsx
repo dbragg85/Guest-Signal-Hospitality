@@ -74,11 +74,19 @@ export default function NewsletterDetailPage({ params }: { params: Params }) {
 
       <section className="border-b border-stone-200/80 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.2),_transparent_42%),radial-gradient(circle_at_top_left,_rgba(2,132,199,0.14),_transparent_38%)]">
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-5">
-          <img
-            src="/guest-signal-header-icon.svg"
-            alt="Guest Signal mark"
-            className="h-12 w-12 rounded-xl border border-amber-200/70 bg-white/90 p-2 shadow-sm"
-          />
+          {item.frontmatter.heroImage ? (
+            <img
+              src={item.frontmatter.heroImage}
+              alt={`${item.frontmatter.title} banner`}
+              className="mb-5 w-full rounded-2xl border border-stone-200 bg-white shadow-sm"
+            />
+          ) : (
+            <img
+              src="/guest-signal-header-icon.svg"
+              alt="Guest Signal mark"
+              className="h-12 w-12 rounded-xl border border-amber-200/70 bg-white/90 p-2 shadow-sm"
+            />
+          )}
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-800/80">
             <Link href="/newsletter/" className="hover:underline">
               Newsletter

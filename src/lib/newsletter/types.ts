@@ -32,6 +32,7 @@ export type NewsletterFrontmatter = {
   tags: string[];
   sources: string[];
   canonicalUrl: string;
+  heroImage?: string;
   draft?: boolean;
 };
 

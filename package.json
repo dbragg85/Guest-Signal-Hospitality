@@ -32,6 +32,7 @@
     "newsletter:collect-trends": "tsx scripts/collectWeeklyHospitalityTrends.ts",
     "newsletter:collect-articles": "tsx scripts/collectWeeklyHospitalityArticles.ts",
     "newsletter:generate": "tsx scripts/generateWeeklyHospitalityNewsletter.ts",
+    "newsletter:backfill-hero-images": "tsx scripts/backfillNewsletterHeroBanners.ts",
     "newsletter:weekly": "npm run newsletter:collect-trends && npm run newsletter:collect-articles && npm run newsletter:generate"
   },
   "dependencies": {

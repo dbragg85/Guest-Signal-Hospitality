@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="840" viewBox="0 0 1600 840" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="840" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="840" fill="url(#bg)"/>
+  <circle cx="1360" cy="120" r="230" fill="#0284C7" fill-opacity="0.2"/>
+  <circle cx="1220" cy="700" r="320" fill="#F59E0B" fill-opacity="0.16"/>
+  <rect x="96" y="98" width="416" height="44" rx="22" fill="#0B1220" stroke="url(#accent)"/>
+  <text x="126" y="126" fill="#FBBF24" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">This Week in Hospitality Signals</text>
+  <text x="96" y="240" fill="#FFFFFF" font-size="64" font-family="Inter, Arial, sans-serif" font-weight="700">Restaurant value menus</text>
+  <text x="96" y="332" fill="#CBD5E1" font-size="34" font-family="Inter, Arial, sans-serif">Search trends, guest behavior signals, and operator takeaways for restaurants.</text>
+  <text x="96" y="760" fill="#F8FAFC" font-size="26" font-family="Inter, Arial, sans-serif" font-weight="600">Guest Signal Hospitality</text>
+  <text x="1340" y="760" fill="#94A3B8" font-size="24" text-anchor="end" font-family="Inter, Arial, sans-serif">2026-04-29</text>
+</svg>

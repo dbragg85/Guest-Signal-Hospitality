@@ -34,6 +34,8 @@ const KEYWORD_ROTATION = [
   "restaurant operations",
 ];
 
+const NEWSLETTER_BANNER_DIR = path.join(process.cwd(), "public", "newsletter-banners");
+
 function safeText(input: string): string {
   let out = input.replace(/\s+/g, " ").trim();
   for (const banned of BRAND_SAFETY_BLOCK) {
@@ -99,10 +101,48 @@ function frontmatterToString(frontmatter: NewsletterFrontmatter): string {
     `tags: [${frontmatter.tags.map((tag) => `"${tag}"`).join(", ")}]`,
     `sources: [${frontmatter.sources.map((source) => `"${source}"`).join(", ")}]`,
     `canonicalUrl: "${frontmatter.canonicalUrl}"`,
+    ...(frontmatter.heroImage ? [`heroImage: "${frontmatter.heroImage}"`] : []),
     ...(frontmatter.draft ? ["draft: true"] : []),
     "---",
   ];
   return rows.join("\n");
+}
+
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function createBannerSvg(title: string, subtitle: string, dateLabel: string): string {
+  const safeTitle = escapeXml(title);
+  const safeSubtitle = escapeXml(subtitle);
+  const safeDate = escapeXml(dateLabel);
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="840" viewBox="0 0 1600 840" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="840" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="840" fill="url(#bg)"/>
+  <circle cx="1360" cy="120" r="230" fill="#0284C7" fill-opacity="0.2"/>
+  <circle cx="1220" cy="700" r="320" fill="#F59E0B" fill-opacity="0.16"/>
+  <rect x="96" y="98" width="416" height="44" rx="22" fill="#0B1220" stroke="url(#accent)"/>
+  <text x="126" y="126" fill="#FBBF24" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">This Week in Hospitality Signals</text>
+  <text x="96" y="240" fill="#FFFFFF" font-size="64" font-family="Inter, Arial, sans-serif" font-weight="700">${safeTitle}</text>
+  <text x="96" y="332" fill="#CBD5E1" font-size="34" font-family="Inter, Arial, sans-serif">${safeSubtitle}</text>
+  <text x="96" y="760" fill="#F8FAFC" font-size="26" font-family="Inter, Arial, sans-serif" font-weight="600">Guest Signal Hospitality</text>
+  <text x="1340" y="760" fill="#94A3B8" font-size="24" text-anchor="end" font-family="Inter, Arial, sans-serif">${safeDate}</text>
+</svg>`;
 }
 
 function buildSourceList(trends: TrendRecord[], articles: ArticleRecord[]): string[] {
@@ -206,6 +246,10 @@ async function main() {
   const excerpt = safeText(`Weekly hospitality intelligence for operators focused on ${mainFeature}.`);
   const sourceUrls = buildSourceList(topTrends, topArticles);
   const draftMode = process.env.NEWSLETTER_AUTO_PUBLISH !== "true";
+  ensureDir(NEWSLETTER_BANNER_DIR);
+  const heroImage = `/newsletter-banners/${slug}.svg`;
+  const bannerSvg = createBannerSvg(mainFeature, subtitle, today);
+  fs.writeFileSync(path.join(NEWSLETTER_BANNER_DIR, `${slug}.svg`), bannerSvg, "utf8");
 
   const body = buildNewsletterBody({
     title,
@@ -235,6 +279,7 @@ async function main() {
     tags: [keyword, "restaurant trends", "guest experience", "hospitality intelligence"],
     sources: sourceUrls,
     canonicalUrl: `https://guestsignalhospitality.com/newsletter/${slug}/`,
+    heroImage,
     draft: draftMode ? true : undefined,
   };
 

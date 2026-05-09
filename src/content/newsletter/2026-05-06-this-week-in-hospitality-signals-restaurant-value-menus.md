@@ -10,6 +10,7 @@ category: Newsletter
 tags: ["restaurant sentiment analysis", "restaurant trends", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
 canonicalUrl: "https://guestsignalhospitality.com/newsletter/2026-05-06-this-week-in-hospitality-signals-restaurant-value-menus/"
+heroImage: "/newsletter-banners/2026-05-06-this-week-in-hospitality-signals-restaurant-value-menus.svg"
 ---
 
 # This Week in Hospitality Signals: Restaurant value menus

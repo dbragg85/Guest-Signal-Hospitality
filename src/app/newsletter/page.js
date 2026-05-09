@@ -50,6 +50,13 @@ export default function NewsletterPage() {
                 key={item.frontmatter.slug}
                 className="rounded-2xl border border-stone-200 bg-gradient-to-b from-white to-stone-50/70 p-6 shadow-sm"
               >
+                {item.frontmatter.heroImage ? (
+                  <img
+                    src={item.frontmatter.heroImage}
+                    alt={`${item.frontmatter.title} banner`}
+                    className="mb-4 w-full rounded-xl border border-stone-200 bg-white"
+                  />
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                   <span>{formatDate(item.frontmatter.publishedDate)}</span>
                   <span aria-hidden>•</span>
