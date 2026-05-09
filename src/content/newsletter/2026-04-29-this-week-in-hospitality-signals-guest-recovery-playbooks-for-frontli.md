@@ -1,24 +1,24 @@
 ---
-title: "This Week in Hospitality Signals: Restaurant value menus and guest recovery playbooks"
-seoTitle: "Restaurant Trends This Week: Restaurant value menus"
+title: "This Week in Hospitality Signals: Guest recovery playbooks for frontline teams"
+seoTitle: "Restaurant Trends This Week: restaurant marketing trends"
 metaDescription: "Weekly hospitality insights for restaurant operators: search trends, guest behavior shifts, and restaurant marketing trends takeaways with practical actions."
-slug: "2026-04-29-this-week-in-hospitality-signals-restaurant-value-menus"
-excerpt: "Weekly hospitality intelligence for operators focused on Restaurant value menus."
+slug: "2026-04-29-this-week-in-hospitality-signals-guest-recovery-playbooks-for-frontli"
+excerpt: "Weekly hospitality intelligence for operators focused on Guest recovery playbooks for frontline teams."
 publishedDate: "2026-04-29T12:00:00.000Z"
-updatedDate: "2026-05-09T03:45:39.067Z"
+updatedDate: "2026-05-09T03:53:17.101Z"
 category: Newsletter
 tags: ["restaurant marketing trends", "restaurant trends", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
-canonicalUrl: "https://guestsignalhospitality.com/newsletter/2026-04-29-this-week-in-hospitality-signals-restaurant-value-menus/"
-heroImage: "/newsletter-banners/2026-04-29-this-week-in-hospitality-signals-restaurant-value-menus.svg"
+canonicalUrl: "https://guestsignalhospitality.com/newsletter/2026-04-29-this-week-in-hospitality-signals-guest-recovery-playbooks-for-frontli/"
+heroImage: "/newsletter-banners/2026-04-29-this-week-in-hospitality-signals-guest-recovery-playbooks-for-frontli.svg"
 ---
 
-# This Week in Hospitality Signals: Restaurant value menus and guest recovery playbooks
+# This Week in Hospitality Signals: Guest recovery playbooks for frontline teams
 
 Search trends, guest behavior signals, and operator takeaways for restaurants.
 
 ## Opening Signal
-This week, the strongest hospitality signal was **Restaurant value menus**. This week's pattern shows guests reward quick acknowledgement and clear recovery actions after mistakes.
+This week, the strongest hospitality signal was **Guest recovery playbooks for frontline teams**. This week's pattern shows guests reward quick acknowledgement and clear recovery actions after mistakes.
 The weekly pattern points to one consistent theme: guests reward clarity and consistency. Teams that monitor search behavior and review feedback together can react faster than teams that rely on intuition alone.
 
 ## What People Are Searching

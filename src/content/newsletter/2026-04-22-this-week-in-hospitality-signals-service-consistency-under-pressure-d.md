@@ -1,24 +1,24 @@
 ---
-title: "This Week in Hospitality Signals: Restaurant value menus and service consistency under pressure"
-seoTitle: "Restaurant Trends This Week: Restaurant value menus"
+title: "This Week in Hospitality Signals: Service consistency under pressure during peak shifts"
+seoTitle: "Restaurant Trends This Week: guest feedback"
 metaDescription: "Weekly hospitality insights for restaurant operators: search trends, guest behavior shifts, and guest feedback takeaways with practical actions."
-slug: "2026-04-22-this-week-in-hospitality-signals-restaurant-value-menus"
-excerpt: "Weekly hospitality intelligence for operators focused on Restaurant value menus."
+slug: "2026-04-22-this-week-in-hospitality-signals-service-consistency-under-pressure-d"
+excerpt: "Weekly hospitality intelligence for operators focused on Service consistency under pressure during peak shifts."
 publishedDate: "2026-04-22T12:00:00.000Z"
-updatedDate: "2026-05-09T03:45:38.776Z"
+updatedDate: "2026-05-09T03:53:16.808Z"
 category: Newsletter
 tags: ["guest feedback", "restaurant trends", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
-canonicalUrl: "https://guestsignalhospitality.com/newsletter/2026-04-22-this-week-in-hospitality-signals-restaurant-value-menus/"
-heroImage: "/newsletter-banners/2026-04-22-this-week-in-hospitality-signals-restaurant-value-menus.svg"
+canonicalUrl: "https://guestsignalhospitality.com/newsletter/2026-04-22-this-week-in-hospitality-signals-service-consistency-under-pressure-d/"
+heroImage: "/newsletter-banners/2026-04-22-this-week-in-hospitality-signals-service-consistency-under-pressure-d.svg"
 ---
 
-# This Week in Hospitality Signals: Restaurant value menus and service consistency under pressure
+# This Week in Hospitality Signals: Service consistency under pressure during peak shifts
 
 Search trends, guest behavior signals, and operator takeaways for restaurants.
 
 ## Opening Signal
-This week, the strongest hospitality signal was **Restaurant value menus**. Operators are seeing demand variability expose handoff and speed inconsistencies during peak windows.
+This week, the strongest hospitality signal was **Service consistency under pressure during peak shifts**. Operators are seeing demand variability expose handoff and speed inconsistencies during peak windows.
 The weekly pattern points to one consistent theme: guests reward clarity and consistency. Teams that monitor search behavior and review feedback together can react faster than teams that rely on intuition alone.
 
 ## What People Are Searching

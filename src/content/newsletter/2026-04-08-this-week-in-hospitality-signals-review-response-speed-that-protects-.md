@@ -1,24 +1,24 @@
 ---
-title: "This Week in Hospitality Signals: Restaurant value menus and review response speed"
-seoTitle: "Restaurant Trends This Week: Restaurant value menus"
+title: "This Week in Hospitality Signals: Review response speed that protects guest trust"
+seoTitle: "Restaurant Trends This Week: Google review monitoring"
 metaDescription: "Weekly hospitality insights for restaurant operators: search trends, guest behavior shifts, and Google review monitoring takeaways with practical actions."
-slug: "2026-04-08-this-week-in-hospitality-signals-restaurant-value-menus"
-excerpt: "Weekly hospitality intelligence for operators focused on Restaurant value menus."
+slug: "2026-04-08-this-week-in-hospitality-signals-review-response-speed-that-protects-"
+excerpt: "Weekly hospitality intelligence for operators focused on Review response speed that protects guest trust."
 publishedDate: "2026-04-08T12:00:00.000Z"
-updatedDate: "2026-05-09T03:45:38.181Z"
+updatedDate: "2026-05-09T03:53:16.209Z"
 category: Newsletter
 tags: ["Google review monitoring", "restaurant trends", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
-canonicalUrl: "https://guestsignalhospitality.com/newsletter/2026-04-08-this-week-in-hospitality-signals-restaurant-value-menus/"
-heroImage: "/newsletter-banners/2026-04-08-this-week-in-hospitality-signals-restaurant-value-menus.svg"
+canonicalUrl: "https://guestsignalhospitality.com/newsletter/2026-04-08-this-week-in-hospitality-signals-review-response-speed-that-protects-/"
+heroImage: "/newsletter-banners/2026-04-08-this-week-in-hospitality-signals-review-response-speed-that-protects-.svg"
 ---
 
-# This Week in Hospitality Signals: Restaurant value menus and review response speed
+# This Week in Hospitality Signals: Review response speed that protects guest trust
 
 Search trends, guest behavior signals, and operator takeaways for restaurants.
 
 ## Opening Signal
-This week, the strongest hospitality signal was **Restaurant value menus**. Guest behavior this week points to tighter expectations around response quality and accountability.
+This week, the strongest hospitality signal was **Review response speed that protects guest trust**. Guest behavior this week points to tighter expectations around response quality and accountability.
 The weekly pattern points to one consistent theme: guests reward clarity and consistency. Teams that monitor search behavior and review feedback together can react faster than teams that rely on intuition alone.
 
 ## What People Are Searching

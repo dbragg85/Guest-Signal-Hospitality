@@ -102,6 +102,13 @@ const WEEKLY_THEMES = [
     ],
   },
 ];
+const THEME_MAIN_FEATURES: Record<string, string> = {
+  "review response speed": "Review response speed that protects guest trust",
+  "menu value positioning": "Menu value positioning for repeat-visit confidence",
+  "service consistency under pressure": "Service consistency under pressure during peak shifts",
+  "guest recovery playbooks": "Guest recovery playbooks for frontline teams",
+  "local marketing signal alignment": "Local marketing signal alignment with live guest intent",
+};
 
 function safeText(input: string): string {
   let out = input.replace(/\s+/g, " ").trim();
@@ -140,6 +147,13 @@ function markdownToHtml(markdown: string): string {
 function pickMainTheme(trends: TrendRecord[], articles: ArticleRecord[]): string {
   const candidate = trends[0]?.term || articles[0]?.title || "restaurant guest experience";
   return candidate.length > 70 ? candidate.slice(0, 70) : candidate;
+}
+
+function pickBackfillMainTheme(themeLabel: string, trends: TrendRecord[]): string {
+  const themed = THEME_MAIN_FEATURES[themeLabel];
+  if (themed) return themed;
+  const trendFallback = trends[0]?.term;
+  return trendFallback || "restaurant guest experience priorities";
 }
 
 function buildSeoTitle(mainTheme: string, keyword: string): string {
@@ -299,7 +313,7 @@ async function main() {
 
   const topTrends = trends.slice(0, 5);
   const topArticles = articles.slice(0, 5);
-  const mainFeature = pickMainTheme(topTrends, topArticles);
+  const trendAnchoredFeature = pickMainTheme(topTrends, topArticles);
   const baseDate = process.env.NEWSLETTER_FORCE_DATE
     ? new Date(`${process.env.NEWSLETTER_FORCE_DATE}T12:00:00.000Z`)
     : new Date();
@@ -307,10 +321,12 @@ async function main() {
   const keyword = KEYWORD_ROTATION[weekIndex % KEYWORD_ROTATION.length];
   const today = isoDay(baseDate);
   const theme = WEEKLY_THEMES[weekIndex % WEEKLY_THEMES.length];
+  const isBackfillRun = Boolean(process.env.NEWSLETTER_FORCE_DATE);
+  const mainFeature = isBackfillRun ? pickBackfillMainTheme(theme.label, topTrends) : trendAnchoredFeature;
   const slugTopic = slugify(mainFeature).slice(0, 36) || "restaurant-trends";
   const slug = `${today}-this-week-in-hospitality-signals-${slugTopic}`;
 
-  const title = `This Week in Hospitality Signals: ${mainFeature} and ${theme.label}`;
+  const title = `This Week in Hospitality Signals: ${mainFeature}`;
   const subtitle = "Search trends, guest behavior signals, and operator takeaways for restaurants.";
   const seoTitle = buildSeoTitle(mainFeature, keyword);
   const metaDescription = buildMetaDescription(keyword);
