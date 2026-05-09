@@ -101,8 +101,7 @@ export function PortalLoginForm() {
             id="portal-email"
             name="email"
             type="email"
-            autoComplete="email"
-            placeholder="admin@bocacincinnati.com"
+            autoComplete="off"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/25"
