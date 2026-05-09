@@ -164,24 +164,6 @@ function buildNewsletterBody(input: {
     "",
     "## Source List",
     ...input.sourceUrls.map((url) => `- ${url}`),
-    "",
-    "## Social Captions",
-    `- **Instagram**: This Week in Hospitality Signals is live. We broke down the top search and guest-experience shifts restaurant operators should watch right now. Read the issue and run the checklist this week.`,
-    `- **LinkedIn**: New issue: This Week in Hospitality Signals. We summarized weekly search trends, restaurant industry developments, and practical operator actions with source links. Built for owners and GMs who need clear next moves.`,
-    "",
-    "## Article Schema JSON-LD",
-    "```json",
-    JSON.stringify(
-      {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        headline: input.title,
-        description: input.subtitle,
-      },
-      null,
-      2,
-    ),
-    "```",
   ].join("\n");
 }
 

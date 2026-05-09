@@ -44,17 +44,3 @@ Want to know what your guests are already signaling? Request your free Guest Sig
 ## Source List
 - https://trends.google.com/trending?geo=US&category=5&hours=168
 - https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/
-
-## Social Captions
-- **Instagram**: This Week in Hospitality Signals is live. We broke down the top search and guest-experience shifts restaurant operators should watch right now. Read the issue and run the checklist this week.
-- **LinkedIn**: New issue: This Week in Hospitality Signals. We summarized weekly search trends, restaurant industry developments, and practical operator actions with source links. Built for owners and GMs who need clear next moves.
-
-## Article Schema JSON-LD
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "headline": "This Week in Hospitality Signals: Restaurant value menus",
-  "description": "Search trends, guest behavior signals, and operator takeaways for restaurants."
-}
-```

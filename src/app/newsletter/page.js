@@ -20,11 +20,16 @@ export default function NewsletterPage() {
   const items = getAllNewsletters();
 
   return (
-    <div>
-      <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
+    <div className="bg-gradient-to-b from-stone-100 via-white to-stone-50">
+      <section className="border-b border-stone-200/80 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.16),_transparent_40%),radial-gradient(circle_at_top_left,_rgba(2,132,199,0.14),_transparent_35%)]">
         <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-amber-800/80">Newsletter</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
+          <img
+            src="/guest-signal-header-icon.svg"
+            alt="Guest Signal mark"
+            className="mx-auto h-12 w-12 rounded-xl border border-amber-200/60 bg-white/85 p-2 shadow-sm"
+          />
+          <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-amber-800/80">Newsletter</p>
+          <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
             This Week in Hospitality Signals
           </h1>
           <p className="mt-4 text-slate-600 md:text-lg">
@@ -41,7 +46,10 @@ export default function NewsletterPage() {
             </p>
           ) : (
             items.map((item) => (
-              <article key={item.frontmatter.slug} className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+              <article
+                key={item.frontmatter.slug}
+                className="rounded-2xl border border-stone-200 bg-gradient-to-b from-white to-stone-50/70 p-6 shadow-sm"
+              >
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                   <span>{formatDate(item.frontmatter.publishedDate)}</span>
                   <span aria-hidden>•</span>

@@ -67,13 +67,18 @@ export default function NewsletterDetailPage({ params }: { params: Params }) {
   };
 
   return (
-    <div>
+    <div className="bg-gradient-to-b from-stone-100 via-white to-stone-50">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
 
-      <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
+      <section className="border-b border-stone-200/80 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.2),_transparent_42%),radial-gradient(circle_at_top_left,_rgba(2,132,199,0.14),_transparent_38%)]">
         <div className="mx-auto max-w-3xl px-4 py-14 sm:px-5">
+          <img
+            src="/guest-signal-header-icon.svg"
+            alt="Guest Signal mark"
+            className="h-12 w-12 rounded-xl border border-amber-200/70 bg-white/90 p-2 shadow-sm"
+          />
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-800/80">
             <Link href="/newsletter/" className="hover:underline">
               Newsletter
@@ -86,6 +91,9 @@ export default function NewsletterDetailPage({ params }: { params: Params }) {
       </section>
 
       <section className="mx-auto max-w-3xl px-4 py-10 sm:px-5">
+        <div className="mb-6 rounded-2xl border border-sky-200/60 bg-sky-50/70 px-4 py-3 text-sm text-slate-700">
+          Built for restaurant owners and operators who want practical weekly signal intelligence.
+        </div>
         <NewsletterMarkdown markdown={item.body} />
 
         <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-6">

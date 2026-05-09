@@ -74,5 +74,9 @@ export function NewsletterMarkdown({ markdown }: Props) {
   }
 
   flushList();
-  return <div className="space-y-5">{elements}</div>;
+  return (
+    <div className="space-y-5 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm [&_a]:font-semibold [&_a]:text-amber-800 [&_a]:underline [&_a]:underline-offset-2">
+      {elements}
+    </div>
+  );
 }
