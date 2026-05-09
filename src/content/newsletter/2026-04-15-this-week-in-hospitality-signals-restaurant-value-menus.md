@@ -39,7 +39,7 @@ This week's signals reinforce the same operating truth: reputation is an output 
 - Track social and review sentiment after any trend-driven campaign or menu change.
 - Compare guest sentiment themes against one local competitor each week.
 
-## CTA
+## Get Your Free Guest Signal Snapshot
 Want to know what your guests are already signaling? Request your free Guest Signal Snapshot.
 
 ## Source List

@@ -199,7 +199,7 @@ function buildNewsletterBody(input: {
     "## Action Checklist for Operators",
     actionList,
     "",
-    "## CTA",
+    "## Get Your Free Guest Signal Snapshot",
     "Want to know what your guests are already signaling? Request your free Guest Signal Snapshot.",
     "",
     "## Source List",
