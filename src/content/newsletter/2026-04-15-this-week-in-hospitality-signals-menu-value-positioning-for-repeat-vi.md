@@ -5,7 +5,7 @@ metaDescription: "Weekly hospitality insights for restaurant operators: search t
 slug: "2026-04-15-this-week-in-hospitality-signals-menu-value-positioning-for-repeat-vi"
 excerpt: "Weekly hospitality intelligence for operators focused on Menu value positioning for repeat-visit confidence."
 publishedDate: "2026-04-15T12:00:00.000Z"
-updatedDate: "2026-05-09T03:53:16.516Z"
+updatedDate: "2026-05-09T04:00:27.253Z"
 category: Newsletter
 tags: ["restaurant sentiment analysis", "restaurant trends", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
@@ -38,9 +38,6 @@ Value perception improves when menu language, portion expectations, and service 
 - Track mentions of price fairness in weekly review summaries.
 - Train front-of-house on one sentence that explains current value proposition.
 - Check whether promotions drive repeat visits, not only one-time traffic.
-
-## Get Your Free Guest Signal Snapshot
-Want to know what your guests are already signaling? Request your free Guest Signal Snapshot.
 
 ## Source List
 - https://trends.google.com/trending?geo=US&category=5&hours=168

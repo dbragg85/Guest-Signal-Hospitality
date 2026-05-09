@@ -282,9 +282,6 @@ function buildNewsletterBody(input: {
     "## Action Checklist for Operators",
     actionList,
     "",
-    "## Get Your Free Guest Signal Snapshot",
-    "Want to know what your guests are already signaling? Request your free Guest Signal Snapshot.",
-    "",
     "## Source List",
     ...input.sourceUrls.map((url) => `- ${url}`),
   ].join("\n");

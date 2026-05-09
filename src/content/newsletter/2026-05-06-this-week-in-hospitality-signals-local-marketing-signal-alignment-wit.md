@@ -5,7 +5,7 @@ metaDescription: "Weekly hospitality insights for restaurant operators: search t
 slug: "2026-05-06-this-week-in-hospitality-signals-local-marketing-signal-alignment-wit"
 excerpt: "Weekly hospitality intelligence for operators focused on Local marketing signal alignment with live guest intent."
 publishedDate: "2026-05-06T12:00:00.000Z"
-updatedDate: "2026-05-09T03:53:17.373Z"
+updatedDate: "2026-05-09T04:00:28.100Z"
 category: Newsletter
 tags: ["restaurant operations", "restaurant trends", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
@@ -38,9 +38,6 @@ Marketing performs better when weekly content reflects real guest language from 
 - Track social and review sentiment after each promotional post.
 - Compare campaign promises against in-store execution consistency.
 - Use one weekly insights recap to sync owners, managers, and marketing.
-
-## Get Your Free Guest Signal Snapshot
-Want to know what your guests are already signaling? Request your free Guest Signal Snapshot.
 
 ## Source List
 - https://trends.google.com/trending?geo=US&category=5&hours=168
