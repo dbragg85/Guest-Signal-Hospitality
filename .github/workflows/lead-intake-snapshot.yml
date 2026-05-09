@@ -89,11 +89,13 @@ jobs:
           APIFY_GOOGLE_SCORING_PERIOD_FILTER: ${{ vars.APIFY_GOOGLE_SCORING_PERIOD_FILTER || '1' }}
           SCORING_TIMEZONE: ${{ vars.SCORING_TIMEZONE || 'America/New_York' }}
           APIFY_GOOGLE_START_URL: ${{ vars.APIFY_GOOGLE_START_URL }}
+          APIFY_GOOGLE_USE_INPUT_TEMPLATE: ${{ vars.APIFY_GOOGLE_USE_INPUT_TEMPLATE || '0' }}
           LEAD_INTAKE_SUCCESS_WEBHOOK_URL: ${{ secrets.LEAD_INTAKE_SUCCESS_WEBHOOK_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM: ${{ vars.RESEND_FROM }}
           LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id || github.event.client_payload.lead_id }}
           LEAD_INTAKE_INVITE_PORTAL_USERS: ${{ vars.LEAD_INTAKE_INVITE_PORTAL_USERS || '1' }}
+          LEAD_INTAKE_REQUIRE_APIFY: ${{ vars.LEAD_INTAKE_REQUIRE_APIFY || '1' }}
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           LEAD_INTAKE_PORTAL_BASE_URL: ${{ vars.LEAD_INTAKE_PORTAL_BASE_URL }}
           LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}

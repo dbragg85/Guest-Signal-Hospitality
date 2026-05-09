@@ -506,7 +506,8 @@ ${magicBlock}
   }
 }
 
-async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
+async function loadReviewsForLead(lead, periodStartIso, periodEndIso, options = {}) {
+  const requireLiveApify = options.requireLiveApify === true;
   const token = getEnv("APIFY_TOKEN", { fallback: "" }).trim();
   const googleActor = getEnv("APIFY_GOOGLE_ACTOR_ID", { fallback: "" }).trim();
   const yelpActor = getEnv("APIFY_YELP_ACTOR_ID", { fallback: "" }).trim();
@@ -521,6 +522,11 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
   let yelpUrlUsed = null;
 
   if (!token || !googleActor) {
+    if (requireLiveApify) {
+      throw new Error(
+        "LEAD_INTAKE_REQUIRE_APIFY=1 but APIFY_TOKEN and/or APIFY_GOOGLE_ACTOR_ID is missing.",
+      );
+    }
     console.warn(
       "[lead-intake] Apify Google skipped (no Apify runs): set APIFY_TOKEN and APIFY_GOOGLE_ACTOR_ID on the GitHub Actions workflow env (repo Secrets / Variables). Without both, every intake uses mock reviews for the scoring month unless you re-ingest later.",
     );
@@ -603,11 +609,21 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso) {
   let sourceNote = `live_${sourceBits.join(";")}`;
 
   if (combined.length > 0 && periodReviews.length === 0) {
+    if (requireLiveApify) {
+      throw new Error(
+        `LEAD_INTAKE_REQUIRE_APIFY=1 and Apify returned reviews, but none were in scoring window ${periodStartIso}..${periodEndIso}.`,
+      );
+    }
     console.warn("Apify returned rows but none fall in the scoring window — using mock dataset.");
     sourceNote = "apify_outside_window_mock_15";
   }
 
   if (!periodReviews.length) {
+    if (requireLiveApify) {
+      throw new Error(
+        "LEAD_INTAKE_REQUIRE_APIFY=1 and no in-window live reviews were available; refusing mock fallback.",
+      );
+    }
     console.log("Using 15-review mock dataset (same Guest Signal rubric scoring).");
     const mockItems = buildFifteenMockApifyItems(periodStartIso, periodEndIso, "google");
     periodReviews = mockItems.map((item) => normalizeApifyItem(item, "google")).filter(Boolean);
@@ -627,6 +643,7 @@ async function main() {
   );
   const invitePortalUsers = envFlag("LEAD_INTAKE_INVITE_PORTAL_USERS", "0");
   const requirePortalProvisioning = invitePortalUsers && envFlag("LEAD_INTAKE_REQUIRE_PORTAL_PROVISIONING", "1");
+  const requireLiveApify = envFlag("LEAD_INTAKE_REQUIRE_APIFY", "1");
   const singleId = getEnv("LEAD_INTAKE_ID", { fallback: "" });
   const welcomeEmailDelayMs = envNonNegativeIntMs("LEAD_INTAKE_WELCOME_EMAIL_DELAY_MS", 0);
   if (welcomeEmailDelayMs > 0) {
@@ -644,6 +661,9 @@ async function main() {
   console.log(
     `Scoring window = prior completed calendar month (${tz}): ${periodLabel} (${periodStartIso} → ${periodEndIso} as UTC date boundaries from local month).`,
   );
+  if (requireLiveApify) {
+    console.log("Apify: strict mode enabled — run fails if live Google reviews are unavailable.");
+  }
   if (invitePortalUsers) {
     console.log("Portal: LEAD_INTAKE_INVITE_PORTAL_USERS enabled — will invite + upsert memberships after snapshot.");
     if (requirePortalProvisioning) {
@@ -740,7 +760,12 @@ async function main() {
       }
     }
 
-    const { periodReviews, sourceNote, yelpUrlUsed } = await loadReviewsForLead(lead, periodStartIso, periodEndIso);
+    const { periodReviews, sourceNote, yelpUrlUsed } = await loadReviewsForLead(
+      lead,
+      periodStartIso,
+      periodEndIso,
+      { requireLiveApify },
+    );
 
     const persisted = await persistRubricSnapshotFromPeriodReviews({
       supabase,

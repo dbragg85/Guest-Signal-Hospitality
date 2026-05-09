@@ -32,6 +32,9 @@ export function buildGoogleMapsSearchUrlFromLead(lead) {
 export function buildGoogleApifyInput(lead, options = {}) {
   const { reviewWindow, maxReviewsOverride } = options;
   const rawTemplate = getEnv("APIFY_GOOGLE_INPUT_TEMPLATE_JSON", { fallback: "" });
+  const allowTemplate = ["1", "true", "yes"].includes(
+    (getEnv("APIFY_GOOGLE_USE_INPUT_TEMPLATE", { fallback: "0" }) || "").toLowerCase(),
+  );
   const maxReviews = Math.min(
     500,
     Math.max(
@@ -45,7 +48,7 @@ export function buildGoogleApifyInput(lead, options = {}) {
   );
 
   const placeOrSearchUrl =
-    getEnv("APIFY_GOOGLE_START_URL", { fallback: "" }) || buildGoogleMapsSearchUrlFromLead(lead);
+    buildGoogleMapsSearchUrlFromLead(lead) || getEnv("APIFY_GOOGLE_START_URL", { fallback: "" });
 
   if (!placeOrSearchUrl) {
     throw new Error("Google Apify: set APIFY_GOOGLE_START_URL or provide business + address on the lead.");
@@ -54,7 +57,7 @@ export function buildGoogleApifyInput(lead, options = {}) {
   const periodStart = String(reviewWindow?.startIso ?? "").trim();
   const periodEnd = String(reviewWindow?.endIso ?? "").trim();
 
-  if (rawTemplate) {
+  if (rawTemplate && allowTemplate) {
     const templated = rawTemplate
       .replaceAll("{{GOOGLE_URL}}", placeOrSearchUrl)
       .replaceAll("{{google_url}}", placeOrSearchUrl)
@@ -92,6 +95,8 @@ export function buildGoogleApifyInput(lead, options = {}) {
  */
 export async function pullGoogleReviewsViaApify({ lead, token, actorId, reviewWindow, maxReviewsOverride } = {}) {
   const input = buildGoogleApifyInput(lead, { reviewWindow, maxReviewsOverride });
+  const startUrl = input?.startUrls?.[0]?.url || input?.searchStrings?.[0] || "unknown";
+  console.log(`[lead-intake] Google Apify input start: ${startUrl}`);
   const run = await startApifyRun({ token, actorId, input });
   const finalRun = await waitForApifyRun({ token, runId: run.id });
   if (finalRun.status !== "SUCCEEDED") {
