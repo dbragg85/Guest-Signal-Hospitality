@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   generate-newsletter:
@@ -55,16 +56,25 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Commit generated files
+        id: newsletter_commit
         run: |
           git add src/data/hospitality-trends src/data/hospitality-articles src/content/newsletter logs || true
           if git diff --cached --quiet; then
             echo "No newsletter changes to commit."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "chore(newsletter): generate weekly hospitality issue"
           git push origin main
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy site to GitHub Pages
+        if: steps.newsletter_commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
 
       - name: Optional deploy hook
         if: ${{ vars.DEPLOY_HOOK_URL != '' }}
