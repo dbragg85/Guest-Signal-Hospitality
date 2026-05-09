@@ -35,28 +35,72 @@ const KEYWORD_ROTATION = [
 ];
 
 const NEWSLETTER_BANNER_DIR = path.join(process.cwd(), "public", "newsletter-banners");
-const OPENING_VARIANTS = [
-  "Operators are seeing demand move quickly across value, speed, and experience expectations.",
-  "Guest behavior this week points to tighter expectations around consistency, clarity, and response quality.",
-  "Search and review signals suggest owners should prioritize operational reliability over one-off promotions.",
-  "This week's pattern indicates guests are rewarding brands that communicate clearly and execute consistently.",
-];
-const TAKEAWAY_VARIANTS = [
-  "This week's signals reinforce the same operating truth: reputation is an output of daily execution. Response speed, message clarity, and service consistency still drive how guests describe your brand.",
-  "Signal shifts this week suggest guest trust is built through consistent execution, not occasional campaigns. Teams that close feedback loops quickly tend to protect ratings and repeat visits.",
-  "Operational follow-through is the real differentiator this week. Guests are noticing response quality, speed, and consistency across channels.",
-];
-const ACTION_POOL = [
-  "Audit recent Google reviews for repeated complaints and assign one owner per issue.",
-  "Check whether menu or pricing updates are explained clearly in-store and online.",
-  "Respond to negative reviews within 24-48 hours with specific corrective language.",
-  "Track social and review sentiment after any trend-driven campaign or menu change.",
-  "Compare guest sentiment themes against one local competitor each week.",
-  "Review staffing handoff quality during peak shifts and capture recurring friction points.",
-  "Update one public-facing FAQ or menu clarification based on this week's guest questions.",
-  "Test one recovery-response script with managers and front-line leads this week.",
-  "Check top complaint categories against ticket-time and accuracy metrics for correlation.",
-  "Run a weekly owner debrief tying review trends to concrete service adjustments.",
+const WEEKLY_THEMES = [
+  {
+    label: "review response speed",
+    opening: "Guest behavior this week points to tighter expectations around response quality and accountability.",
+    takeaway:
+      "Faster, specific review responses reduce trust erosion and give teams clearer feedback loops for service recovery.",
+    actions: [
+      "Track average response time to negative and neutral reviews each week.",
+      "Create three approved response templates for speed and tone consistency.",
+      "Escalate recurring complaint categories to operations within 24 hours.",
+      "Assign one manager each shift to monitor and route review friction signals.",
+      "Compare response quality against one local competitor each week.",
+    ],
+  },
+  {
+    label: "menu value positioning",
+    opening: "Search and review signals suggest guests are scrutinizing value communication more than discount size.",
+    takeaway:
+      "Value perception improves when menu language, portion expectations, and service consistency are aligned.",
+    actions: [
+      "Audit top-selling menu items for clarity on portion and value framing.",
+      "Update one pricing explanation touchpoint on menu, web, or social channels.",
+      "Track mentions of price fairness in weekly review summaries.",
+      "Train front-of-house on one sentence that explains current value proposition.",
+      "Check whether promotions drive repeat visits, not only one-time traffic.",
+    ],
+  },
+  {
+    label: "service consistency under pressure",
+    opening: "Operators are seeing demand variability expose handoff and speed inconsistencies during peak windows.",
+    takeaway:
+      "Consistency in execution still beats occasional spikes in demand when protecting long-term reputation.",
+    actions: [
+      "Review staffing handoff quality during peak shifts and note repeat breakdowns.",
+      "Run one pre-shift briefing focused on top complaint themes this week.",
+      "Cross-check ticket-time outliers against review sentiment by daypart.",
+      "Assign one owner to close the loop on every repeated complaint theme.",
+      "Measure service recovery outcomes after escalations within 48 hours.",
+    ],
+  },
+  {
+    label: "guest recovery playbooks",
+    opening: "This week's pattern shows guests reward quick acknowledgement and clear recovery actions after mistakes.",
+    takeaway:
+      "Restaurants that standardize recovery language and follow-through protect trust faster than ad hoc responses.",
+    actions: [
+      "Publish a simple guest recovery playbook for managers and leads.",
+      "Set 24-48 hour SLA targets for high-impact complaint responses.",
+      "Track whether recovered guests mention improved experience in follow-up reviews.",
+      "Capture top three service failures and assign root-cause fixes this week.",
+      "Audit social reply tone to ensure alignment with review response standards.",
+    ],
+  },
+  {
+    label: "local marketing signal alignment",
+    opening: "Search momentum this week indicates operators should align local messaging with what guests are actively seeking.",
+    takeaway:
+      "Marketing performs better when weekly content reflects real guest language from reviews and search behavior.",
+    actions: [
+      "Map top search terms to one menu or service message update this week.",
+      "Update Google Business Profile copy to match current guest intent language.",
+      "Track social and review sentiment after each promotional post.",
+      "Compare campaign promises against in-store execution consistency.",
+      "Use one weekly insights recap to sync owners, managers, and marketing.",
+    ],
+  },
 ];
 
 function safeText(input: string): string {
@@ -174,15 +218,6 @@ function buildSourceList(trends: TrendRecord[], articles: ArticleRecord[]): stri
   return Array.from(new Set([...trendSources, ...articleSources]));
 }
 
-function rotatingChecklist(seed: number): string[] {
-  const start = seed % ACTION_POOL.length;
-  const output: string[] = [];
-  for (let i = 0; i < 5; i += 1) {
-    output.push(ACTION_POOL[(start + i) % ACTION_POOL.length]);
-  }
-  return output;
-}
-
 function buildNewsletterBody(input: {
   title: string;
   subtitle: string;
@@ -268,22 +303,23 @@ async function main() {
   const baseDate = process.env.NEWSLETTER_FORCE_DATE
     ? new Date(`${process.env.NEWSLETTER_FORCE_DATE}T12:00:00.000Z`)
     : new Date();
-  const keyword = KEYWORD_ROTATION[baseDate.getDate() % KEYWORD_ROTATION.length];
+  const weekIndex = Math.floor(baseDate.getTime() / (7 * 24 * 60 * 60 * 1000));
+  const keyword = KEYWORD_ROTATION[weekIndex % KEYWORD_ROTATION.length];
   const today = isoDay(baseDate);
+  const theme = WEEKLY_THEMES[weekIndex % WEEKLY_THEMES.length];
   const slugTopic = slugify(mainFeature).slice(0, 36) || "restaurant-trends";
   const slug = `${today}-this-week-in-hospitality-signals-${slugTopic}`;
 
-  const title = `This Week in Hospitality Signals: ${mainFeature}`;
+  const title = `This Week in Hospitality Signals: ${mainFeature} and ${theme.label}`;
   const subtitle = "Search trends, guest behavior signals, and operator takeaways for restaurants.";
   const seoTitle = buildSeoTitle(mainFeature, keyword);
   const metaDescription = buildMetaDescription(keyword);
   const excerpt = safeText(`Weekly hospitality intelligence for operators focused on ${mainFeature}.`);
   const sourceUrls = buildSourceList(topTrends, topArticles);
   const draftMode = process.env.NEWSLETTER_AUTO_PUBLISH !== "true";
-  const variationSeed = baseDate.getDate() + baseDate.getMonth() * 31;
-  const checklist = rotatingChecklist(variationSeed);
-  const openingDetail = OPENING_VARIANTS[variationSeed % OPENING_VARIANTS.length];
-  const guestTakeawayText = TAKEAWAY_VARIANTS[variationSeed % TAKEAWAY_VARIANTS.length];
+  const checklist = theme.actions;
+  const openingDetail = theme.opening;
+  const guestTakeawayText = theme.takeaway;
   ensureDir(NEWSLETTER_BANNER_DIR);
   const heroImage = `/newsletter-banners/${slug}.svg`;
   const bannerSvg = createBannerSvg(mainFeature, subtitle, today);
