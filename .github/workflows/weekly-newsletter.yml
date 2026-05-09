@@ -58,7 +58,7 @@ jobs:
       - name: Commit generated files
         id: newsletter_commit
         run: |
-          git add src/data/hospitality-trends src/data/hospitality-articles src/content/newsletter logs || true
+          git add src/data/hospitality-trends src/data/hospitality-articles src/content/newsletter public/newsletter-banners logs || true
           if git diff --cached --quiet; then
             echo "No newsletter changes to commit."
             echo "pushed=false" >> "$GITHUB_OUTPUT"
