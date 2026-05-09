@@ -35,7 +35,7 @@ export default function HomePage() {
   };
 
   return (
-    <div>
+    <div className="bg-[radial-gradient(circle_at_top_left,_rgba(2,132,199,0.10),_transparent_40%),radial-gradient(circle_at_80%_20%,_rgba(245,158,11,0.12),_transparent_35%),linear-gradient(to_bottom,_#f8fafc,_#f8fafc)]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
@@ -45,7 +45,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
       />
       {/* Hero Section */}
-      <section className="border-b gradient-primary">
+      <section className="border-b border-stone-200/70 bg-[radial-gradient(circle_at_20%_0%,_rgba(245,158,11,0.16),_transparent_38%),radial-gradient(circle_at_80%_12%,_rgba(2,132,199,0.14),_transparent_36%),linear-gradient(to_bottom,_#ffffff,_#f8fafc)]">
         <div className="mx-auto max-w-6xl px-4 py-14 md:py-16">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-semibold tracking-tight md:text-5xl lg:text-6xl">
@@ -57,19 +57,16 @@ export default function HomePage() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <ServicesIntakeLink
                 href="/services/inquiry/?plan=free_snapshot"
-                className="btn-primary"
+                className="btn-primary px-4 py-2 text-sm"
                 data-track="cta_hero_snapshot"
               >
                 Get Your Free Snapshot
               </ServicesIntakeLink>
-              <Link href="/portal" className="btn-secondary" data-track="cta_hero_portal">
-                Client Portal
-              </Link>
             </div>
             <p className="mt-3 text-xs text-slate-500">
               Preview a sample snapshot experience, no login required for the demo.
             </p>
-            <div className="mt-6 rounded-2xl border border-amber-200/70 bg-white/80 px-5 py-4 text-left shadow-sm">
+            <div className="mt-6 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-white/95 to-amber-50/55 px-5 py-4 text-left shadow-sm">
               <p className="text-sm font-semibold text-slate-900">Recent Cincinnati outcome</p>
               <p className="mt-1 text-sm text-slate-700">
                 One 30-day engagement produced <strong>+27% direct booking CTA clicks</strong> and{" "}
@@ -81,7 +78,7 @@ export default function HomePage() {
       </section>
 
       {/* Free Snapshot Section */}
-      <Section>
+      <Section className="bg-[radial-gradient(circle_at_85%_10%,_rgba(2,132,199,0.08),_transparent_35%)]">
         <div className="max-w-4xl mx-auto">
           <div className="surface-elevated border-2 p-8 md:p-12">
             <div className="text-center mb-8">
@@ -123,7 +120,11 @@ export default function HomePage() {
       </Section>
 
       {/* How It Works Section */}
-      <Section title="How Guest Signal Works" kicker="Process">
+      <Section
+        title="How Guest Signal Works"
+        kicker="Process"
+        className="bg-[radial-gradient(circle_at_12%_15%,_rgba(245,158,11,0.10),_transparent_40%)]"
+      >
         <div className="max-w-4xl mx-auto">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-6 shadow-sm">
@@ -178,7 +179,7 @@ export default function HomePage() {
       </Section>
 
       {/* Local Trust Signal Section */}
-      <Section>
+      <Section className="bg-[radial-gradient(circle_at_80%_25%,_rgba(245,158,11,0.12),_transparent_45%)]">
         <div className="max-w-4xl mx-auto">
           <div className="rounded-3xl border-2 border-amber-200/70 bg-gradient-to-br from-stone-50 via-white to-amber-50/40 p-8 text-center shadow-lg md:p-12">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl text-slate-900">
@@ -203,7 +204,11 @@ export default function HomePage() {
       </Section>
 
       {/* Pricing Plans Section */}
-      <Section title="Ongoing Guest Experience Monitoring & Elevation" kicker="Core Plans">
+      <Section
+        title="Ongoing Guest Experience Monitoring & Elevation"
+        kicker="Core Plans"
+        className="bg-[radial-gradient(circle_at_20%_20%,_rgba(2,132,199,0.10),_transparent_45%)]"
+      >
         <p className="mx-auto mb-10 max-w-2xl text-center text-lg font-semibold tracking-tight text-slate-900 drop-shadow-sm md:text-xl">
           Choose the level of intelligence and support that fits your restaurant&apos;s growth goals.
         </p>
@@ -261,7 +266,7 @@ export default function HomePage() {
       </Section>
 
       {/* Authority Section */}
-      <Section>
+      <Section className="bg-[radial-gradient(circle_at_80%_35%,_rgba(245,158,11,0.10),_transparent_45%)]">
         <div className="rounded-3xl border border-stone-200 bg-gradient-to-br from-stone-50/90 to-white p-10 shadow-sm">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
@@ -277,7 +282,11 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Section title="Guides for owners" kicker="Resources">
+      <Section
+        title="Guides for owners"
+        kicker="Resources"
+        className="bg-[radial-gradient(circle_at_15%_20%,_rgba(2,132,199,0.08),_transparent_45%)]"
+      >
         <div className="mx-auto max-w-4xl">
           <p className="mx-auto mb-8 max-w-2xl text-center text-slate-600">
             Practical reads on review monitoring, Google Reviews, and Cincinnati-area reputation—linked
@@ -308,7 +317,10 @@ export default function HomePage() {
       </Section>
 
       {/* Newsletter Section */}
-      <Section id="newsletter">
+      <Section
+        id="newsletter"
+        className="bg-[radial-gradient(circle_at_85%_18%,_rgba(245,158,11,0.10),_transparent_45%)]"
+      >
         <div className="rounded-3xl border border-amber-200/60 bg-gradient-to-br from-amber-50/40 via-white to-stone-50 p-10 shadow-sm">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">

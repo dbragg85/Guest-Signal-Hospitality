@@ -35,6 +35,29 @@ const KEYWORD_ROTATION = [
 ];
 
 const NEWSLETTER_BANNER_DIR = path.join(process.cwd(), "public", "newsletter-banners");
+const OPENING_VARIANTS = [
+  "Operators are seeing demand move quickly across value, speed, and experience expectations.",
+  "Guest behavior this week points to tighter expectations around consistency, clarity, and response quality.",
+  "Search and review signals suggest owners should prioritize operational reliability over one-off promotions.",
+  "This week's pattern indicates guests are rewarding brands that communicate clearly and execute consistently.",
+];
+const TAKEAWAY_VARIANTS = [
+  "This week's signals reinforce the same operating truth: reputation is an output of daily execution. Response speed, message clarity, and service consistency still drive how guests describe your brand.",
+  "Signal shifts this week suggest guest trust is built through consistent execution, not occasional campaigns. Teams that close feedback loops quickly tend to protect ratings and repeat visits.",
+  "Operational follow-through is the real differentiator this week. Guests are noticing response quality, speed, and consistency across channels.",
+];
+const ACTION_POOL = [
+  "Audit recent Google reviews for repeated complaints and assign one owner per issue.",
+  "Check whether menu or pricing updates are explained clearly in-store and online.",
+  "Respond to negative reviews within 24-48 hours with specific corrective language.",
+  "Track social and review sentiment after any trend-driven campaign or menu change.",
+  "Compare guest sentiment themes against one local competitor each week.",
+  "Review staffing handoff quality during peak shifts and capture recurring friction points.",
+  "Update one public-facing FAQ or menu clarification based on this week's guest questions.",
+  "Test one recovery-response script with managers and front-line leads this week.",
+  "Check top complaint categories against ticket-time and accuracy metrics for correlation.",
+  "Run a weekly owner debrief tying review trends to concrete service adjustments.",
+];
 
 function safeText(input: string): string {
   let out = input.replace(/\s+/g, " ").trim();
@@ -151,6 +174,15 @@ function buildSourceList(trends: TrendRecord[], articles: ArticleRecord[]): stri
   return Array.from(new Set([...trendSources, ...articleSources]));
 }
 
+function rotatingChecklist(seed: number): string[] {
+  const start = seed % ACTION_POOL.length;
+  const output: string[] = [];
+  for (let i = 0; i < 5; i += 1) {
+    output.push(ACTION_POOL[(start + i) % ACTION_POOL.length]);
+  }
+  return output;
+}
+
 function buildNewsletterBody(input: {
   title: string;
   subtitle: string;
@@ -159,6 +191,8 @@ function buildNewsletterBody(input: {
   mainFeature: string;
   takeaways: string[];
   sourceUrls: string[];
+  openingDetail: string;
+  guestTakeawayText: string;
 }): string {
   const trendSection = input.trends
     .map(
@@ -182,9 +216,9 @@ function buildNewsletterBody(input: {
     input.subtitle,
     "",
     "## Opening Signal",
-    `This week, the strongest hospitality signal was **${safeText(
-      input.mainFeature,
-    )}**. Operators are seeing demand move quickly across value, speed, and experience expectations.`,
+    `This week, the strongest hospitality signal was **${safeText(input.mainFeature)}**. ${safeText(
+      input.openingDetail,
+    )}`,
     "The weekly pattern points to one consistent theme: guests reward clarity and consistency. Teams that monitor search behavior and review feedback together can react faster than teams that rely on intuition alone.",
     "",
     "## What People Are Searching",
@@ -194,7 +228,7 @@ function buildNewsletterBody(input: {
     articleSection,
     "",
     "## Guest Signal Takeaway",
-    "This week's signals reinforce the same operating truth: reputation is an output of daily execution. Response speed, message clarity, and service consistency still drive how guests describe your brand.",
+    safeText(input.guestTakeawayText),
     "",
     "## Action Checklist for Operators",
     actionList,
@@ -246,6 +280,10 @@ async function main() {
   const excerpt = safeText(`Weekly hospitality intelligence for operators focused on ${mainFeature}.`);
   const sourceUrls = buildSourceList(topTrends, topArticles);
   const draftMode = process.env.NEWSLETTER_AUTO_PUBLISH !== "true";
+  const variationSeed = baseDate.getDate() + baseDate.getMonth() * 31;
+  const checklist = rotatingChecklist(variationSeed);
+  const openingDetail = OPENING_VARIANTS[variationSeed % OPENING_VARIANTS.length];
+  const guestTakeawayText = TAKEAWAY_VARIANTS[variationSeed % TAKEAWAY_VARIANTS.length];
   ensureDir(NEWSLETTER_BANNER_DIR);
   const heroImage = `/newsletter-banners/${slug}.svg`;
   const bannerSvg = createBannerSvg(mainFeature, subtitle, today);
@@ -257,14 +295,10 @@ async function main() {
     trends: topTrends.slice(0, 5),
     articles: topArticles.slice(0, 5),
     mainFeature,
-    takeaways: [
-      "Audit recent Google reviews for repeated complaints and assign one owner per issue.",
-      "Check whether menu or pricing updates are explained clearly in-store and online.",
-      "Respond to negative reviews within 24-48 hours with specific corrective language.",
-      "Track social and review sentiment after any trend-driven campaign or menu change.",
-      "Compare guest sentiment themes against one local competitor each week.",
-    ],
+    takeaways: checklist,
     sourceUrls,
+    openingDetail,
+    guestTakeawayText,
   });
 
   const frontmatter: NewsletterFrontmatter = {
