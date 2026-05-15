@@ -16,14 +16,28 @@ export function createClient(): SupabaseClient {
       "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY",
     );
   }
-  return createBrowserClient(env.url, env.key);
+  return createBrowserClient(env.url, env.key, {
+    auth: {
+      flowType: "pkce",
+      // Welcome page calls exchangeCodeForSession explicitly (static export).
+      detectSessionInUrl: false,
+      persistSession: true,
+    },
+  });
 }
 
 /** For client UI when env may be unset (local preview without .env). */
 export function createClientIfConfigured(): SupabaseClient | null {
   const env = browserSupabaseEnv();
   if (!env) return null;
-  return createBrowserClient(env.url, env.key);
+  return createBrowserClient(env.url, env.key, {
+    auth: {
+      flowType: "pkce",
+      // Welcome page calls exchangeCodeForSession explicitly (static export).
+      detectSessionInUrl: false,
+      persistSession: true,
+    },
+  });
 }
 
 /**

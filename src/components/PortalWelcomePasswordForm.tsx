@@ -15,18 +15,56 @@ const EMAIL_OTP_TYPES = new Set<string>([
   "email",
 ]);
 
+function cleanAuthParamsFromUrl() {
+  const url = new URL(window.location.href);
+  for (const key of [
+    "code",
+    "token_hash",
+    "token",
+    "type",
+    "error",
+    "error_code",
+    "error_description",
+  ]) {
+    url.searchParams.delete(key);
+  }
+  const nextSearch = url.searchParams.toString();
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}`,
+  );
+}
+
 /**
- * Supabase email links land with either `?token_hash=&type=invite` (SSR-style) or
- * `#access_token=&refresh_token=` (implicit). `createBrowserClient` uses PKCE and does not
- * apply those automatically on a static site — we must verify or setSession before getSession().
+ * Supabase invite links may arrive as:
+ * - `?code=` (PKCE — default for inviteUserByEmail + @supabase/ssr)
+ * - `?token_hash=&type=invite` (email OTP / server-style)
+ * - `#access_token=&refresh_token=` (implicit / older templates)
  */
 async function consumeInviteFromUrl(supabase: SupabaseClient) {
   if (typeof window === "undefined") return;
 
-  const { search, hash, pathname } = window.location;
+  const { search, hash } = window.location;
   const query = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
-  const tokenHash = query.get("token_hash");
+
+  const authError = query.get("error_description") || query.get("error");
+  if (authError) {
+    throw new Error(decodeURIComponent(authError.replace(/\+/g, " ")));
+  }
+
+  const code = query.get("code");
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      throw new Error(error.message || "Could not complete invite sign-in (PKCE code).");
+    }
+    cleanAuthParamsFromUrl();
+    return;
+  }
+
   const typeRaw = query.get("type");
+  const tokenHash = query.get("token_hash");
 
   if (tokenHash && typeRaw && EMAIL_OTP_TYPES.has(typeRaw)) {
     const { error: vErr } = await supabase.auth.verifyOtp({
@@ -36,15 +74,7 @@ async function consumeInviteFromUrl(supabase: SupabaseClient) {
     if (vErr) {
       throw new Error(vErr.message || "Could not verify invite link.");
     }
-    const url = new URL(window.location.href);
-    url.searchParams.delete("token_hash");
-    url.searchParams.delete("type");
-    const nextSearch = url.searchParams.toString();
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${url.pathname}${nextSearch ? `?${nextSearch}` : ""}${url.hash}`,
-    );
+    cleanAuthParamsFromUrl();
     return;
   }
 
@@ -56,7 +86,8 @@ async function consumeInviteFromUrl(supabase: SupabaseClient) {
     if (sErr) {
       throw new Error(sErr.message || "Could not activate session from invite link.");
     }
-    window.history.replaceState(window.history.state, "", pathname + search);
+    const url = new URL(window.location.href);
+    window.history.replaceState(window.history.state, "", url.pathname + url.search);
   }
 }
 
@@ -103,7 +134,11 @@ export function PortalWelcomePasswordForm() {
         }
       }
       if (cancelled) return;
-      const { data: { session } } = await supabase.auth.getSession();
+      let session = (await supabase.auth.getSession()).data.session;
+      if (!session?.user) {
+        await new Promise((r) => setTimeout(r, 400));
+        session = (await supabase.auth.getSession()).data.session;
+      }
       if (cancelled) return;
       if (session?.user) setError(null);
       sync(session?.user ?? null);
