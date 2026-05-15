@@ -36,14 +36,14 @@ export async function purgeRestaurantSnapshotData(supabase, restaurantId, { dryR
     if (catErr) throw catErr;
   }
 
-  const { error: scoreErr } = await supabase.from("scorecards").delete().eq("restaurant_id", restaurantId);
-  if (scoreErr) throw scoreErr;
-
-  const { count: scorecardCount } = await supabase
+  const { count: scorecardsBefore } = await supabase
     .from("scorecards")
     .select("id", { count: "exact", head: true })
     .eq("restaurant_id", restaurantId);
-  summary.scorecards = scorecardCount ?? 0;
+  summary.scorecards = scorecardsBefore ?? 0;
+
+  const { error: scoreErr } = await supabase.from("scorecards").delete().eq("restaurant_id", restaurantId);
+  if (scoreErr) throw scoreErr;
 
   if (snapshotIds.length) {
     const { error: delSnapErr } = await supabase.from("snapshots").delete().eq("restaurant_id", restaurantId);

@@ -680,11 +680,18 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  let query = supabase
-    .from("lead_intake_submissions")
-    .select("*")
-    .eq("processing_status", "pending")
-    .order("created_at", { ascending: true });
+  const plans = freeSnapshotOnly ? ["free_snapshot"] : SERVICE_INQUIRY_PLANS;
+
+  let query = supabase.from("lead_intake_submissions").select("*").order("created_at", { ascending: true });
+
+  if (singleId) {
+    query = query.eq("id", singleId);
+    if (!force) {
+      query = query.eq("processing_status", "pending");
+    }
+  } else {
+    query = query.eq("processing_status", "pending");
+  }
 
   if (freeSnapshotOnly) {
     query = query.eq("inquiry_plan", "free_snapshot");
@@ -692,16 +699,16 @@ async function main() {
     query = query.in("inquiry_plan", SERVICE_INQUIRY_PLANS);
   }
 
-  if (singleId) {
-    query = query.eq("id", singleId);
-  }
-
   const { data: leads, error: leadsError } = await query;
   if (leadsError) throw leadsError;
 
-  const list = (leads ?? []).filter((row) => force || !row.restaurant_id);
+  const list = (leads ?? []).filter((row) => {
+    if (!plans.includes(row.inquiry_plan)) return false;
+    if (singleId && force) return true;
+    return force || !row.restaurant_id;
+  });
   if (!list.length) {
-    console.log("No pending lead_intake_submissions to process.");
+    console.log("No lead_intake_submissions to process for this query.");
     await logNoMatchingLeadsHelp(supabase, { freeSnapshotOnly, singleId, force });
     return;
   }

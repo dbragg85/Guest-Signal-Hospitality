@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Purge old snapshot/scorecard data for converted leads, reset them to pending, then re-run intake processing.
+ * Purge old snapshot/scorecard data for converted leads, reset them one-by-one, re-run intake processing.
  *
  * Usage:
- *   node scripts/reprocess-converted-leads.mjs
- *   DRY_RUN=1 node scripts/reprocess-converted-leads.mjs
- *   REPROCESS_INQUIRY_PLANS=free_snapshot node scripts/reprocess-converted-leads.mjs
- *   SKIP_INTAKE_RUN=1 node scripts/reprocess-converted-leads.mjs   # purge + reset only
+ *   node --env-file=.env.local scripts/reprocess-converted-leads.mjs
+ *   DRY_RUN=1 node --env-file=.env.local scripts/reprocess-converted-leads.mjs
+ *   REPROCESS_INQUIRY_PLANS=free_snapshot node --env-file=.env.local scripts/reprocess-converted-leads.mjs
+ *   SKIP_INTAKE_RUN=1 node --env-file=.env.local scripts/reprocess-converted-leads.mjs
  *
  * Requires: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- * For intake re-run: APIFY_TOKEN, APIFY_GOOGLE_ACTOR_ID (or mock fallback if LEAD_INTAKE_REQUIRE_APIFY=0)
+ * For intake re-run: APIFY_TOKEN, APIFY_GOOGLE_ACTOR_ID (or LEAD_INTAKE_REQUIRE_APIFY=0 for mock fallback)
  */
 import { createClient } from "@supabase/supabase-js";
 import { spawn } from "node:child_process";
@@ -27,16 +27,21 @@ function plansFromEnv() {
   return raw.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
-function runIntakeProcessor(env) {
+function runIntakeForLead(leadId) {
   return new Promise((resolve, reject) => {
     const child = spawn("node", ["scripts/process-lead-intake-snapshot.mjs"], {
       stdio: "inherit",
-      env: { ...process.env, ...env, FORCE_REPROCESS: "1" },
+      env: {
+        ...process.env,
+        LEAD_INTAKE_ID: leadId,
+        FORCE_REPROCESS: "1",
+        LEAD_INTAKE_INVITE_PORTAL_USERS: process.env.LEAD_INTAKE_INVITE_PORTAL_USERS ?? "0",
+      },
     });
     child.on("error", reject);
     child.on("close", (code) => {
       if (code === 0) resolve();
-      else reject(new Error(`process-lead-intake-snapshot.mjs exited with code ${code}`));
+      else reject(new Error(`Lead ${leadId} intake exited with code ${code}`));
     });
   });
 }
@@ -55,56 +60,57 @@ async function main() {
   const { data: leads, error: leadsErr } = await supabase
     .from("lead_intake_submissions")
     .select("id, business, inquiry_plan, processing_status, restaurant_id, email, created_at")
-    .eq("processing_status", "converted")
+    .in("processing_status", ["converted", "pending", "processing"])
     .in("inquiry_plan", plans)
     .not("restaurant_id", "is", null)
     .order("created_at", { ascending: true });
   if (leadsErr) throw leadsErr;
 
-  if (!leads?.length) {
+  const converted = (leads ?? []).filter((l) => l.processing_status === "converted");
+  if (!converted.length) {
     console.log(`No converted leads found for plans: ${plans.join(", ")}`);
     return;
   }
 
-  console.log(`Found ${leads.length} converted lead(s) to reprocess (${plans.join(", ")}).`);
+  console.log(`Found ${converted.length} converted lead(s) to reprocess (${plans.join(", ")}).`);
 
-  const restaurantIds = new Set();
-  for (const lead of leads) {
-    if (lead.restaurant_id) restaurantIds.add(lead.restaurant_id);
-  }
+  const purgedRestaurants = new Set();
 
-  for (const restaurantId of restaurantIds) {
-    const related = leads.filter((l) => l.restaurant_id === restaurantId);
-    const label = related.map((l) => l.business).join(", ");
-    console.log(`\nPurging snapshot data for restaurant ${restaurantId} (${label})…`);
-    const purged = await purgeRestaurantSnapshotData(supabase, restaurantId, { dryRun });
-    console.log(JSON.stringify(purged, null, 2));
-  }
+  for (const lead of converted) {
+    console.log(`\n=== ${lead.business} (${lead.id}) ===`);
 
-  if (!dryRun) {
-    const leadIds = leads.map((l) => l.id);
+    if (lead.restaurant_id && !purgedRestaurants.has(lead.restaurant_id)) {
+      console.log(`Purging snapshot data for restaurant ${lead.restaurant_id}…`);
+      const purged = await purgeRestaurantSnapshotData(supabase, lead.restaurant_id, { dryRun });
+      console.log(JSON.stringify(purged));
+      purgedRestaurants.add(lead.restaurant_id);
+    }
+
+    if (dryRun) {
+      console.log("DRY_RUN: would reset this lead to pending and re-run intake.");
+      continue;
+    }
+
     const { error: resetErr } = await supabase
       .from("lead_intake_submissions")
-      .update({
-        processing_status: "pending",
-        pipeline_last_error: null,
-      })
-      .in("id", leadIds);
-    if (resetErr) throw resetErr;
-    console.log(`\nReset ${leadIds.length} lead(s) to processing_status=pending.`);
-  } else {
-    console.log("\nDRY_RUN: would reset leads to pending without running intake.");
-    return;
+      .update({ processing_status: "pending", pipeline_last_error: null })
+      .eq("id", lead.id);
+    if (resetErr) {
+      console.error(`Could not reset lead ${lead.id} to pending:`, resetErr.message);
+      continue;
+    }
+
+    if (skipIntake) {
+      console.log("SKIP_INTAKE_RUN=1 — lead left pending for manual intake run.");
+      continue;
+    }
+
+    console.log("Running intake processor…");
+    await runIntakeForLead(lead.id);
+    console.log(`Done: ${lead.business}`);
   }
 
-  if (skipIntake) {
-    console.log("\nSKIP_INTAKE_RUN=1 — run manually:\n  FORCE_REPROCESS=1 node scripts/process-lead-intake-snapshot.mjs");
-    return;
-  }
-
-  console.log("\nStarting lead intake processor (FORCE_REPROCESS=1)…\n");
-  await runIntakeProcessor({ FORCE_REPROCESS: "1" });
-  console.log("\nReprocess complete.");
+  console.log("\nReprocess pass complete.");
 }
 
 main().catch((err) => {
