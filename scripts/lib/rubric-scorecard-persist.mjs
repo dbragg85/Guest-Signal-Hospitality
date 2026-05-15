@@ -208,26 +208,21 @@ export async function persistRubricSnapshotFromPeriodReviews({
     merged.set(category, { score: mergedScore, mentions: mergedMentions });
   }
 
-  const mergedRows = [...merged.entries()].map(([category, row]) => ({
+  const { displayScores, displayCategoryScores, overallScore, pillarScoresRaw, starOnlyCount, starOnlyAvg } =
+    computeBlendedRubricDisplay(merged, starOnly);
+
+  const categoryScoresPayload = displayCategoryScores;
+
+  const mergedRows = categoryScoresPayload.map((row) => ({
     snapshot_id: snapshotId,
-    category,
+    category: row.category,
     score: row.score,
     mentions: row.mentions,
   }));
 
-  const { displayScores, overallScore, pillarScoresRaw, starOnlyCount, starOnlyAvg } = computeBlendedRubricDisplay(
-    merged,
-    starOnly,
-  );
   const existingOverallScore = parseNumber(existingSnapshot?.guest_signal_score);
   const effectiveOverallScore = overallScore ?? existingOverallScore;
   const canPersistSnapshot = effectiveOverallScore != null;
-
-  const categoryScoresPayload = [...merged.entries()].map(([category, row]) => ({
-    category,
-    score: row.score,
-    mentions: row.mentions,
-  }));
 
   let scorecardData = {
     review_scoring_model: "guest_signal_rubric_v1",
@@ -262,7 +257,7 @@ export async function persistRubricSnapshotFromPeriodReviews({
       category_count: categoryScoresPayload.length,
       variance: null,
       source:
-        "Guest Signal rubric v1 — written reviews drive mention+star category scores per category; each pillar/tile blends 80% mention-based leg + 20% mean star→rubric from textless reviews only when that pillar/tile has a written score; unmentioned dimensions stay null. Overall uses pillar weights on non-null pillars; if all pillars are null but textless reviews exist, overall falls back to mean star→rubric.",
+        "Guest Signal rubric v1 — category rows and pillar tiles share the same 80% mention-based + 20% textless-review blend when textless reviews exist; overall uses pillar weights (45/30/25) on Experience, Operational, and Emotional.",
       pillar_written_weight: 0.8,
       pillar_star_only_weight: 0.2,
       written_review_count_rubric: written.length,

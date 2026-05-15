@@ -516,28 +516,22 @@ async function main() {
       merged.set(category, { score: mergedScore, mentions: mergedMentions });
     }
 
-    const mergedRows = [...merged.entries()].map(([category, row]) => ({
-      snapshot_id: snapshotId,
-      category,
-      score: row.score,
-      mentions: row.mentions,
-    }));
-
     const googleCount = Number(existingSnapshot?.google_reviews_analyzed ?? 0);
     const yelpCount = periodReviews.length;
     const totalReviews = googleCount + yelpCount;
     const confidenceLevel = confidenceLevelFromReviewCount(totalReviews);
 
-    const { displayScores, overallScore, pillarScoresRaw, starOnlyCount, starOnlyAvg } = computeBlendedRubricDisplay(
-      merged,
-      starOnly,
-    );
+    const { displayScores, displayCategoryScores, overallScore, pillarScoresRaw, starOnlyCount, starOnlyAvg } =
+      computeBlendedRubricDisplay(merged, starOnly);
     const existingOverallScore = parseNumber(existingSnapshot?.guest_signal_score);
     const effectiveOverallScore = overallScore ?? existingOverallScore;
     const canPersistSnapshot = effectiveOverallScore != null;
 
-    const categoryScoresPayload = [...merged.entries()].map(([category, row]) => ({
-      category,
+    const categoryScoresPayload = displayCategoryScores;
+
+    const mergedRows = categoryScoresPayload.map((row) => ({
+      snapshot_id: snapshotId,
+      category: row.category,
       score: row.score,
       mentions: row.mentions,
     }));
@@ -563,7 +557,7 @@ async function main() {
         category_count: categoryScoresPayload.length,
         variance: null,
         source:
-          "Guest Signal rubric v1 — written reviews drive mention+star category scores; pillar/tile scores blend 80% written + 20% star-only only when that pillar/tile has a written score; unmentioned dimensions stay null. Overall falls back to mean star→rubric if only star-only reviews exist.",
+          "Guest Signal rubric v1 — category rows and pillar tiles share the same 80% mention-based + 20% textless-review blend when textless reviews exist; overall uses pillar weights (45/30/25).",
         pillar_written_weight: 0.8,
         pillar_star_only_weight: 0.2,
         written_review_count_rubric: written.length,

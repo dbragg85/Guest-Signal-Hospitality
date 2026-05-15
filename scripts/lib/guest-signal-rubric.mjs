@@ -291,6 +291,18 @@ export function blendAllPillarDisplayScores(pillarScoresRaw, serviceScore, foodS
 }
 
 /**
+ * Portal + scorecard category rows use the same 80/20 star-only blend as pillar tiles so the
+ * category table matches the headline Guest Signal score.
+ */
+export function buildDisplayCategoryScoresFromMerged(merged, starOnlyAvg, starOnlyCount) {
+  return [...merged.entries()].map(([category, row]) => ({
+    category,
+    score: blendPillarWithStarOnlyRubric(row.score, starOnlyAvg, starOnlyCount) ?? row.score,
+    mentions: row.mentions,
+  }));
+}
+
+/**
  * Written leg = category map merge; star-only nudges pillars **that already have** a written score (80/20).
  * Overall = weighted mean of non-null display pillars; if none, fall back to mean star→rubric when only
  * star-only reviews exist (headline score without fabricating per-pillar breakdown).
@@ -314,8 +326,10 @@ export function computeBlendedRubricDisplay(merged, starOnlyReviews) {
   if (overallScore == null && starAvg != null && Number.isFinite(starAvg) && starOnlyCount > 0) {
     overallScore = Math.round(starAvg);
   }
+  const displayCategoryScores = buildDisplayCategoryScoresFromMerged(merged, starAvg, starOnlyCount);
   return {
     displayScores,
+    displayCategoryScores,
     overallScore,
     pillarScoresRaw,
     starOnlyCount,

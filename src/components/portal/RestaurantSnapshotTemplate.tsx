@@ -436,12 +436,6 @@ export function RestaurantSnapshotTemplate({
       .find((rows) => rows.length > 0) ?? [];
   const categoryBreakdown = dedupeCategoryScoreRows(categoryBreakdownRaw);
 
-  const categoryScoreMap = new Map<string, { score: number; mentions: number | null }>(
-    categoryBreakdown.map((row) => [
-      row.category.trim().toLowerCase(),
-      { score: row.score, mentions: row.mentions },
-    ]),
-  );
   const breakdownPayload =
     data?.total_score_breakdown && typeof data.total_score_breakdown === "object"
       ? (data.total_score_breakdown as Record<string, unknown>)
@@ -469,8 +463,8 @@ export function RestaurantSnapshotTemplate({
 
   const reviewScoringModel = parseOptionalString(data?.review_scoring_model) ?? "";
   const isRubricV1 = reviewScoringModel === "guest_signal_rubric_v1";
-  /** Rubric already documents methodology in JSON; table + pillars cover the story — hide legacy GSS-style derivation. */
-  const hideTotalScoreDerivation = isRubricV1 && categoryBreakdown.length > 0;
+  const rubricStarOnlyCount = parseNumeric(breakdownPayload?.star_only_review_count) ?? 0;
+  const hideTotalScoreDerivation = false;
   const showCategoryMentionsColumn = categoryBreakdown.some(
     (r) => r.mentions != null && Number.isFinite(r.mentions) && r.mentions > 0,
   );
@@ -520,6 +514,13 @@ export function RestaurantSnapshotTemplate({
 
     return null;
   }
+
+  const categoryScoreMap = new Map<string, { score: number; mentions: number | null }>(
+    categoryBreakdown.map((row) => [
+      row.category.trim().toLowerCase(),
+      { score: row.score, mentions: row.mentions },
+    ]),
+  );
 
   const pillarComputedByKey = Object.fromEntries(
     computePortalPillarScores(data).map((pc) => [pc.key, pc]),
@@ -853,14 +854,21 @@ export function RestaurantSnapshotTemplate({
             Category score breakdown
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Mention-based rubric categories for the selected period. Each score maps star level to a
-            band (5★ → 95, 4★ → 85, …) for reviews that mention that category.
+            {isRubricV1
+              ? "Scores use the same rubric as the Guest Signal headline and pillar tiles: mention-based star bands (5★ → 95, 4★ → 85, …), then an 80% / 20% blend with textless reviews in the period when any exist."
+              : "Mention-based rubric categories for the selected period. Each score maps star level to a band (5★ → 95, 4★ → 85, …) for reviews that mention that category."}
           </p>
-          {uniformCategoryScores ? (
+          {isRubricV1 && rubricStarOnlyCount > 0 ? (
+            <p className="mt-2 max-w-2xl text-xs text-slate-600">
+              This period includes {Math.round(rubricStarOnlyCount)} rating-only review
+              {rubricStarOnlyCount === 1 ? "" : "s"} (no text); those pull category and pillar scores
+              toward the textless star band using the 20% leg above.
+            </p>
+          ) : null}
+          {uniformCategoryScores && !isRubricV1 ? (
             <p className="mt-2 max-w-2xl text-xs text-slate-600">
               Every category shows the same band when all scored mentions share the same star rating
-              in-window (for example only 5★ mentions → 95 across categories). That reflects the
-              rubric, not a display bug.
+              in-window. That reflects the rubric, not a display bug.
             </p>
           ) : null}
           {isFreeSnapshotPlan ? (
@@ -927,8 +935,9 @@ export function RestaurantSnapshotTemplate({
             Total score derivation
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Published total score comes from the scorecard row, with category
-            scores hydrated from snapshot category metrics.
+            {isRubricV1
+              ? "Guest Signal headline uses pillar weights (45% Experience, 30% Operational, 25% Emotional). Category average is the simple mean of category rows above — both use the same 80/20 blend when textless reviews exist."
+              : "Published total score comes from the scorecard row, with category scores hydrated from snapshot category metrics."}
           </p>
           <div className="mt-6 overflow-x-auto rounded-2xl border border-stone-200 bg-white shadow-sm">
             <table className="min-w-full text-left text-sm">
