@@ -23,6 +23,7 @@ type Restaurant = {
   logo_url: string | null;
   google_rating: number | null;
   price_level: string | number | null;
+  price_level_label: string | null;
   competitors: unknown;
   intake_inquiry_plan: string | null;
 };
@@ -259,7 +260,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
     const { data: rests, error: rErr } = await supabase
       .from("restaurants")
       .select(
-        "id, slug, name, portal_intro, address, phone, website, logo_url, google_rating, price_level, competitors, intake_inquiry_plan"
+        "id, slug, name, portal_intro, address, phone, website, logo_url, google_rating, price_level, price_level_label, competitors, intake_inquiry_plan"
       )
       .order("name");
 
@@ -711,7 +712,9 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                         logo_url: cur.logo_url,
                         google_rating: cur.google_rating,
                         price_level: cur.price_level,
+                        price_level_label: cur.price_level_label,
                         competitors: cur.competitors,
+                        intake_inquiry_plan: cur.intake_inquiry_plan,
                       }}
                       scorecards={scorecards.map((row) => ({
                         id: row.id,

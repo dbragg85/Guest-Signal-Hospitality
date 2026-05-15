@@ -27,7 +27,9 @@ export type RestaurantProfile = {
   google_rating: number | null;
   /** Google Places 0–4, or plain-text tier (e.g. `$`, `$$`) when the column is `text`. */
   price_level: string | number | null;
+  price_level_label?: string | null;
   competitors: unknown;
+  intake_inquiry_plan?: string | null;
 };
 
 function Trend({ value }: { value: number | null }) {
@@ -476,7 +478,10 @@ export function RestaurantSnapshotTemplate({
     categoryBreakdown.length > 1 &&
     new Set(categoryBreakdown.map((r) => r.score)).size === 1;
 
-  const inquiryPlanKey = parseOptionalString(data?.intake_inquiry_plan) ?? "free_snapshot";
+  const inquiryPlanKey =
+    parseOptionalString(data?.intake_inquiry_plan) ??
+    parseOptionalString(restaurant.intake_inquiry_plan) ??
+    "free_snapshot";
   const isFreeSnapshotPlan = inquiryPlanKey === "free_snapshot";
   const snapshotDeliverables = parseSnapshotDeliverables(data);
 
@@ -572,6 +577,9 @@ export function RestaurantSnapshotTemplate({
   const competitors =
     scorecardCompetitors.length > 0 ? scorecardCompetitors : restaurantCompetitors;
   const competitorsFromScorecard = scorecardCompetitors.length > 0;
+  /** Full peer table is a Growth+ feature; free snapshot promises positioning notes in deliverables only. */
+  const showComparablePeersSection =
+    competitors.length > 0 || !isFreeSnapshotPlan;
   const websiteHref = normalizeWebsiteUrl(restaurant.website);
   const profileLogoUrl = restaurant.logo_url ?? logoUrlFromWebsite(restaurant.website);
 
@@ -688,7 +696,7 @@ export function RestaurantSnapshotTemplate({
                   <span>
                     Price tier:{" "}
                     <strong className="text-slate-800">
-                      {displayPriceTier(restaurant.price_level)}
+                      {displayPriceTier(restaurant.price_level, restaurant.price_level_label)}
                     </strong>
                   </span>
                 </div>
@@ -1127,6 +1135,7 @@ export function RestaurantSnapshotTemplate({
         </section>
       )}
 
+      {showComparablePeersSection ? (
       <section aria-labelledby="peers-heading">
         <h2
           id="peers-heading"
@@ -1255,6 +1264,7 @@ export function RestaurantSnapshotTemplate({
           </div>
         )}
       </section>
+      ) : null}
 
       <section aria-labelledby="upgrade-heading">
         <div className="rounded-3xl border-2 border-amber-200/60 bg-gradient-to-br from-amber-50/40 via-white to-stone-50 p-8 shadow-lg sm:p-10">

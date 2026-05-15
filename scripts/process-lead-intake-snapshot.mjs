@@ -53,6 +53,10 @@ import {
   persistRubricSnapshotFromPeriodReviews,
 } from "./lib/rubric-scorecard-persist.mjs";
 import { purgeRestaurantSnapshotData } from "./lib/purge-restaurant-snapshot-data.mjs";
+import {
+  extractGooglePlaceProfileFromApifyItems,
+  restaurantPatchFromGooglePlaceProfile,
+} from "./lib/google-place-profile-from-apify.mjs";
 
 function siteOrigin() {
   return getEnv("NEXT_PUBLIC_SITE_URL", { fallback: "https://guestsignalhospitality.com" }).replace(/\/+$/, "");
@@ -521,6 +525,7 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso, options = 
   const sourceBits = [];
   const combined = [];
   let yelpUrlUsed = null;
+  let rawGoogleItems = [];
 
   if (!token || !googleActor) {
     if (requireLiveApify) {
@@ -542,6 +547,7 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso, options = 
         actorId: googleActor,
         reviewWindow: { startIso: periodStartIso, endIso: periodEndIso },
       });
+      rawGoogleItems = rawGoogle;
       const sliced = rawGoogle.slice(0, maxTotal);
       const parsedG = sliced.map((item) => normalizeApifyItem(item, "google")).filter(Boolean);
       combined.push(...parsedG);
@@ -631,7 +637,9 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso, options = 
     sourceNote = sourceNote.includes("live_") ? `empty_or_unparsed_mock_15;${sourceNote}` : "mock_15_rubric_fallback";
   }
 
-  return { periodReviews, sourceNote, yelpUrlUsed };
+  const googlePlaceProfile = extractGooglePlaceProfileFromApifyItems(rawGoogleItems);
+
+  return { periodReviews, sourceNote, yelpUrlUsed, googlePlaceProfile };
 }
 
 async function main() {
@@ -776,7 +784,7 @@ async function main() {
       }
     }
 
-    const { periodReviews, sourceNote, yelpUrlUsed } = await loadReviewsForLead(
+    const { periodReviews, sourceNote, yelpUrlUsed, googlePlaceProfile } = await loadReviewsForLead(
       lead,
       periodStartIso,
       periodEndIso,
@@ -814,6 +822,15 @@ async function main() {
       const website = String(lead.website_url ?? "").trim();
       if (website && website !== "—") {
         updates.website = website;
+      }
+      const venuePhone = String(lead.venue_phone ?? "").trim();
+      if (venuePhone && venuePhone !== "—") {
+        updates.phone = venuePhone;
+      }
+      const profilePatch = restaurantPatchFromGooglePlaceProfile(googlePlaceProfile);
+      Object.assign(updates, profilePatch);
+      if (Object.keys(profilePatch).length) {
+        console.log(`Restaurant profile from Google/Apify: ${JSON.stringify(profilePatch)}`);
       }
       const { error: planErr } = await supabase.from("restaurants").update(updates).eq("id", restaurant.id);
       if (planErr) {
