@@ -36,13 +36,6 @@ export default function PortalPage() {
         </Suspense>
         <p className="mt-8 text-center text-sm text-slate-500">
           <Link
-            href="/portal/demo/"
-            className="font-semibold text-amber-800 underline-offset-4 hover:underline"
-          >
-            View the sales demo (no login)
-          </Link>
-          {" · "}
-          <Link
             href="/"
             className="font-semibold text-slate-900 underline-offset-4 hover:underline"
           >

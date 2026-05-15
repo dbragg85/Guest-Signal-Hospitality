@@ -185,8 +185,8 @@ export function SnapshotIntakeForm() {
                 <ServicesIntakeLink href={recommendation.ctaHref} className="btn-primary inline-block">
                   {recommendation.ctaLabel}
                 </ServicesIntakeLink>
-                <Link href="/portal/demo/" className="btn-secondary inline-block">
-                  Preview sample dashboard
+                <Link href="/snapshot/" className="btn-secondary inline-block">
+                  Request another snapshot
                 </Link>
               </div>
             </div>
@@ -214,8 +214,8 @@ export function SnapshotIntakeForm() {
             ← Plans
           </Link>
           <span className="mx-2 text-slate-300">·</span>
-          <Link href="/portal/demo/" className="text-slate-700 hover:underline">
-            Preview sample snapshot
+          <Link href="/portal/" className="text-slate-700 hover:underline">
+            Client portal sign-in
           </Link>
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">{freeSnapshot.title}</h1>

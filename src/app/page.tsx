@@ -74,7 +74,7 @@ export default function HomePage() {
               </ServicesIntakeLink>
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              Preview a sample snapshot experience, no login required for the demo.
+              Delivered to your client portal after intake—live data from your Google reviews.
             </p>
             <div className="mt-6 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-white/95 to-amber-50/55 px-5 py-4 text-left shadow-sm">
               <p className="text-sm font-semibold text-slate-900">Recent Cincinnati outcome</p>

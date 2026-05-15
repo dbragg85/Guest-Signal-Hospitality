@@ -517,9 +517,23 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso, options = 
   const googleActor = getEnv("APIFY_GOOGLE_ACTOR_ID", { fallback: "" }).trim();
   const yelpActor = getEnv("APIFY_YELP_ACTOR_ID", { fallback: "" }).trim();
   const yelpUrlOverride = getEnv("LEAD_INTAKE_APIFY_YELP_URL", { fallback: "" }).trim();
-  const enableYelp = ["1", "true", "yes"].includes(
-    (getEnv("LEAD_INTAKE_ENABLE_YELP", { fallback: "0" }) || "").toLowerCase(),
-  );
+  const yelpFusionKey = getEnv("YELP_FUSION_API_KEY", { fallback: "" }).trim();
+  const yelpActorConfigured = Boolean(yelpActor);
+  const yelpEnableEnv = (getEnv("LEAD_INTAKE_ENABLE_YELP", { fallback: "" }) || "").toLowerCase();
+  const enableYelp =
+    yelpEnableEnv === "1" ||
+    yelpEnableEnv === "true" ||
+    yelpEnableEnv === "yes" ||
+    (yelpEnableEnv !== "0" && yelpEnableEnv !== "false" && yelpEnableEnv !== "no" && yelpFusionKey && yelpActorConfigured);
+  if (enableYelp) {
+    console.log("Yelp: enabled — Fusion resolve + Apify pull when keys/actor are set.");
+  } else if (yelpEnableEnv === "0" || yelpEnableEnv === "false" || yelpEnableEnv === "no") {
+    console.log("Yelp: disabled (LEAD_INTAKE_ENABLE_YELP=0).");
+  } else {
+    console.log(
+      "Yelp: skipped — set YELP_FUSION_API_KEY + APIFY_YELP_ACTOR_ID (or LEAD_INTAKE_ENABLE_YELP=0 to silence).",
+    );
+  }
   const maxTotal = Math.min(500, Math.max(1, Number(getEnv("LEAD_INTAKE_MAX_REVIEWS", { fallback: "50" }))));
 
   const sourceBits = [];

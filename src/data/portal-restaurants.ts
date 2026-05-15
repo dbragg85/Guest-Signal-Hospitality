@@ -1,27 +1,32 @@
 /**
- * Canonical list for static export (`generateStaticParams`) and SQL seed alignment.
- * Add a row here + redeploy when onboarding a new restaurant page; run matching INSERT in Supabase.
+ * Legacy static-export slug list (Boca, Mita's, etc.) — retired.
+ * Portal restaurants now come only from Supabase (memberships + RLS).
+ * Intake-created venues use /portal/dashboard/ after sign-in.
  */
-export const PORTAL_RESTAURANTS = [
-  { slug: "boca", name: "Boca" },
-  { slug: "bourbon-house-pizza-florence", name: "Bourbon House Pizza (Florence)" },
-  { slug: "bridges-nepali-cuisine-northside", name: "Bridges Nepali Cuisine (Northside)" },
-  { slug: "mitas", name: "Mita's" },
-  { slug: "cozys-cafe-and-pub", name: "Cozy's Cafe and Pub" },
-  { slug: "elis-bbq-riverside", name: "Eli's BBQ (Riverside)" },
-  { slug: "ghost-kitchen-pizza", name: "Ghost Kitchen Pizza" },
-  { slug: "herb-and-thelmas-tavern", name: "Herb & Thelma's Tavern" },
-  { slug: "knotty-pine-on-the-bayou", name: "Knotty Pine on the Bayou" },
-  { slug: "libbys-southern-comfort", name: "Libby's Southern Comfort" },
-  { slug: "lisse-steakhuis", name: "Lisse Steakhuis" },
-  { slug: "mazunte-taqueria", name: "Mazunte Taqueria" },
-  { slug: "the-bakers-table", name: "The Baker's Table" },
-  { slug: "the-park-diner", name: "The Park Diner" },
-  { slug: "west-shine-family-restaurant", name: "West Shine Family Restaurant" },
-] as const;
+export const PORTAL_RESTAURANTS = [] as const;
 
-export type PortalRestaurantSlug = (typeof PORTAL_RESTAURANTS)[number]["slug"];
+export type PortalRestaurantSlug = string;
 
-export function isPortalRestaurantSlug(s: string): s is PortalRestaurantSlug {
-  return PORTAL_RESTAURANTS.some((r) => r.slug === s);
+/** @deprecated Static slug allowlist removed; any slug from the DB is valid in the dashboard. */
+export function isPortalRestaurantSlug(_s: string): _s is PortalRestaurantSlug {
+  return false;
 }
+
+/** Legacy demo slugs — keep in sync with scripts/lib/demo-restaurant-slugs.mjs */
+export const DEMO_RESTAURANT_SLUGS = [
+  "boca",
+  "bourbon-house-pizza-florence",
+  "bridges-nepali-cuisine-northside",
+  "mitas",
+  "cozys-cafe-and-pub",
+  "elis-bbq-riverside",
+  "ghost-kitchen-pizza",
+  "herb-and-thelmas-tavern",
+  "knotty-pine-on-the-bayou",
+  "libbys-southern-comfort",
+  "lisse-steakhuis",
+  "mazunte-taqueria",
+  "the-bakers-table",
+  "the-park-diner",
+  "west-shine-family-restaurant",
+] as const;

@@ -2,7 +2,6 @@
 
 import { RestaurantSnapshotTemplate } from "@/components/portal/RestaurantSnapshotTemplate";
 import { usePortalSession } from "@/contexts/PortalSessionContext";
-import { isPortalRestaurantSlug } from "@/data/portal-restaurants";
 import {
   isPlanInquiryKey,
   PLAN_INQUIRY_LABELS,
@@ -59,8 +58,6 @@ type SnapshotPeriodRow = {
   created_at: string | null;
   [key: string]: unknown;
 };
-
-type Props = { initialSlug?: string };
 
 const MONTH_INDEX: Record<string, number> = {
   jan: 1,
@@ -153,15 +150,6 @@ function normalizePeriodForLookup(period: string): string {
   return canonical ?? `raw:${normalizePeriod(period)}`;
 }
 
-/** Legacy demo seed from migration 001; removed in 009 — hide until DB migration runs. */
-function isRetractedBocaQ12025Seed(
-  restaurantSlug: string | undefined,
-  period: string,
-): boolean {
-  if (!restaurantSlug || restaurantSlug !== "boca") return false;
-  return canonicalPeriodKey(period) === "q:2025:1";
-}
-
 function getSnapshotIdFromScorecardData(data: Record<string, unknown> | null): string | null {
   if (!data) return null;
   const raw = data.snapshot_id;
@@ -221,7 +209,7 @@ const PILLAR_FIELD_ALIASES: Array<{ dataKey: string; snapshotFields: string[] }>
   },
 ];
 
-export function PortalDashboardClient({ initialSlug }: Props) {
+export function PortalDashboardClient() {
   const router = useRouter();
   const { session, loading: authLoading, supabase, configured } =
     usePortalSession();
@@ -274,11 +262,6 @@ export function PortalDashboardClient({ initialSlug }: Props) {
     setRestaurants(list);
     if (list.length) {
       setSelectedId((prev) => {
-        if (initialSlug) {
-          const bySlug = list.find((r) => r.slug === initialSlug);
-          if (bySlug) return bySlug.id;
-          return null;
-        }
         if (prev && list.some((r) => r.id === prev)) return prev;
         return list[0].id;
       });
@@ -286,7 +269,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
       setSelectedId(null);
     }
     setDataLoading(false);
-  }, [supabase, session, initialSlug]);
+  }, [supabase, session]);
 
   useEffect(() => {
     if (!configured || authLoading) return;
@@ -314,10 +297,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
         setLoadError(error.message);
         return;
       }
-      const selectedSlug = restaurants.find((r) => r.id === selectedId)?.slug;
-      const base = sortScorecards((data ?? []) as Scorecard[]).filter(
-        (row) => !isRetractedBocaQ12025Seed(selectedSlug, row.period),
-      );
+      const base = sortScorecards((data ?? []) as Scorecard[]);
       if (base.length === 0) {
         setScorecards(base);
         setActiveScorecardId(null);
@@ -588,12 +568,6 @@ export function PortalDashboardClient({ initialSlug }: Props) {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/portal/demo/"
-              className="text-sm font-medium text-slate-600 underline-offset-4 hover:underline"
-            >
-              Sales demo layout
-            </Link>
             <button
               type="button"
               onClick={() => signOut()}
@@ -615,23 +589,6 @@ export function PortalDashboardClient({ initialSlug }: Props) {
             No restaurants linked to this account yet. Ask Guest Signal to add a
             membership or set your profile as super admin in Supabase.
           </p>
-        ) : !dataLoading &&
-          initialSlug &&
-          selectedId === null &&
-          restaurants.length > 0 ? (
-          <div className="mt-10 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-5 text-sm text-amber-950">
-            <p className="font-semibold">This restaurant page isn&apos;t available for your account.</p>
-            <p className="mt-2 text-amber-900/90">
-              The URL may be wrong, or your team hasn&apos;t been granted access yet. Open the main
-              dashboard to pick a restaurant you&apos;re assigned to.
-            </p>
-            <Link
-              href="/portal/dashboard/"
-              className="mt-4 inline-block font-semibold text-amber-900 underline underline-offset-4"
-            >
-              Back to scorecards
-            </Link>
-          </div>
         ) : (
           <>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -642,14 +599,7 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                 id="restaurant"
                 className="max-w-md rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm"
                 value={selectedId ?? ""}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setSelectedId(id);
-                  const r = restaurants.find((x) => x.id === id);
-                  if (initialSlug !== undefined && r && isPortalRestaurantSlug(r.slug)) {
-                    router.replace(`/portal/dashboard/${r.slug}/`);
-                  }
-                }}
+                onChange={(e) => setSelectedId(e.target.value)}
               >
                 {restaurants.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -657,29 +607,6 @@ export function PortalDashboardClient({ initialSlug }: Props) {
                   </option>
                 ))}
               </select>
-              {selectedId ? (
-                <div className="text-sm">
-                  {(() => {
-                    const cur = restaurants.find((r) => r.id === selectedId);
-                    if (cur && isPortalRestaurantSlug(cur.slug)) {
-                      return (
-                        <Link
-                          href={`/portal/dashboard/${cur.slug}/`}
-                          className="font-medium text-amber-900 underline-offset-4 hover:underline"
-                        >
-                          Bookmarkable page for this restaurant
-                        </Link>
-                      );
-                    }
-                    return (
-                      <span className="text-slate-500">
-                        Add this venue to the static portal list in the repo to enable a dedicated
-                        URL.
-                      </span>
-                    );
-                  })()}
-                </div>
-              ) : null}
             </div>
 
             {selectedId ? (

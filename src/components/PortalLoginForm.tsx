@@ -78,8 +78,8 @@ export function PortalLoginForm() {
           your project URL and anon key.
         </p>
         <p className="mt-3">
-          <Link href="/portal/demo/" className="font-semibold underline">
-            View the public demo dashboard
+          <Link href="/snapshot/" className="font-semibold underline">
+            Request a free snapshot
           </Link>{" "}
           meanwhile.
         </p>
