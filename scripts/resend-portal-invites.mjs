@@ -129,10 +129,11 @@ for (const email of emails) {
     continue;
   }
 
+  // Existing users: magic link to welcome so PKCE ?code= is exchanged before password setup.
   const gen = await supabase.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: { redirectTo: magicRedirectTo },
+    options: { redirectTo: inviteRedirectTo },
   });
 
   if (gen.error || !gen.data?.properties?.action_link) {
