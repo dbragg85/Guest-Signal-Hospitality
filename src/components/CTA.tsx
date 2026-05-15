@@ -4,7 +4,7 @@ import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 export function CTA({
   title,
   desc,
-  primaryHref = "/contact",
+  primaryHref = "/snapshot/",
   primaryLabel = "Get a Free Snapshot",
   secondaryHref = "/services/",
   secondaryLabel = "See Services",
@@ -23,7 +23,8 @@ export function CTA({
 }) {
   const centered = align === "center";
   const PrimaryLink =
-    typeof primaryHref === "string" && primaryHref.includes("/services/inquiry")
+    typeof primaryHref === "string" &&
+    (primaryHref.includes("/services/inquiry") || primaryHref.includes("/snapshot"))
       ? ServicesIntakeLink
       : Link;
 

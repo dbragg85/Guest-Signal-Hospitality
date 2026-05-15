@@ -44,13 +44,14 @@ export function isPlanInquiryKey(v: string | null): v is PlanInquiryKey {
   return v !== null && Object.prototype.hasOwnProperty.call(PLAN_INQUIRY_LABELS, v);
 }
 
-/** /services: short “why these price points” bridge between free snapshot and paid tiers. */
+/** /services: plan progression bridge between free snapshot and paid tiers. */
 export const servicesPricingContext = {
-  title: "Why these price points",
-  lead: "Teams often spend similar amounts on reputation software or light guest-experience help—we stay in that band on purpose, with tiers so you only buy the depth you need.",
+  title: "How the plans progress",
+  lead: "Each tier builds on the last—from AI-powered visibility and performance insights to menu intelligence and executive reporting with hands-on execution.",
   bullets: [
-    "That market is usually roughly $80–200/mo for basics and higher when you add multi-site reporting and leadership-ready rollups; advisory-style support often lands in the low hundreds to low thousands depending on involvement.",
-    "Start with the free snapshot, then choose Monitor, Growth, or Elevate as you want more signal, peer context, or hands-on review and social coordination.",
+    "Signal Monitor ($149/mo) — foundational guest reputation and visibility monitoring.",
+    "Signal Growth ($499/mo) — restaurant performance insights, value perception trends, sentiment patterns, and monthly opportunity analysis.",
+    "Signal Elevate ($999/mo) — menu intelligence, pricing perception, operational tradeoffs, throughput opportunities, and executive performance reporting.",
   ],
 } as const;
 
@@ -58,16 +59,19 @@ export const pricingPlans = [
   {
     inquiryKey: "signal_monitor" as const,
     name: "Signal Monitor",
-    price: "$79",
+    price: "$149",
     period: "month",
     badge: null,
-    description: "Essential visibility with a monthly scorecard and 72-hour alerting.",
+    description: "Foundational guest reputation and visibility monitoring.",
     features: [
       "Monthly Guest Signal Score with category breakdown",
-      "Sentiment trend monitoring across Google reviews",
-      "Risk alerts delivered within 72 hours",
+      "Google review sentiment monitoring",
+      "Google Business Profile visibility snapshot",
+      "Basic website and mobile health scan",
+      "Reputation risk alerts within 72 hours",
       "One-page monthly intelligence digest",
-      "Quarterly owner readout and next-step checklist"
+      "AI-assisted review response suggestions, up to 10/month",
+      "Quarterly owner checklist with next-step priorities",
     ],
     buttonText: "Start With Signal Monitor",
     popular: false,
@@ -75,20 +79,25 @@ export const pricingPlans = [
   {
     inquiryKey: "signal_growth" as const,
     name: "Signal Growth",
-    price: "$149",
+    price: "$499",
     period: "month",
     badge: "Most Popular",
-    description: "Active improvement with faster reporting and monthly priorities.",
+    description:
+      "AI-powered restaurant visibility and performance intelligence—guest sentiment patterns, value perception trends, and monthly opportunity analysis grounded in how guests experience your operation.",
     features: [
-      "Everything in Monitor, plus:",
-      "Competitor tracking for 3 local peers",
-      "Weekly sentiment breakdown by category",
-      "Monthly improvement roadmap with top 5 priorities",
-      "48-hour priority alerts for rating drops",
+      "Everything in Signal Monitor",
+      "Restaurant Performance Insights",
+      "Value perception trend analysis",
+      "Guest sentiment pattern observations",
+      "Competitor positioning summaries (up to 5 local restaurants)",
+      "Monthly opportunity analysis",
+      "Operational bottleneck observations based on guest feedback",
+      "Google Business Profile optimization recommendations",
+      "Local SEO scan and keyword opportunity tracking",
+      "Website conversion and CTA recommendations",
+      "Weekly sentiment breakdown by service theme",
+      "Review generation funnel recommendations",
       "Monthly growth summary and owner action list",
-      "90-day rolling theme view so priorities stay tied to recent guest feedback",
-      "Peer comparison snapshots on hospitality, speed, and value vs. each tracked competitor",
-      "Month-over-month Guest Signal trend with plain-language what-moved callouts",
     ],
     buttonText: "Choose Signal Growth",
     popular: true,
@@ -96,21 +105,26 @@ export const pricingPlans = [
   {
     inquiryKey: "signal_elevate" as const,
     name: "Signal Elevate",
-    price: "$299",
+    price: "$999",
     period: "month",
-    badge: "Best Value",
+    badge: "Premium Managed Support",
     description:
-      "Our highest tier: hands-on reputation elevation plus social media tracking, mention monitoring, and coordinated management alongside review intelligence.",
+      "Premium managed reputation plus menu intelligence, pricing perception, throughput opportunities, and executive performance reporting for operators balancing guest experience, labor, and revenue.",
     features: [
-      "Everything in Growth, plus:",
-      "Social tracking: mentions, tags, and DMs on Instagram, Facebook, and TikTok (where applicable), tied to review signals",
-      "Monthly social + review narrative with recommended posts/replies, escalation flags, and light content cadence guidance",
-      "Ongoing coordination for social and review response pacing (aligned with your brand voice)",
-      "Professional review response drafting (up to 20/month)",
-      "Weekly reputation monitoring and coaching notes",
-      "Guest recovery response playbook with SLA targets",
-      "Monthly executive intelligence report + KPI review",
-      "Priority support with 24-hour response SLA",
+      "Everything in Signal Growth",
+      "Menu Intelligence Analysis",
+      "Menu item sentiment clustering",
+      "Opportunity cost and throughput observations",
+      "Pricing perception indicators",
+      "Guest preference pattern tracking",
+      "Operational tradeoff summaries",
+      "Executive restaurant performance reporting",
+      "Professional review response drafting, up to 30/month",
+      "Social mention and reputation tracking for Instagram, Facebook, and TikTok where applicable",
+      "Guest recovery response playbook",
+      "Priority support with 24-hour response target",
+      "Website optimization recommendations and implementation guidance",
+      "Quarterly competitive intelligence review",
     ],
     buttonText: "Request Signal Elevate",
     popular: false,
@@ -127,11 +141,36 @@ export const freeSnapshot = {
     "Review sentiment overview",
     "Key strengths and improvement areas",
     "Executive summary",
-    "Delivered within 48 hours"
+    "Delivered within 48 hours",
   ],
   buttonText: "Get Your Free Snapshot",
-  trustText: "No obligation. No credit card required."
+  trustText: "No obligation. No credit card required.",
 };
+
+/** /services page: SEO hero and snapshot scope (restaurant reputation, SEO, GBP). */
+export const servicesPageSeo = {
+  title: "Restaurant Reputation, SEO & Google Visibility Plans",
+  intro:
+    "Guest Signal Hospitality delivers AI-powered restaurant visibility and performance intelligence—reviews, Google visibility, local SEO, and guest feedback translated into operational priorities owners can run.",
+  supporting:
+    "Whether you need restaurant reputation management, restaurant review monitoring, Google Business Profile optimization, or local restaurant marketing that matches what guests are already searching for—we deliver guest experience intelligence with plain-English action plans. Cincinnati restaurant marketing roots, nationwide delivery for independent restaurant growth.",
+  snapshotHeading: "Start With a Free Guest Signal Snapshot",
+  snapshotLead:
+    "Before you choose a paid plan, get a complimentary baseline. Your snapshot is restaurant reputation management without a long contract—so you can see plan fit before you commit.",
+  snapshotReviews: [
+    "Google review sentiment and recurring guest themes",
+    "Guest Signal Score with strengths and risk areas",
+    "Google Business Profile visibility and listing health",
+    "Website and mobile experience health (speed, clarity, core CTAs)",
+    "Basic local SEO opportunities tied to how guests find you",
+    "Competitor positioning against nearby restaurants",
+    "Recommended plan fit: Signal Monitor ($149/mo), Signal Growth ($499/mo), or Signal Elevate ($999/mo)",
+  ],
+  plansKicker: "Paid plans",
+  plansTitle: "Restaurant reputation management & local visibility plans",
+  plansLead:
+    "Progress from review monitoring to AI-powered performance intelligence—or Elevate for menu intelligence, operational tradeoffs, and executive reporting with managed support.",
+} as const;
 
 export const services = [
   {

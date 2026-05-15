@@ -19,7 +19,7 @@ export default function Home() {
               We help restaurants identify operational strengths, guest experience gaps, and revenue opportunities through advanced review intelligence and competitive analysis.
             </p>
             <div className="hero-cta">
-              <a href="#audit" className="btn btn-primary">Get Your Guest Intelligence Audit</a>
+              <a href="/snapshot/" className="btn btn-primary">Get Your Free Guest Signal Snapshot</a>
               <a href="#services" className="btn btn-secondary">Learn More</a>
             </div>
             <div className="hero-stats">
@@ -29,7 +29,7 @@ export default function Home() {
               </div>
               <div className="stat">
                 <span className="stat-number">$149</span>
-                <span className="stat-label">Intro Price</span>
+                <span className="stat-label">Monitor from</span>
               </div>
               <div className="stat">
                 <span className="stat-number">5+</span>
@@ -102,13 +102,13 @@ export default function Home() {
         <div className="container">
           <div className="audit-content">
             <div className="audit-info">
-              <span className="badge">Introductory Offer</span>
-              <h2 className="audit-title">Guest Intelligence Audit</h2>
+              <span className="badge">Free baseline</span>
+              <h2 className="audit-title">Free Guest Signal Snapshot</h2>
               <p className="audit-description">
-                Get a comprehensive analysis of your restaurant's guest experience with actionable recommendations to improve operations and increase revenue.
+                Complimentary reputation and Google visibility baseline—then Signal Monitor ($149/mo), Signal Growth ($499/mo), or Signal Elevate ($999/mo).
               </p>
               <div className="price-section">
-                <span className="price-label">Starting at</span>
+                <span className="price-label">Paid plans from</span>
                 <div className="price">
                   <span className="currency">$</span>
                   <span className="amount">149</span>
@@ -242,7 +242,7 @@ export default function Home() {
           <div className="contact-content">
             <div className="contact-info">
               <h2>Ready to Transform Your Guest Experience?</h2>
-              <p>Let's discuss how our Guest Intelligence Audit can help identify specific opportunities to increase repeat customers and revenue for your restaurant.</p>
+              <p>Let's discuss how our Free Guest Signal Snapshot can help identify specific opportunities to increase repeat customers and revenue for your restaurant.</p>
               <div className="contact-details">
                 <div className="contact-item">
                   <svg className="contact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -260,7 +260,7 @@ export default function Home() {
                   </svg>
                   <div>
                     <strong>Get Started</strong>
-                    <p>Contact us for your Guest Intelligence Audit</p>
+                    <p>Contact us for your Free Guest Signal Snapshot</p>
                   </div>
                 </div>
               </div>
@@ -290,7 +290,7 @@ export default function Home() {
                 <ul>
                   <li><a href="#services">Review Analysis</a></li>
                   <li><a href="#services">Competitive Intelligence</a></li>
-                  <li><a href="#audit">Guest Intelligence Audit</a></li>
+                  <li><a href="#audit">Free Guest Signal Snapshot</a></li>
                 </ul>
               </div>
               <div className="footer-column">

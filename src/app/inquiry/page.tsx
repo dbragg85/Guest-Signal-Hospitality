@@ -11,8 +11,13 @@ export default function LegacyInquiryPathRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    const search = typeof window !== "undefined" ? window.location.search : "";
-    router.replace(`/services/inquiry/${search}`);
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("plan") === "free_snapshot") {
+      router.replace("/snapshot/");
+      return;
+    }
+    router.replace(`/services/inquiry/${window.location.search}`);
   }, [router]);
 
   return (

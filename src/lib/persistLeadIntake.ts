@@ -23,8 +23,12 @@ export type LeadIntakePayload = {
   socialPresenceNote: string;
   venuePhone: string;
   websiteUrl: string;
+  gbpUrl?: string;
   operatingHoursNote: string;
   message: string;
+  snapshotPriority?: string;
+  recommendedPlan?: string;
+  snapshotSummary?: string;
 };
 
 export type LeadIntakeDuplicateCode =
@@ -116,7 +120,7 @@ export async function persistLeadIntakeToSupabase(
     return /lead_intake_active_email_pending_uidx/i.test(text);
   }
 
-  const { error: insertError } = await supabase.from("lead_intake_submissions").insert({
+  const insertRow: Record<string, unknown> = {
     inquiry_plan: payload.inquiryPlan.trim(),
     name: payload.name.trim(),
     email: payload.email.trim(),
@@ -136,7 +140,20 @@ export async function persistLeadIntakeToSupabase(
     operating_hours_note: cleanField(payload.operatingHoursNote),
     message: cleanField(payload.message),
     submission_client_key: submissionClientKey,
-  });
+  };
+
+  if (payload.gbpUrl) insertRow.gbp_url = cleanField(payload.gbpUrl);
+  if (payload.snapshotPriority) insertRow.snapshot_priority = cleanField(payload.snapshotPriority);
+  if (payload.recommendedPlan) insertRow.recommended_plan = cleanField(payload.recommendedPlan);
+  if (payload.snapshotSummary) {
+    try {
+      insertRow.snapshot_summary = JSON.parse(payload.snapshotSummary);
+    } catch {
+      insertRow.snapshot_summary = { raw: payload.snapshotSummary };
+    }
+  }
+
+  const { error: insertError } = await supabase.from("lead_intake_submissions").insert(insertRow);
 
   if (insertError) {
     const msg = insertError.message ?? "";

@@ -37,10 +37,10 @@ export function ArticleInternalLinks({ article }: { article: ParsedNewsletter })
           <span className="text-slate-500"> — how we support independent and multi-unit operators.</span>
         </li>
         <li>
-          <Link href="/contact/" className="font-semibold text-amber-900 underline underline-offset-2">
-            Request a hospitality intelligence consult
+          <Link href="/snapshot/" className="font-semibold text-amber-900 underline underline-offset-2">
+            Get your free Guest Signal Snapshot
           </Link>
-          <span className="text-slate-500"> — start with a free Guest Signal Snapshot.</span>
+          <span className="text-slate-500"> — complimentary baseline before choosing Monitor, Growth, or Elevate.</span>
         </li>
         <li>
           <Link href="/" className="font-semibold text-amber-900 underline underline-offset-2">

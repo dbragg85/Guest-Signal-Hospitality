@@ -47,7 +47,7 @@ export default function ServicesPage() {
 
             <div className="text-center">
               <Link
-                href="/contact"
+                href="/snapshot/"
                 className="inline-block rounded-xl bg-slate-900 px-8 py-3 text-sm font-semibold text-white hover:bg-slate-800"
               >
                 {freeSnapshot.buttonText}
@@ -103,7 +103,7 @@ export default function ServicesPage() {
               </ul>
 
               <Link
-                href="/contact"
+                href={`/services/inquiry/?plan=${plan.inquiryKey}`}
                 className={`block w-full text-center rounded-xl px-5 py-3 text-sm font-semibold ${
                   plan.popular
                     ? "bg-slate-900 text-white hover:bg-slate-800"

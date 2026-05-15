@@ -90,7 +90,7 @@ if (argId && uuidRe.test(argId)) {
   record = await fetchLatestPendingRecord(base, serviceKey);
   if (!record?.id) {
     console.error(
-      "No pending service-tier lead found. Submit from /services/inquiry/?plan=free_snapshot or pass a UUID:\n" +
+      "No pending service-tier lead found. Submit from /snapshot/ or pass a UUID:\n" +
         "  npm run test:lead-intake-webhook -- <lead_uuid>",
     );
     process.exit(1);

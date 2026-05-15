@@ -6,6 +6,7 @@ import { resourceArticles } from "@/content/resources";
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
+import { PlanFitSnapshotCta } from "@/components/PlanFitSnapshotCta";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
@@ -65,7 +66,7 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <ServicesIntakeLink
-                href="/services/inquiry/?plan=free_snapshot"
+                href="/snapshot/"
                 className="btn-primary px-4 py-2 text-sm"
                 data-track="cta_hero_snapshot"
               >
@@ -114,7 +115,7 @@ export default function HomePage() {
 
             <div className="text-center">
               <ServicesIntakeLink
-                href="/services/inquiry/?plan=free_snapshot"
+                href="/snapshot/"
                 className="btn-primary inline-block px-8 py-3"
                 data-track="cta_snapshot_primary"
               >
@@ -272,6 +273,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
+        <PlanFitSnapshotCta />
       </Section>
 
       {/* Authority Section */}

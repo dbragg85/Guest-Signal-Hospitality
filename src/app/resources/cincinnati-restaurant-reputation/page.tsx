@@ -67,7 +67,7 @@ export default function CincinnatiRestaurantReputationPage() {
             what to prioritize next.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <ServicesIntakeLink href="/services/inquiry/?plan=free_snapshot" className="btn-primary">
+            <ServicesIntakeLink href="/snapshot/" className="btn-primary">
               Get your free snapshot
             </ServicesIntakeLink>
             <Link href="/contact/" className="btn-secondary">

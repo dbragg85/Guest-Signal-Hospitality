@@ -80,7 +80,7 @@ export default function RestaurantReviewMonitoringPage() {
             a complimentary Guest Signal Snapshot (score, themes, strengths, and risks).
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <ServicesIntakeLink href="/services/inquiry/?plan=free_snapshot" className="btn-primary">
+            <ServicesIntakeLink href="/snapshot/" className="btn-primary">
               Get your free snapshot
             </ServicesIntakeLink>
             <Link href="/services/" className="btn-secondary">

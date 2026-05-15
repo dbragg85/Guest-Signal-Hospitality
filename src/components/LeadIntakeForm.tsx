@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   brand,
@@ -13,6 +13,7 @@ import {
   type PlanInquiryKey,
 } from "@/content/site";
 import { persistLeadIntakeToSupabase } from "@/lib/persistLeadIntake";
+import { SNAPSHOT_INTAKE_PATH } from "@/lib/snapshot/constants";
 import { trackEvent } from "@/lib/tracking";
 
 const DEFAULT_CONTACT_ENDPOINT =
@@ -38,25 +39,32 @@ export type LeadIntakeMode = "contact" | "service";
 
 function paidPlanGoalsLabel(planKey: PlanInquiryKey | null): string {
   if (planKey === "signal_monitor") {
-    return "What should we prioritize watching first?";
+    return "What should we baseline first for reputation and Google visibility?";
   }
   if (planKey === "signal_growth") {
-    return "Goals for the next 90 days";
+    return "Goals for local visibility, GBP, and conversion (next 90 days)";
   }
   if (planKey === "signal_elevate") {
-    return "Goals for the next 90 days (reputation, social, operations)";
+    return "Goals for managed reputation, review response, and executive reporting";
   }
   return "Goals for the next 90 days";
 }
 
 function paidPlanGoalsHint(planKey: PlanInquiryKey | null): string | null {
   if (planKey === "signal_monitor") {
-    return "Examples: recent rating dip, repeat complaints (speed, hospitality, cleanliness), delivery mix, new competitor, staffing churn.";
+    return "Examples: rating trend, review themes, Google listing gaps, competitor rating context, areas you want on the monthly scorecard.";
+  }
+  if (planKey === "signal_growth") {
+    return "Examples: local search visibility, GBP posts/specials, website booking or menu CTAs, up to 5 competitors to track, conversion pages to improve.";
+  }
+  if (planKey === "signal_elevate") {
+    return "Examples: review response tone, social channels to coordinate, recovery SLAs, monthly exec readout priorities.";
   }
   return null;
 }
 
 export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,6 +112,12 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
       setSubmitted(true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (mode === "service" && planKey === "free_snapshot") {
+      router.replace(SNAPSHOT_INTAKE_PATH);
+    }
+  }, [mode, planKey, router]);
 
   const heading = planKey
     ? PLAN_INQUIRY_LABELS[planKey]
@@ -282,6 +296,14 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
     }
   };
 
+  if (mode === "service" && planKey === "free_snapshot") {
+    return (
+      <section className="mx-auto max-w-3xl px-4 py-16 text-center text-slate-600">
+        <p>Redirecting to the free snapshot form…</p>
+      </section>
+    );
+  }
+
   if (submitted) {
     return (
       <div>
@@ -332,7 +354,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
 
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <ServicesIntakeLink
-                href={`${serviceRouteBase}?plan=${freeSnapshot.inquiryKey}`}
+                href={SNAPSHOT_INTAKE_PATH}
                 className="rounded-3xl border-2 border-stone-200 bg-white p-8 shadow-sm transition hover:border-amber-500/40 hover:shadow-md"
               >
                 <h2 className="text-xl font-semibold">{freeSnapshot.title}</h2>

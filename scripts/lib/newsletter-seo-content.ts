@@ -152,7 +152,7 @@ export function buildGuestSignalCtaBlock(slug: string, topicCategory: TopicCateg
     "",
     "Guest Signal Hospitality turns review clusters and competitive context into a **Guest Signal Score** and prioritized action list—built for operators who want operational intelligence, not generic agency dashboards.",
     "",
-    `- Start with a [free Guest Signal Snapshot](/services/inquiry/?plan=free_snapshot) to baseline your location.`,
+    `- Start with a [free Guest Signal Snapshot](/snapshot/) to baseline your location.`,
     `- Explore [monitoring plans](/services/) if you want monthly scorecards and alerts.`,
     `- Read more on [${topicLabelFromCategory(topicCategory)}](/topics/${topicCategory}/).`,
     `- Browse related briefs in [Hospitality Signals](/insights/).`,

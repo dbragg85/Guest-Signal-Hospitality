@@ -135,7 +135,7 @@ export default function TeamPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-slate-400">•</span>
-                  <span>Cadence that scales from snapshot → Monitor → Growth → Elevate</span>
+                  <span>Cadence that scales from free snapshot → Monitor ($149) → Growth ($499) → Elevate ($999)</span>
                 </li>
               </ul>
             </div>
@@ -158,7 +158,7 @@ export default function TeamPage() {
             align="center"
             title="Ready to improve your restaurant?"
             desc="Get a free snapshot of your review signals and see how we help you turn guest feedback into growth."
-            primaryHref="/services/inquiry/?plan=free_snapshot"
+            primaryHref="/snapshot/"
             primaryLabel="Get Free Snapshot"
             secondaryHref="/services/"
             secondaryLabel="View Plans"

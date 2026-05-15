@@ -137,7 +137,7 @@ export function InsightArticle({ item }: { item: ParsedNewsletter }) {
           </p>
           <div className="mt-4">
             <ServicesIntakeLink
-              href="/services/inquiry/?plan=free_snapshot"
+              href="/snapshot/"
               className="btn-primary inline-block"
               data-track="cta_insight_snapshot"
             >

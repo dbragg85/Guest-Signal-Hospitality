@@ -109,7 +109,7 @@ export default function RestaurantsIndustryPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <ServicesIntakeLink
-                  href="/services/inquiry/?plan=free_snapshot"
+                  href="/snapshot/"
                   className="btn-primary px-6 py-3 text-center"
                 >
                   Get Your Free Snapshot
@@ -190,7 +190,7 @@ export default function RestaurantsIndustryPage() {
         <CTA
           title="Ready to turn your reviews into actionable insights?"
           desc="Get a free snapshot of your review signals. We'll send a quick summary: top strengths, biggest risks, and 3 quick wins you can implement this week."
-          primaryHref="/services/inquiry/?plan=free_snapshot"
+          primaryHref="/snapshot/"
           primaryLabel="Get Free Snapshot"
           secondaryLabel="Learn More"
           secondaryHref="/services/"

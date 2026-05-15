@@ -28,6 +28,7 @@
 ```
 /                          → Homepage (priority 1.0)
 /services/                 → Plans (0.95)
+/snapshot/                 → Free snapshot lead magnet (0.93)
 /industries/restaurants/   → Vertical (0.9)
 /contact/                  → Lead (0.9)
 /team/                     → About (0.85)

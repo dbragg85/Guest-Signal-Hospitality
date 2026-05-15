@@ -1,4 +1,4 @@
-import { brand } from "@/content/site";
+import { brand, freeSnapshot, pricingPlans } from "@/content/site";
 import { getSiteOrigin } from "@/lib/site-url";
 
 const LOGO = "/guest-signal-header-icon.svg";
@@ -75,6 +75,72 @@ export function professionalServiceSchema() {
     url: `${origin}/services/`,
     description:
       "Review intelligence, sentiment analysis, competitive positioning, and prioritized operational action plans.",
+    offers: pricingPlans.map((plan) => planOfferSchema(plan.inquiryKey, plan.name, plan.description, plan.price)),
+  };
+}
+
+function parseUsdPrice(priceLabel: string): string {
+  return priceLabel.replace(/[^\d.]/g, "") || "0";
+}
+
+function planOfferSchema(
+  planKey: string,
+  name: string,
+  description: string,
+  priceLabel: string,
+) {
+  const origin = getSiteOrigin();
+  const price = parseUsdPrice(priceLabel);
+  return {
+    "@type": "Offer",
+    name,
+    description,
+    price,
+    priceCurrency: "USD",
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price,
+      priceCurrency: "USD",
+      unitText: "MONTH",
+      billingDuration: "P1M",
+    },
+    url: `${origin}/services/inquiry/?plan=${planKey}`,
+    availability: "https://schema.org/InStock",
+    seller: { "@type": "Organization", name: brand.name },
+  };
+}
+
+/** ItemList + Offer nodes for /services (Monitor $149, Growth $499, Elevate $999, free snapshot). */
+export function servicesPricingSchema() {
+  const origin = getSiteOrigin();
+  const paidOffers = pricingPlans.map((plan, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    item: planOfferSchema(plan.inquiryKey, plan.name, plan.description, plan.price),
+  }));
+
+  const freeOffer = {
+    "@type": "ListItem",
+    position: paidOffers.length + 1,
+    item: {
+      "@type": "Offer",
+      name: freeSnapshot.title,
+      description: freeSnapshot.description,
+      price: "0",
+      priceCurrency: "USD",
+      url: `${origin}/snapshot/`,
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: brand.name },
+    },
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Guest Signal Hospitality service plans",
+    description:
+      "AI-powered restaurant visibility and performance intelligence: Signal Monitor ($149/mo), Signal Growth ($499/mo), Signal Elevate ($999/mo), plus a free Guest Signal Snapshot.",
+    itemListElement: [...paidOffers, freeOffer],
   };
 }
 

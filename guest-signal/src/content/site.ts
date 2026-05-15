@@ -19,7 +19,7 @@ export const brand = {
 export const nav = [
   { label: "Home", href: "/" },
   { label: "Plans", href: "/services" },
-  { label: "Free Snapshot", href: "/contact" },
+  { label: "Free Snapshot", href: "/snapshot/" },
   { label: "About", href: "/team" },
   { label: "Newsletter", href: "#newsletter" },
   { label: "Contact", href: "/contact" },
@@ -27,70 +27,95 @@ export const nav = [
 
 export const pricingPlans = [
   {
+    inquiryKey: "signal_monitor" as const,
     name: "Signal Monitor",
-    price: "$79",
-    period: "month",
-    badge: null,
-    description: "Essential guest experience visibility.",
-    features: [
-      "Monthly Guest Signal Score",
-      "Sentiment trend monitoring",
-      "Google review monitoring",
-      "Risk alerts",
-      "Quarterly Intelligence Report"
-    ],
-    buttonText: "Start Monitoring",
-    popular: false
-  },
-  {
-    name: "Signal Growth",
     price: "$149",
     period: "month",
-    badge: "Most Popular",
-    description: "Active guest experience improvement.",
+    badge: null,
+    description: "Foundational guest reputation and visibility monitoring.",
     features: [
-      "Everything in Monitor, plus:",
-      "Competitor tracking",
-      "Monthly improvement insights",
-      "Sentiment breakdown by category",
-      "Monthly Growth Summary",
-      "Priority alerts"
+      "Monthly Guest Signal Score with category breakdown",
+      "Google review sentiment monitoring",
+      "Google Business Profile visibility snapshot",
+      "Basic website and mobile health scan",
+      "Reputation risk alerts within 72 hours",
+      "One-page monthly intelligence digest",
+      "AI-assisted review response suggestions, up to 10/month",
+      "Quarterly owner checklist with next-step priorities",
     ],
-    buttonText: "Start Growing",
-    popular: true
+    buttonText: "Start With Signal Monitor",
+    popular: false,
   },
   {
-    name: "Signal Elevate",
-    price: "$299",
+    inquiryKey: "signal_growth" as const,
+    name: "Signal Growth",
+    price: "$499",
     period: "month",
-    badge: "Best Value",
-    description: "Full guest reputation elevation.",
+    badge: "Most Popular",
+    description:
+      "AI-powered restaurant visibility and performance intelligence—guest sentiment patterns, value perception trends, and monthly opportunity analysis grounded in how guests experience your operation.",
     features: [
-      "Everything in Growth, plus:",
-      "Professional review responses",
-      "Weekly reputation monitoring",
-      "Guest recovery response strategy",
-      "Monthly Executive Intelligence Report",
-      "Priority support"
+      "Everything in Signal Monitor",
+      "Restaurant Performance Insights",
+      "Value perception trend analysis",
+      "Guest sentiment pattern observations",
+      "Competitor positioning summaries (up to 5 local restaurants)",
+      "Monthly opportunity analysis",
+      "Operational bottleneck observations based on guest feedback",
+      "Google Business Profile optimization recommendations",
+      "Local SEO scan and keyword opportunity tracking",
+      "Website conversion and CTA recommendations",
+      "Weekly sentiment breakdown by service theme",
+      "Review generation funnel recommendations",
+      "Monthly growth summary and owner action list",
     ],
-    buttonText: "Elevate Your Reputation",
-    popular: false
-  }
+    buttonText: "Choose Signal Growth",
+    popular: true,
+  },
+  {
+    inquiryKey: "signal_elevate" as const,
+    name: "Signal Elevate",
+    price: "$999",
+    period: "month",
+    badge: "Premium Managed Support",
+    description:
+      "Premium managed reputation plus menu intelligence, pricing perception, throughput opportunities, and executive performance reporting for operators balancing guest experience, labor, and revenue.",
+    features: [
+      "Everything in Signal Growth",
+      "Menu Intelligence Analysis",
+      "Menu item sentiment clustering",
+      "Opportunity cost and throughput observations",
+      "Pricing perception indicators",
+      "Guest preference pattern tracking",
+      "Operational tradeoff summaries",
+      "Executive restaurant performance reporting",
+      "Professional review response drafting, up to 30/month",
+      "Social mention and reputation tracking for Instagram, Facebook, and TikTok where applicable",
+      "Guest recovery response playbook",
+      "Priority support with 24-hour response target",
+      "Website optimization recommendations and implementation guidance",
+      "Quarterly competitive intelligence review",
+    ],
+    buttonText: "Request Signal Elevate",
+    popular: false,
+  },
 ];
 
 export const freeSnapshot = {
+  inquiryKey: "free_snapshot" as const,
   title: "Start With Your Free Guest Signal Snapshot",
   price: "Free",
-  description: "See how your restaurant is performing through the eyes of your guests. Your complimentary snapshot provides immediate visibility into your reputation, strengths, and risk areas.",
+  description:
+    "See how your restaurant is performing through the eyes of your guests. Your complimentary snapshot provides immediate visibility into your reputation, strengths, and risk areas.",
   features: [
     "Guest Signal Score",
     "Review sentiment overview",
     "Key strengths and improvement areas",
     "Executive summary",
-    "Delivered within 48 hours"
+    "Delivered within 48 hours",
   ],
   buttonText: "Get Your Free Snapshot",
-  trustText: "No obligation. No credit card required."
+  trustText: "No obligation. No credit card required.",
 };
 
 export const services = [
@@ -204,13 +229,7 @@ export const team = [
   {
     name: "Your Name",
     title: "Founder / Restaurant Analyst",
-    bio: "Hospitality operator with over [X] years of experience in restaurant operations, guest experience management, and data analysis. Passionate about helping independent operators succeed by turning guest feedback into actionable insights. Previously worked in [relevant experience] and understands the day-to-day challenges of running a successful restaurant.",
-    linkedin: "#",
-  },
-  {
-    name: "Advisor Name",
-    title: "Advisor / Brand & Operations",
-    bio: "Hospitality strategist with deep expertise in positioning, process optimization, coaching, and execution planning for owner-operators. Brings [X] years of experience helping restaurants improve guest experience and profitability through data-driven decision making.",
+    bio: "Hospitality operator with deep experience in restaurant operations, guest experience management, and data analysis.",
     linkedin: "#",
   },
 ];
@@ -224,32 +243,6 @@ export const jobs = [
       "Turn review data into operator-ready insights and reports",
       "Draft SWOT analyses and prioritized action plans",
       "Support client calls, presentations, and follow-ups",
-      "Analyze competitive positioning and market trends",
-      "Collaborate with team to ensure high-quality deliverables"
-    ],
-  },
-  {
-    title: "Client Success Manager (Contract)",
-    location: "Remote",
-    type: "Part-time / Contract",
-    bullets: [
-      "Onboard new clients and manage delivery timelines",
-      "Track KPIs and conduct weekly check-ins",
-      "Coordinate report delivery and manage revision cycles",
-      "Build relationships with restaurant owners and operators",
-      "Gather feedback to continuously improve our services"
-    ],
-  },
-  {
-    title: "Hospitality Operations Consultant (Contract)",
-    location: "Cincinnati / Remote",
-    type: "Part-time / Contract",
-    bullets: [
-      "Provide operational expertise and recommendations",
-      "Develop training materials and SOPs based on insights",
-      "Support implementation of action plans",
-      "Conduct on-site assessments when needed",
-      "Share best practices from industry experience"
     ],
   },
 ];

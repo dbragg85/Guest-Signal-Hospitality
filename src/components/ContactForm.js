@@ -15,7 +15,7 @@ export default function ContactForm() {
     const phone = e.target.phone.value
     const message = e.target.message.value
     
-    const subject = encodeURIComponent('Guest Intelligence Audit Request - ' + name)
+    const subject = encodeURIComponent('Free Guest Signal Snapshot Request - ' + name)
     const body = encodeURIComponent(
       'Restaurant Name: ' + name + '\n\n' +
       'Email: ' + email + '\n\n' +
@@ -70,7 +70,7 @@ export default function ContactForm() {
           {message}
         </div>
       )}
-      <p className="form-note">We'll respond within 24 hours to discuss your Guest Intelligence Audit.</p>
+      <p className="form-note">We'll respond within 24 hours to discuss your Free Guest Signal Snapshot.</p>
     </form>
   )
 }

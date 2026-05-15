@@ -114,7 +114,7 @@ async function logNoMatchingLeadsHelp(supabase, ctx) {
     console.log("LEAD_INTAKE_ID row snapshot:", JSON.stringify(one, null, 2));
     if (!plans.includes(one.inquiry_plan)) {
       console.log(
-        `::notice::That row inquiry_plan="${one.inquiry_plan}" — this job only processes: ${plans.join(", ")}. Submit via /services/inquiry/?plan=free_snapshot (or paid plan key).`,
+        `::notice::That row inquiry_plan="${one.inquiry_plan}" — this job only processes: ${plans.join(", ")}. Submit via /snapshot/ (or paid plan at /services/inquiry/?plan=signal_*).`,
       );
     }
     if (one.processing_status !== "pending") {
@@ -195,7 +195,7 @@ async function logNoMatchingLeadsHelp(supabase, ctx) {
   }
 
   let notice =
-    "No pending service-tier leads to process. Check diagnostics above. Common fixes: submit from /services/inquiry/?plan=free_snapshot (not plain /contact); confirm GitHub SUPABASE_URL matches the project where the form posts; if the row is already converted, it will not run again.";
+    "No pending service-tier leads to process. Check diagnostics above. Common fixes: submit from /snapshot/ (not plain /contact); confirm GitHub SUPABASE_URL matches the project where the form posts; if the row is already converted, it will not run again.";
   if (pendingGeneral > 0 && (pendingService === 0 || pendingService == null)) {
     notice =
       `You have ${pendingGeneral} pending row(s) with inquiry_plan=general (plain contact form). This job skips those — use a plan URL so inquiry_plan is free_snapshot or a paid key.`;

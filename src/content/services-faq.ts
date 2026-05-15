@@ -22,7 +22,7 @@ export const servicesFaq: ServiceFaqItem[] = [
   {
     question: "Which plan fits an independent restaurant with one location?",
     answer:
-      "Many independents start with the free snapshot, then choose Signal Monitor for monthly scorecards and alerts, or Signal Growth when they want competitor context and weekly priority lists.",
+      "Start with the free snapshot. Signal Monitor ($149/mo) gives foundational reputation intelligence and a Google visibility baseline. Signal Growth ($499/mo) adds AI-powered restaurant performance insights—value perception trends, sentiment patterns, competitor positioning, monthly opportunity analysis, and operational bottleneck observations from guest feedback. Signal Elevate ($999/mo) layers menu intelligence, pricing perception, throughput opportunities, operational tradeoff summaries, and executive performance reporting with managed execution.",
   },
   {
     question: "Do you work outside Cincinnati?",
