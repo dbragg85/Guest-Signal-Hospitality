@@ -13,6 +13,16 @@ import {
   scoreArticle,
   scoreTrend,
 } from "./lib/newsletter-utils";
+import {
+  TARGET_WORD_MAX,
+  TARGET_WORD_MIN,
+  buildCommonMistakes,
+  buildGuestSignalCtaBlock,
+  buildMetricsSection,
+  buildOperatorDeepDive,
+  estimateWordCount,
+  pickRelatedSlugs,
+} from "./lib/newsletter-seo-content";
 
 const BRAND_SAFETY_BLOCK = [
   "affiliate",
@@ -38,6 +48,7 @@ const NEWSLETTER_BANNER_DIR = path.join(process.cwd(), "public", "newsletter-ban
 const WEEKLY_THEMES = [
   {
     label: "review response speed",
+    topicCategory: "reputation-management" as const,
     opening: "Guest behavior this week points to tighter expectations around response quality and accountability.",
     takeaway:
       "Faster, specific review responses reduce trust erosion and give teams clearer feedback loops for service recovery.",
@@ -51,6 +62,7 @@ const WEEKLY_THEMES = [
   },
   {
     label: "menu value positioning",
+    topicCategory: "menu-engineering" as const,
     opening: "Search and review signals suggest guests are scrutinizing value communication more than discount size.",
     takeaway:
       "Value perception improves when menu language, portion expectations, and service consistency are aligned.",
@@ -64,6 +76,7 @@ const WEEKLY_THEMES = [
   },
   {
     label: "service consistency under pressure",
+    topicCategory: "front-of-house" as const,
     opening: "Operators are seeing demand variability expose handoff and speed inconsistencies during peak windows.",
     takeaway:
       "Consistency in execution still beats occasional spikes in demand when protecting long-term reputation.",
@@ -77,6 +90,7 @@ const WEEKLY_THEMES = [
   },
   {
     label: "guest recovery playbooks",
+    topicCategory: "service-recovery" as const,
     opening: "This week's pattern shows guests reward quick acknowledgement and clear recovery actions after mistakes.",
     takeaway:
       "Restaurants that standardize recovery language and follow-through protect trust faster than ad hoc responses.",
@@ -90,6 +104,7 @@ const WEEKLY_THEMES = [
   },
   {
     label: "local marketing signal alignment",
+    topicCategory: "hospitality-marketing" as const,
     opening: "Search momentum this week indicates operators should align local messaging with what guests are actively seeking.",
     takeaway:
       "Marketing performs better when weekly content reflects real guest language from reviews and search behavior.",
@@ -109,6 +124,13 @@ const THEME_MAIN_FEATURES: Record<string, string> = {
   "guest recovery playbooks": "Guest recovery playbooks for frontline teams",
   "local marketing signal alignment": "Local marketing signal alignment with live guest intent",
 };
+
+/** Second paragraph under Opening Signal — rotates so issues do not read identical week to week. */
+const OPENING_FOLLOWUPS = [
+  "Search spikes are only useful when paired with what guests already say in reviews: look for mismatches between promise and proof.",
+  "If one theme dominates local search, your menu, hours, and GBP copy should answer that intent in plain language—not buried in marketing fluff.",
+  "Teams that assign one owner to connect search themes to weekly service adjustments usually see fewer repeat complaints in the same category.",
+];
 
 function safeText(input: string): string {
   let out = input.replace(/\s+/g, " ").trim();
@@ -144,9 +166,37 @@ function markdownToHtml(markdown: string): string {
     .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
 }
 
-function pickMainTheme(trends: TrendRecord[], articles: ArticleRecord[]): string {
-  const candidate = trends[0]?.term || articles[0]?.title || "restaurant guest experience";
-  return candidate.length > 70 ? candidate.slice(0, 70) : candidate;
+/**
+ * Weekly hero trend: rotate among the top scored pool so we do not always feature trends[0]
+ * (important when the collector returns several rows or manual fallback has many terms).
+ */
+function pickTrendPoolAndPrimary(
+  trends: TrendRecord[],
+  articles: ArticleRecord[],
+  weekIndex: number,
+): { primary: TrendRecord; orderedForIssue: TrendRecord[] } {
+  const sorted = [...trends].sort((a, b) => scoreTrend(b.term) - scoreTrend(a.term));
+  if (!sorted.length) {
+    const fake: TrendRecord = {
+      term: articles[0]?.title ?? "restaurant guest experience",
+      source: "Manual",
+      geo: "US",
+      category: "Food & Drink",
+      timeWindow: "past 7 days",
+      searchVolumeLabel: "N/A",
+      trendUrl: "https://trends.google.com/trending?geo=US&category=5&hours=168",
+      collectedAt: new Date().toISOString(),
+      operatorAngle: "Treat this as demand signal context and check whether guest expectations are shifting faster than current operations.",
+    };
+    return { primary: fake, orderedForIssue: [fake] };
+  }
+  const pool = sorted.slice(0, Math.min(5, sorted.length));
+  const primaryIdx = weekIndex % pool.length;
+  const primary = pool[primaryIdx]!;
+  const otherInPool = pool.filter((_, i) => i !== primaryIdx);
+  const deeper = sorted.slice(pool.length);
+  const orderedForIssue = [primary, ...otherInPool, ...deeper].slice(0, 5);
+  return { primary, orderedForIssue };
 }
 
 function pickBackfillMainTheme(themeLabel: string, trends: TrendRecord[]): string {
@@ -156,16 +206,58 @@ function pickBackfillMainTheme(themeLabel: string, trends: TrendRecord[]): strin
   return trendFallback || "restaurant guest experience priorities";
 }
 
-function buildSeoTitle(mainTheme: string, keyword: string): string {
-  const candidate = `Restaurant Trends This Week: ${mainTheme}`;
-  if (candidate.length >= 50 && candidate.length <= 65) return candidate;
-  const fallback = `Restaurant Trends This Week: ${keyword}`;
-  return fallback.slice(0, 65);
+/** SEO title: lead with the actual Google-trends-style phrase (primary term), length-safe. */
+function buildTrendAwareSeoTitle(primaryTerm: string, keyword: string): string {
+  const stem = safeText(primaryTerm).slice(0, 52);
+  const candidate = `Restaurant trends: ${stem}`;
+  if (candidate.length >= 45 && candidate.length <= 65) return candidate;
+  if (candidate.length > 65) return candidate.slice(0, 62).trimEnd() + "...";
+  const fallback = `Restaurant trends: ${keyword}`.slice(0, 65);
+  return fallback;
 }
 
-function buildMetaDescription(keyword: string): string {
-  const text = `Weekly hospitality insights for restaurant operators: search trends, guest behavior shifts, and ${keyword} takeaways with practical actions.`;
+/** Meta description: primary + optional secondary trend phrase + operator keyword (not generic filler). */
+function buildTrendAwareMetaDescription(
+  primaryTerm: string,
+  secondaryTerm: string | null,
+  keyword: string,
+): string {
+  const sec =
+    secondaryTerm && safeText(secondaryTerm) !== safeText(primaryTerm)
+      ? ` Also rising: ${safeText(secondaryTerm)}.`
+      : "";
+  const text = `Weekly hospitality signals for restaurant owners—${safeText(primaryTerm)}.${sec} ${safeText(keyword)} takeaways and actions.`;
   return text.slice(0, 160);
+}
+
+function buildTrendAwareExcerpt(
+  primaryTerm: string,
+  secondaryTerm: string | null,
+  themeLabel: string,
+): string {
+  const sec =
+    secondaryTerm && safeText(secondaryTerm) !== safeText(primaryTerm)
+      ? ` Related search theme: ${safeText(secondaryTerm)}.`
+      : "";
+  return safeText(`This week: ${safeText(primaryTerm)}. Operator lens: ${themeLabel}.${sec}`).slice(0, 220);
+}
+
+function buildNewsletterTags(keyword: string, primaryTerm: string, secondaryTerm: string | null): string[] {
+  const tags = new Set<string>();
+  tags.add(keyword);
+  tags.add("restaurant trends");
+  const primaryTag = safeText(primaryTerm).split(/\s+/).slice(0, 5).join(" ").slice(0, 56);
+  if (primaryTag) tags.add(primaryTag);
+  if (secondaryTerm && safeText(secondaryTerm) !== safeText(primaryTerm)) {
+    tags.add(safeText(secondaryTerm).split(/\s+/).slice(0, 4).join(" ").slice(0, 56));
+  }
+  tags.add("guest experience");
+  tags.add("hospitality intelligence");
+  return Array.from(tags).slice(0, 8);
+}
+
+function buildOperatorLensParagraph(primaryTerm: string, themeLabel: string): string {
+  return `We are framing **${safeText(primaryTerm)}** through **${safeText(themeLabel)}**. Compare that search intent to the last few weeks of Google reviews at your location—if the words guests use do not match what people are searching for, update menu copy, response tone, and training priorities before you spend on promos.`;
 }
 
 function frontmatterToString(frontmatter: NewsletterFrontmatter): string {
@@ -175,14 +267,20 @@ function frontmatterToString(frontmatter: NewsletterFrontmatter): string {
     `seoTitle: "${frontmatter.seoTitle}"`,
     `metaDescription: "${frontmatter.metaDescription}"`,
     `slug: "${frontmatter.slug}"`,
+    ...(frontmatter.legacySlug ? [`legacySlug: "${frontmatter.legacySlug}"`] : []),
     `excerpt: "${frontmatter.excerpt}"`,
     `publishedDate: "${frontmatter.publishedDate}"`,
     `updatedDate: "${frontmatter.updatedDate}"`,
     `category: ${frontmatter.category}`,
+    `topicCategory: ${frontmatter.topicCategory}`,
     `tags: [${frontmatter.tags.map((tag) => `"${tag}"`).join(", ")}]`,
     `sources: [${frontmatter.sources.map((source) => `"${source}"`).join(", ")}]`,
     `canonicalUrl: "${frontmatter.canonicalUrl}"`,
     ...(frontmatter.heroImage ? [`heroImage: "${frontmatter.heroImage}"`] : []),
+    ...(frontmatter.relatedSlugs?.length
+      ? [`relatedSlugs: [${frontmatter.relatedSlugs.map((s) => `"${s}"`).join(", ")}]`]
+      : []),
+    ...(frontmatter.featured ? ["featured: true"] : []),
     ...(frontmatter.draft ? ["draft: true"] : []),
     "---",
   ];
@@ -242,6 +340,12 @@ function buildNewsletterBody(input: {
   sourceUrls: string[];
   openingDetail: string;
   guestTakeawayText: string;
+  openingFollowup: string;
+  operatorLens: string;
+  secondaryTrendLabel: string | null;
+  themeLabel: string;
+  topicCategory: NewsletterFrontmatter["topicCategory"];
+  slug: string;
 }): string {
   const trendSection = input.trends
     .map(
@@ -259,16 +363,33 @@ function buildNewsletterBody(input: {
     .join("\n");
   const actionList = input.takeaways.map((item) => `- ${safeText(item)}`).join("\n");
 
+  const secondaryLine =
+    input.secondaryTrendLabel && safeText(input.secondaryTrendLabel) !== safeText(input.mainFeature)
+      ? `\nAlso watch search traction around **${safeText(input.secondaryTrendLabel)}**—note whether your public listings and menu language already answer that intent.`
+      : "";
+
   return [
     `# ${input.title}`,
     "",
     input.subtitle,
     "",
     "## Opening Signal",
-    `This week, the strongest hospitality signal was **${safeText(input.mainFeature)}**. ${safeText(
+    `This week, the primary hospitality search theme is **${safeText(input.mainFeature)}**. ${safeText(
       input.openingDetail,
-    )}`,
-    "The weekly pattern points to one consistent theme: guests reward clarity and consistency. Teams that monitor search behavior and review feedback together can react faster than teams that rely on intuition alone.",
+    )}${secondaryLine}`,
+    safeText(input.openingFollowup),
+    "",
+    "## Operator lens",
+    safeText(input.operatorLens),
+    "",
+    "## Operator deep dive",
+    buildOperatorDeepDive(input.themeLabel),
+    "",
+    "## Metrics to track this week",
+    buildMetricsSection(input.topicCategory),
+    "",
+    "## Common mistakes operators make",
+    buildCommonMistakes(input.themeLabel),
     "",
     "## What People Are Searching",
     trendSection,
@@ -284,6 +405,8 @@ function buildNewsletterBody(input: {
     "",
     "## Source List",
     ...input.sourceUrls.map((url) => `- ${url}`),
+    "",
+    buildGuestSignalCtaBlock(input.slug, input.topicCategory),
   ].join("\n");
 }
 
@@ -302,15 +425,12 @@ async function main() {
     throw new Error("Missing data files. Run trend/article collectors first.");
   }
 
-  const trends = (loadJsonFile<TrendRecord[]>(trendsFile) ?? []).sort((a, b) => scoreTrend(b.term) - scoreTrend(a.term));
+  const trends = loadJsonFile<TrendRecord[]>(trendsFile) ?? [];
   const articles = (loadJsonFile<ArticleRecord[]>(articlesFile) ?? []).sort((a, b) => scoreArticle(b) - scoreArticle(a));
   if (!trends.length || !articles.length) {
     throw new Error("Insufficient trend/article data to generate newsletter.");
   }
 
-  const topTrends = trends.slice(0, 5);
-  const topArticles = articles.slice(0, 5);
-  const trendAnchoredFeature = pickMainTheme(topTrends, topArticles);
   const baseDate = process.env.NEWSLETTER_FORCE_DATE
     ? new Date(`${process.env.NEWSLETTER_FORCE_DATE}T12:00:00.000Z`)
     : new Date();
@@ -319,36 +439,70 @@ async function main() {
   const today = isoDay(baseDate);
   const theme = WEEKLY_THEMES[weekIndex % WEEKLY_THEMES.length];
   const isBackfillRun = Boolean(process.env.NEWSLETTER_FORCE_DATE);
+
+  const { primary, orderedForIssue } = pickTrendPoolAndPrimary(trends, articles, weekIndex);
+  const topTrends = orderedForIssue;
+  const topArticles = articles.slice(0, 5);
+  const secondaryTrendLabel = topTrends[1]?.term ?? null;
+  const trendAnchoredFeature =
+    primary.term.length > 70 ? primary.term.slice(0, 70) : primary.term;
   const mainFeature = isBackfillRun ? pickBackfillMainTheme(theme.label, topTrends) : trendAnchoredFeature;
-  const slugTopic = slugify(mainFeature).slice(0, 36) || "restaurant-trends";
-  const slug = `${today}-this-week-in-hospitality-signals-${slugTopic}`;
+  const slugTopic = slugify(mainFeature).slice(0, 48) || "restaurant-trends";
+  const slug = slugTopic;
+  const legacySlug = `${today}-this-week-in-hospitality-signals-${slugTopic.slice(0, 36)}`;
 
   const title = `This Week in Hospitality Signals: ${mainFeature}`;
   const subtitle = "Search trends, guest behavior signals, and operator takeaways for restaurants.";
-  const seoTitle = buildSeoTitle(mainFeature, keyword);
-  const metaDescription = buildMetaDescription(keyword);
-  const excerpt = safeText(`Weekly hospitality intelligence for operators focused on ${mainFeature}.`);
+  const seoTrendPhrase = primary.term;
+  const seoTitle = buildTrendAwareSeoTitle(seoTrendPhrase, keyword);
+  const metaDescription = buildTrendAwareMetaDescription(seoTrendPhrase, secondaryTrendLabel, keyword);
+  const excerpt = buildTrendAwareExcerpt(
+    isBackfillRun ? mainFeature : primary.term,
+    secondaryTrendLabel,
+    theme.label,
+  );
   const sourceUrls = buildSourceList(topTrends, topArticles);
   const draftMode = process.env.NEWSLETTER_AUTO_PUBLISH !== "true";
   const checklist = theme.actions;
   const openingDetail = theme.opening;
   const guestTakeawayText = theme.takeaway;
+  const openingFollowup = OPENING_FOLLOWUPS[weekIndex % OPENING_FOLLOWUPS.length] ?? OPENING_FOLLOWUPS[0]!;
+  const operatorLens = buildOperatorLensParagraph(primary.term, theme.label);
   ensureDir(NEWSLETTER_BANNER_DIR);
   const heroImage = `/newsletter-banners/${slug}.svg`;
   const bannerSvg = createBannerSvg(mainFeature, subtitle, today);
   fs.writeFileSync(path.join(NEWSLETTER_BANNER_DIR, `${slug}.svg`), bannerSvg, "utf8");
 
+  const relatedSlugs = pickRelatedSlugs(slug, theme.topicCategory, 2);
+
   const body = buildNewsletterBody({
     title,
     subtitle,
-    trends: topTrends.slice(0, 5),
+    trends: topTrends,
     articles: topArticles.slice(0, 5),
     mainFeature,
     takeaways: checklist,
     sourceUrls,
     openingDetail,
     guestTakeawayText,
+    openingFollowup,
+    operatorLens,
+    secondaryTrendLabel,
+    themeLabel: theme.label,
+    topicCategory: theme.topicCategory,
+    slug,
   });
+
+  const wordCount = estimateWordCount(body);
+  if (wordCount < TARGET_WORD_MIN) {
+    console.warn(
+      `Newsletter word count ${wordCount} is below target ${TARGET_WORD_MIN}-${TARGET_WORD_MAX}. Consider adding source articles.`,
+    );
+  } else if (wordCount > TARGET_WORD_MAX) {
+    console.log(`Newsletter word count ${wordCount} (target max ${TARGET_WORD_MAX}).`);
+  } else {
+    console.log(`Newsletter word count ${wordCount} (within ${TARGET_WORD_MIN}-${TARGET_WORD_MAX} target).`);
+  }
 
   const frontmatter: NewsletterFrontmatter = {
     title,
@@ -359,9 +513,13 @@ async function main() {
     publishedDate: baseDate.toISOString(),
     updatedDate: new Date().toISOString(),
     category: "Newsletter",
-    tags: [keyword, "restaurant trends", "guest experience", "hospitality intelligence"],
+    tags: buildNewsletterTags(keyword, seoTrendPhrase, secondaryTrendLabel),
     sources: sourceUrls,
-    canonicalUrl: `https://guestsignalhospitality.com/newsletter/${slug}/`,
+    canonicalUrl: `https://guestsignalhospitality.com/insights/${slug}/`,
+    legacySlug,
+    topicCategory: theme.topicCategory,
+    relatedSlugs,
+    featured: draftMode ? undefined : true,
     heroImage,
     draft: draftMode ? true : undefined,
   };

@@ -9,5 +9,71 @@
     "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
     "collectedAt": "2026-01-01T00:00:00.000Z",
     "operatorAngle": "Value framing changes are shaping guest expectations around pricing and menu clarity."
+  },
+  {
+    "term": "Restaurant delivery wait times",
+    "source": "Manual",
+    "geo": "US",
+    "category": "Food & Drink",
+    "timeWindow": "past 7 days",
+    "searchVolumeLabel": "Manual",
+    "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
+    "collectedAt": "2026-01-01T00:00:00.000Z",
+    "operatorAngle": "Off-premise behavior is active; confirm packaging quality, order accuracy, and pickup flow clarity."
+  },
+  {
+    "term": "Brunch reservations near me",
+    "source": "Manual",
+    "geo": "US",
+    "category": "Food & Drink",
+    "timeWindow": "past 7 days",
+    "searchVolumeLabel": "Manual",
+    "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
+    "collectedAt": "2026-01-01T00:00:00.000Z",
+    "operatorAngle": "Daypart demand is shifting; adjust staffing and prep timing to protect speed and consistency."
+  },
+  {
+    "term": "Google restaurant reviews sorting",
+    "source": "Manual",
+    "geo": "US",
+    "category": "Food & Drink",
+    "timeWindow": "past 7 days",
+    "searchVolumeLabel": "Manual",
+    "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
+    "collectedAt": "2026-01-01T00:00:00.000Z",
+    "operatorAngle": "Guests compare you in-list; align photos, recent responses, and top themes with what searchers expect."
+  },
+  {
+    "term": "Restaurant happy hour deals",
+    "source": "Manual",
+    "geo": "US",
+    "category": "Food & Drink",
+    "timeWindow": "past 7 days",
+    "searchVolumeLabel": "Manual",
+    "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
+    "collectedAt": "2026-01-01T00:00:00.000Z",
+    "operatorAngle": "Guests are signaling price sensitivity; review menu framing, value communication, and margin-safe offers."
+  },
+  {
+    "term": "Outdoor dining Cincinnati",
+    "source": "Manual",
+    "geo": "US",
+    "category": "Food & Drink",
+    "timeWindow": "past 7 days",
+    "searchVolumeLabel": "Manual",
+    "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
+    "collectedAt": "2026-01-01T00:00:00.000Z",
+    "operatorAngle": "Local intent is visible in search; match GBP, menu, and staff talking points to neighborhood demand."
+  },
+  {
+    "term": "Restaurant staffing weekend shifts",
+    "source": "Manual",
+    "geo": "US",
+    "category": "Food & Drink",
+    "timeWindow": "past 7 days",
+    "searchVolumeLabel": "Manual",
+    "trendUrl": "https://trends.google.com/trending?geo=US&category=5&hours=168",
+    "collectedAt": "2026-01-01T00:00:00.000Z",
+    "operatorAngle": "Treat this as demand signal context and check whether guest expectations are shifting faster than current operations."
   }
 ]

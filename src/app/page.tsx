@@ -7,42 +7,51 @@ import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
 import { NewsletterForm } from "@/components/NewsletterForm";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  getFeaturedNewsletters,
+  getInsightPath,
+} from "@/lib/newsletter/content";
+import {
+  localBusinessSchema,
+  organizationSchema,
+  professionalServiceSchema,
+  websiteSchema,
+} from "@/lib/seo/schema";
 
 export const metadata: Metadata = {
-  title: "Restaurant Guest Experience Monitoring",
+  title: "Hospitality Operational Intelligence for Restaurants & Hotels",
   description:
-    "Guest Signal Hospitality helps restaurant owners monitor reviews, improve guest experience, and protect reputation with monthly scorecards, sentiment insights, and action plans.",
+    "Guest Signal Hospitality delivers operational intelligence—review signals, guest experience systems, service consistency, and revenue optimization for restaurants, bars, and hotels.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Hospitality Operational Intelligence | Guest Signal Hospitality",
+    description:
+      "Review intelligence, guest experience monitoring, and prioritized operational action plans—not generic marketing.",
+    url: "/",
+  },
 };
 
-export default function HomePage() {
-  const organizationJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: brand.name,
-    url: "https://guestsignalhospitality.com",
-    email: brand.email,
-    areaServed: ["Cincinnati, Ohio", "United States"],
-    sameAs: [brand.instagram],
-  };
+function formatInsightDate(value: string): string {
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
-  const serviceJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "ProfessionalService",
-    name: brand.name,
-    serviceType: "Restaurant reputation and guest experience monitoring",
-    areaServed: ["Cincinnati, Ohio", "United States"],
-    url: "https://guestsignalhospitality.com/services/",
-  };
+export default function HomePage() {
+  const featuredInsights = getFeaturedNewsletters(3);
 
   return (
     <div className="bg-[radial-gradient(circle_at_top_left,_rgba(2,132,199,0.10),_transparent_40%),radial-gradient(circle_at_80%_20%,_rgba(245,158,11,0.12),_transparent_35%),linear-gradient(to_bottom,_#f8fafc,_#f8fafc)]">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
+      <JsonLd
+        data={[
+          organizationSchema(),
+          websiteSchema(),
+          localBusinessSchema(),
+          professionalServiceSchema(),
+        ]}
       />
       {/* Hero Section */}
       <section className="border-b border-stone-200/70 bg-[radial-gradient(circle_at_20%_0%,_rgba(245,158,11,0.16),_transparent_38%),radial-gradient(circle_at_80%_12%,_rgba(2,132,199,0.14),_transparent_36%),linear-gradient(to_bottom,_#ffffff,_#f8fafc)]">
@@ -316,6 +325,47 @@ export default function HomePage() {
         </div>
       </Section>
 
+      {featuredInsights.length > 0 ? (
+        <Section
+          title="Latest Hospitality Signals"
+          kicker="Operational intelligence"
+          className="bg-[radial-gradient(circle_at_50%_0%,_rgba(245,158,11,0.08),_transparent_50%)]"
+        >
+          <div className="mx-auto max-w-4xl">
+            <p className="mx-auto mb-8 max-w-2xl text-center text-slate-600">
+              Weekly briefs on menu value, service consistency, guest recovery, and reputation
+              intelligence—written for operators, not generic marketing audiences.
+            </p>
+            <ul className="grid gap-4 md:grid-cols-3">
+              {featuredInsights.map((item) => (
+                <li key={item.frontmatter.slug}>
+                  <Link
+                    href={getInsightPath(item.frontmatter.slug)}
+                    className="flex h-full flex-col rounded-2xl border border-stone-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-amber-200/80"
+                  >
+                    <span className="text-xs text-slate-500">
+                      {formatInsightDate(item.frontmatter.publishedDate)}
+                    </span>
+                    <span className="mt-2 font-semibold text-slate-900">{item.frontmatter.title}</span>
+                    <span className="mt-2 text-sm text-slate-600 line-clamp-3">
+                      {item.frontmatter.excerpt}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-center">
+              <Link
+                href="/insights/"
+                className="text-sm font-semibold text-amber-900 underline underline-offset-2"
+              >
+                Browse all hospitality intelligence briefs
+              </Link>
+            </p>
+          </div>
+        </Section>
+      ) : null}
+
       {/* Newsletter Section */}
       <Section
         id="newsletter"
@@ -330,8 +380,8 @@ export default function HomePage() {
               Monthly insights into guest experience trends and hospitality performance.
             </p>
             <div className="mt-6">
-              <Link href="/newsletter/" className="btn-secondary inline-block">
-                View Newsletter Page
+              <Link href="/insights/" className="btn-secondary inline-block">
+                Read Hospitality Signals
               </Link>
             </div>
             <NewsletterForm />

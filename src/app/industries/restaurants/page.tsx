@@ -1,5 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+
+export const metadata: Metadata = {
+  title: "Restaurant Reputation & Guest Experience Intelligence",
+  description:
+    "Operational intelligence for independent restaurants and multi-unit groups—review monitoring, Guest Signal Score, service consistency, and recovery playbooks.",
+  alternates: { canonical: "/industries/restaurants/" },
+};
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";

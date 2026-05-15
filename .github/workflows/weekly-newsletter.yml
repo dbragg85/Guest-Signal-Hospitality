@@ -2,6 +2,7 @@ name: Weekly hospitality newsletter
 
 on:
   schedule:
+    # Calendar Monday 11:00 UTC (not "7 days after last run"). Next run is the next Monday after any manual run.
     # 7:00 AM Eastern during daylight-saving time (11:00 UTC Monday).
     - cron: "0 11 * * 1"
   workflow_dispatch:
@@ -71,7 +72,7 @@ jobs:
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       - name: Deploy site to GitHub Pages
-        if: steps.newsletter_commit.outputs.pushed == 'true'
+        if: steps.newsletter_commit.outputs.pushed == 'true' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run pages.yml --ref main

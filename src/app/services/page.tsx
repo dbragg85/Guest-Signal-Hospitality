@@ -2,17 +2,22 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { freeSnapshot, pricingPlans, servicesPricingContext } from "@/content/site";
+import { servicesFaq } from "@/content/services-faq";
 import { Section } from "@/components/Section";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { faqPageSchema } from "@/lib/seo/schema";
 
 export const metadata: Metadata = {
-  title: "Restaurant Reputation Monitoring Plans",
+  title: "Hospitality Operational Intelligence Plans & Monitoring",
   description:
-    "Compare Guest Signal Hospitality plans for restaurant reputation monitoring, review sentiment intelligence, competitor benchmarking, and guest experience improvement.",
+    "Compare Guest Signal plans for review intelligence, Guest Signal Score monitoring, competitor benchmarking, and operational action plans—not generic reputation software alone.",
+  alternates: { canonical: "/services/" },
 };
 
 export default function ServicesPage() {
   return (
     <div>
+      <JsonLd data={faqPageSchema(servicesFaq)} />
       {/* Hero Section */}
       <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
         <div className="mx-auto max-w-6xl px-4 py-20">
@@ -165,6 +170,17 @@ export default function ServicesPage() {
         </div>
       </Section>
 
+      <Section title="Frequently asked questions" kicker="Plans & intelligence">
+        <div className="mx-auto max-w-3xl divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">
+          {servicesFaq.map((item) => (
+            <details key={item.question} className="px-6 py-5">
+              <summary className="cursor-pointer font-semibold text-slate-900">{item.question}</summary>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </Section>
+
       <Section>
         <div className="mx-auto max-w-3xl rounded-3xl border border-amber-200/70 bg-amber-50/60 p-8 text-center">
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900">Weekly operator intelligence</h2>
@@ -173,8 +189,8 @@ export default function ServicesPage() {
             patterns, and practical restaurant actions.
           </p>
           <div className="mt-5">
-            <Link href="/newsletter/" className="btn-secondary inline-block">
-              View weekly newsletter
+            <Link href="/insights/" className="btn-secondary inline-block">
+              Read Hospitality Signals
             </Link>
           </div>
         </div>

@@ -1,5 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Section } from "@/components/Section";
+
+export const metadata: Metadata = {
+  title: "About Guest Signal Hospitality — Operational Intelligence Team",
+  description:
+    "Meet the team behind Guest Signal Hospitality—hospitality operational intelligence, review analysis, and guest experience systems for restaurant owners.",
+  alternates: { canonical: "/team/" },
+};
 import { Card } from "@/components/Card";
 import { CTA } from "@/components/CTA";
 import { brand, team, teamPageProofPoints } from "@/content/site";

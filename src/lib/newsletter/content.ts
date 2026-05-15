@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { getSiteOrigin } from "@/lib/site-url";
-import type { NewsletterFrontmatter, ParsedNewsletter } from "@/lib/newsletter/types";
+import { buildLegacySlugMap, getLegacyRedirectTarget } from "@/lib/seo/redirects";
+import type { NewsletterFrontmatter, ParsedNewsletter, TopicCategorySlug } from "@/lib/newsletter/types";
 
 const NEWSLETTER_DIR = path.join(process.cwd(), "src", "content", "newsletter");
 
@@ -48,15 +49,32 @@ function parseFrontmatter(raw: string): { frontmatter: NewsletterFrontmatter; bo
     "tags",
     "sources",
     "canonicalUrl",
+    "topicCategory",
   ];
   for (const field of required) {
     if (!(field in map)) return null;
   }
 
-  return {
-    frontmatter: map as NewsletterFrontmatter,
-    body,
-  };
+  const fm = map as NewsletterFrontmatter;
+  if (!fm.topicCategory) {
+    fm.topicCategory = inferTopicCategory(fm);
+  }
+
+  return { frontmatter: fm, body };
+}
+
+function inferTopicCategory(fm: NewsletterFrontmatter): TopicCategorySlug {
+  const haystack = `${fm.title} ${fm.excerpt} ${(fm.tags ?? []).join(" ")}`.toLowerCase();
+  if (haystack.includes("menu") || haystack.includes("value")) return "menu-engineering";
+  if (haystack.includes("recovery")) return "service-recovery";
+  if (haystack.includes("review") || haystack.includes("reputation")) return "reputation-management";
+  if (haystack.includes("marketing") || haystack.includes("local")) return "hospitality-marketing";
+  if (haystack.includes("consistency") || haystack.includes("front")) return "front-of-house";
+  if (haystack.includes("staff") || haystack.includes("retention")) return "staff-retention";
+  if (haystack.includes("revenue")) return "revenue-optimization";
+  if (haystack.includes("technology") || haystack.includes("monitoring")) return "hospitality-technology";
+  if (haystack.includes("guest")) return "guest-experience";
+  return "restaurant-operations";
 }
 
 export function getNewsletterFiles(): string[] {
@@ -86,13 +104,69 @@ export function getPublishedNewsletters(): ParsedNewsletter[] {
   return getAllNewsletters().filter((item) => !item.frontmatter.draft);
 }
 
+export function getFeaturedNewsletters(limit = 3): ParsedNewsletter[] {
+  const published = getPublishedNewsletters();
+  const featured = published.filter((item) => item.frontmatter.featured);
+  if (featured.length >= limit) return featured.slice(0, limit);
+  return published.slice(0, limit);
+}
+
+function getLegacySlugMap(): Record<string, string> {
+  return buildLegacySlugMap(
+    getAllNewsletters().map((item) => ({
+      slug: item.frontmatter.slug,
+      legacySlug: item.frontmatter.legacySlug,
+    })),
+  );
+}
+
 export function getNewsletterBySlug(slug: string): ParsedNewsletter | null {
   const clean = slug.replace(/^\/+|\/+$/g, "");
   const list = getAllNewsletters();
-  return list.find((item) => item.frontmatter.slug.replace(/^\/+|\/+$/g, "") === clean) ?? null;
+  const legacyMap = getLegacySlugMap();
+
+  const direct = list.find((item) => item.frontmatter.slug.replace(/^\/+|\/+$/g, "") === clean);
+  if (direct) return direct;
+
+  const legacyTarget = getLegacyRedirectTarget(clean, legacyMap);
+  if (legacyTarget) {
+    return list.find((item) => item.frontmatter.slug.replace(/^\/+|\/+$/g, "") === legacyTarget) ?? null;
+  }
+
+  return null;
+}
+
+export function getAllLegacySlugsForRedirect(): string[] {
+  return Object.keys(getLegacySlugMap());
+}
+
+export function getInsightPath(slug: string): string {
+  return `/insights/${slug.replace(/^\/+|\/+$/g, "")}/`;
 }
 
 export function getNewsletterCanonical(slug: string): string {
   const base = getSiteOrigin();
-  return `${base}/newsletter/${slug.replace(/^\/+|\/+$/g, "")}/`;
+  return `${base}${getInsightPath(slug)}`;
+}
+
+export function getNewslettersByTopic(topicCategory: TopicCategorySlug): ParsedNewsletter[] {
+  return getPublishedNewsletters().filter((item) => item.frontmatter.topicCategory === topicCategory);
+}
+
+export function getRelatedNewsletters(item: ParsedNewsletter, limit = 3): ParsedNewsletter[] {
+  const published = getPublishedNewsletters().filter(
+    (n) => n.frontmatter.slug !== item.frontmatter.slug,
+  );
+  const relatedSlugs = item.frontmatter.relatedSlugs ?? [];
+  const fromSlugs = relatedSlugs
+    .map((s) => published.find((n) => n.frontmatter.slug === s))
+    .filter((n): n is ParsedNewsletter => Boolean(n));
+
+  const sameTopic = published.filter(
+    (n) =>
+      n.frontmatter.topicCategory === item.frontmatter.topicCategory &&
+      !fromSlugs.some((r) => r.frontmatter.slug === n.frontmatter.slug),
+  );
+
+  return [...fromSlugs, ...sameTopic].slice(0, limit);
 }
