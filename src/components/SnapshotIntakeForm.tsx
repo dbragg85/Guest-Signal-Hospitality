@@ -129,18 +129,36 @@ export function SnapshotIntakeForm() {
       requestBody.append("_template", "table");
       requestBody.append("_captcha", "false");
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: requestBody,
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) throw new Error(`Contact submit failed: ${response.status}`);
+      let emailNotifyOk = false;
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          body: requestBody,
+          headers: { Accept: "application/json" },
+        });
+        emailNotifyOk = response.ok;
+        if (!response.ok) {
+          console.warn("FormSubmit notification failed:", response.status);
+        }
+      } catch (notifyErr) {
+        console.warn("FormSubmit notification error:", notifyErr);
+      }
+
+      if (!supabaseResult.rowInserted) {
+        throw new Error("Snapshot was not saved to the database.");
+      }
 
       form.reset();
       setRecommendation(rec);
       setSavedOnline(supabaseResult.rowInserted);
       setSubmitted(true);
-      trackEvent("snapshot_intake_success", { recommendedPlan: rec.planKey });
+      trackEvent("snapshot_intake_success", {
+        recommendedPlan: rec.planKey,
+        emailNotifyOk,
+      });
+      if (!emailNotifyOk) {
+        trackEvent("snapshot_intake_formsubmit_failed", { leadIntakeId: supabaseResult.leadIntakeId });
+      }
     } catch (error) {
       console.error(error);
       setSubmitError(`Submission failed. Please retry or email ${brand.email}.`);
