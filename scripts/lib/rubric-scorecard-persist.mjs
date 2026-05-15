@@ -13,6 +13,7 @@ import {
   RUBRIC_SCORING_MODEL_V1,
   buildRubricReviewAttributionRows,
 } from "./guest-signal-rubric.mjs";
+import { buildSnapshotDeliverablesForScorecard } from "./snapshot-deliverables.mjs";
 
 export const SERVICE_INQUIRY_PLANS = [
   "free_snapshot",
@@ -112,7 +113,7 @@ export function intakePlanPresentation(planKey) {
         humanLabel: "Free Guest Signal Snapshot",
         callouts: [
           "This intake preview reflects the prior completed calendar month only (e.g. March when you run in April).",
-          "Full onboarding layers Google coverage, executive summary, and your prioritized action plan.",
+          "Scroll to Snapshot deliverables below for GBP notes, website health, SEO opportunities, top priorities, and plan fit.",
         ],
       };
   }
@@ -134,6 +135,7 @@ export async function persistRubricSnapshotFromPeriodReviews({
   dryRun = false,
   reviewSourceNote,
   inquiryPlan,
+  lead = null,
   skipObservationUpsert = false,
   ignoreExistingCategoryScores = false,
   rubricAttributionReviewSources,
@@ -227,7 +229,7 @@ export async function persistRubricSnapshotFromPeriodReviews({
     mentions: row.mentions,
   }));
 
-  const scorecardData = {
+  let scorecardData = {
     review_scoring_model: "guest_signal_rubric_v1",
     confidence_level: confidenceLevel,
     category_scores: categoryScoresPayload,
@@ -269,6 +271,39 @@ export async function persistRubricSnapshotFromPeriodReviews({
       pillar_scores_written_leg: pillarScoresRaw,
     },
   };
+
+  const planNorm = normalizeInquiryPlan(inquiryPlan);
+  if (lead && planNorm === "free_snapshot" && canPersistSnapshot) {
+    const pillarsForDeliverables = [
+      { key: "experience_quality", label: "Experience", score: displayScores.experience_quality },
+      { key: "operational_reliability", label: "Operational", score: displayScores.operational_reliability },
+      { key: "emotional_connection", label: "Emotional", score: displayScores.emotional_connection },
+    ];
+    let competitors = [];
+    if (Array.isArray(restaurant?.competitors)) {
+      competitors = restaurant.competitors;
+    } else if (typeof restaurant?.competitors === "string") {
+      try {
+        competitors = JSON.parse(restaurant.competitors);
+      } catch {
+        competitors = [];
+      }
+    }
+    const { snapshot_deliverables, swot } = await buildSnapshotDeliverablesForScorecard({
+      lead,
+      overallScore: effectiveOverallScore,
+      categoryScores: categoryScoresPayload,
+      pillars: pillarsForDeliverables,
+      googleCount,
+      periodLabel,
+      competitors,
+    });
+    scorecardData = {
+      ...scorecardData,
+      snapshot_deliverables,
+      swot,
+    };
+  }
 
   if (dryRun) {
     console.log(

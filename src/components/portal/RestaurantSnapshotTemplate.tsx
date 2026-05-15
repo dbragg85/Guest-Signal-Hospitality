@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { SnapshotDeliverablesPanel } from "@/components/portal/SnapshotDeliverablesPanel";
 import { guestSignalHeadlineFromDisplayPillars } from "@/lib/guest-signal-display-score";
+import { parseSnapshotDeliverables } from "@/lib/snapshot/portal-deliverables";
 import {
   computePortalPillarScores,
   portalGuestSignalHeadline,
@@ -476,6 +478,7 @@ export function RestaurantSnapshotTemplate({
 
   const inquiryPlanKey = parseOptionalString(data?.intake_inquiry_plan) ?? "free_snapshot";
   const isFreeSnapshotPlan = inquiryPlanKey === "free_snapshot";
+  const snapshotDeliverables = parseSnapshotDeliverables(data);
 
   function normalizePeriodLabel(input: string): string {
     return input
@@ -820,6 +823,18 @@ export function RestaurantSnapshotTemplate({
           ) : null}
         </div>
       </section>
+
+      {snapshotDeliverables ? (
+        <SnapshotDeliverablesPanel deliverables={snapshotDeliverables} />
+      ) : isFreeSnapshotPlan ? (
+        <section className="mt-10 rounded-2xl border border-amber-200/80 bg-amber-50/50 p-6 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">Snapshot deliverables</p>
+          <p className="mt-2">
+            This scorecard predates the expanded deliverables package. Re-run lead intake processing to
+            refresh GBP, website, SEO, priorities, and plan-fit notes in the portal.
+          </p>
+        </section>
+      ) : null}
 
       {categoryBreakdown.length > 0 ? (
         <section aria-labelledby="category-breakdown-heading">

@@ -52,6 +52,7 @@ import {
   normalizeInquiryPlan,
   persistRubricSnapshotFromPeriodReviews,
 } from "./lib/rubric-scorecard-persist.mjs";
+import { purgeRestaurantSnapshotData } from "./lib/purge-restaurant-snapshot-data.mjs";
 
 function siteOrigin() {
   return getEnv("NEXT_PUBLIC_SITE_URL", { fallback: "https://guestsignalhospitality.com" }).replace(/\/+$/, "");
@@ -721,6 +722,12 @@ async function main() {
     }
 
     try {
+    if (!dryRun && force && lead.restaurant_id) {
+      console.log(`FORCE_REPROCESS: purging prior snapshot/scorecard rows for restaurant ${lead.restaurant_id}…`);
+      const purged = await purgeRestaurantSnapshotData(supabase, lead.restaurant_id);
+      console.log(JSON.stringify(purged));
+    }
+
     const baseSlug = slugifyBase(lead.business);
 
     let restaurant;
@@ -734,7 +741,7 @@ async function main() {
       } else {
         const { data: row, error: fetchErr } = await supabase
           .from("restaurants")
-          .select("id, slug, name")
+          .select("id, slug, name, website, competitors")
           .eq("id", lead.restaurant_id)
           .single();
         if (fetchErr) throw fetchErr;
@@ -745,15 +752,17 @@ async function main() {
       if (dryRun) {
         restaurant = { id: crypto.randomUUID(), slug, name: lead.business };
       } else {
+        const website = String(lead.website_url ?? "").trim();
         const { data: ins, error: insErr } = await supabase
           .from("restaurants")
           .insert({
             slug,
             name: lead.business.trim(),
             address: formatAddress(lead),
+            website: website && website !== "—" ? website : null,
             // Plan is set via update after snapshot so migration 012 is optional at insert time.
           })
-          .select("id, slug, name")
+          .select("id, slug, name, website, competitors")
           .single();
         if (insErr) throw insErr;
         restaurant = ins;
@@ -767,6 +776,15 @@ async function main() {
       { requireLiveApify },
     );
 
+    let leadForDeliverables = lead;
+    if (!dryRun && lead.snapshot_summary && typeof lead.snapshot_summary === "string") {
+      try {
+        leadForDeliverables = { ...lead, snapshot_summary: JSON.parse(lead.snapshot_summary) };
+      } catch {
+        leadForDeliverables = lead;
+      }
+    }
+
     const persisted = await persistRubricSnapshotFromPeriodReviews({
       supabase,
       restaurant,
@@ -777,6 +795,7 @@ async function main() {
       dryRun,
       reviewSourceNote: sourceNote,
       inquiryPlan: lead.inquiry_plan,
+      lead: leadForDeliverables,
     });
 
     if (!dryRun && persisted) {
@@ -784,6 +803,10 @@ async function main() {
       const updates = { intake_inquiry_plan: planNorm };
       if (yelpUrlUsed) {
         updates.yelp_url = yelpUrlUsed;
+      }
+      const website = String(lead.website_url ?? "").trim();
+      if (website && website !== "—") {
+        updates.website = website;
       }
       const { error: planErr } = await supabase.from("restaurants").update(updates).eq("id", restaurant.id);
       if (planErr) {
