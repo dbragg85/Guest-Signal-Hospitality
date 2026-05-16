@@ -6,6 +6,16 @@ function cleanField(v: string): string | null {
   return t;
 }
 
+const PAID_INQUIRY_PLANS = new Set([
+  "signal_monitor",
+  "signal_growth",
+  "signal_elevate",
+]);
+
+function isPaidInquiryPlan(plan: string): boolean {
+  return PAID_INQUIRY_PLANS.has(plan.trim());
+}
+
 export type LeadIntakePayload = {
   inquiryPlan: string;
   name: string;
@@ -102,7 +112,9 @@ export async function persistLeadIntakeToSupabase(
 
   if (!blockErr && blockPayload && typeof blockPayload === "object" && "blocked" in blockPayload) {
     const o = blockPayload as { blocked?: boolean; code?: string };
-    if (o.blocked === true) {
+    const paidUpgrade =
+      isPaidInquiryPlan(payload.inquiryPlan) && o.code === "recent_converted_email";
+    if (o.blocked === true && !paidUpgrade) {
       let code: LeadIntakeDuplicateCode = "active_email";
       if (o.code === "active_venue_profile") code = "active_venue_profile";
       else if (o.code === "recent_converted_email") code = "recent_converted_email";
