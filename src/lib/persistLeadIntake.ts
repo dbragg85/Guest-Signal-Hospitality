@@ -25,6 +25,8 @@ export type LeadIntakePayload = {
   websiteUrl: string;
   gbpUrl?: string;
   operatingHoursNote: string;
+  menuText?: string;
+  menuSourceUrl?: string;
   message: string;
   snapshotPriority?: string;
   recommendedPlan?: string;
@@ -138,6 +140,8 @@ export async function persistLeadIntakeToSupabase(
     venue_phone: cleanField(payload.venuePhone),
     website_url: cleanField(payload.websiteUrl),
     operating_hours_note: cleanField(payload.operatingHoursNote),
+    menu_text: cleanField(payload.menuText ?? ""),
+    menu_source_url: cleanField(payload.menuSourceUrl ?? ""),
     message: cleanField(payload.message),
     submission_client_key: submissionClientKey,
   };

@@ -1,6 +1,18 @@
 import Link from "next/link";
+import { ElevateDeliverablesPanel } from "@/components/portal/ElevateDeliverablesPanel";
+import {
+  ElevateGapsPanel,
+  ElevateUnlockPreviewPanel,
+} from "@/components/portal/ElevateGapsPanel";
+import { PortalPlanUpgradePanel } from "@/components/portal/PortalPlanUpgradePanel";
 import { SnapshotDeliverablesPanel } from "@/components/portal/SnapshotDeliverablesPanel";
+import type { PlanInquiryKey } from "@/content/site";
 import { guestSignalHeadlineFromDisplayPillars } from "@/lib/guest-signal-display-score";
+import {
+  parseElevateDeliverables,
+  parseElevateGaps,
+  parseElevateUnlockPreview,
+} from "@/lib/elevate/portal-elevate";
 import { parseSnapshotDeliverables } from "@/lib/snapshot/portal-deliverables";
 import {
   computePortalPillarScores,
@@ -477,7 +489,13 @@ export function RestaurantSnapshotTemplate({
     parseOptionalString(restaurant.intake_inquiry_plan) ??
     "free_snapshot";
   const isFreeSnapshotPlan = inquiryPlanKey === "free_snapshot";
+  const isElevatePlan = inquiryPlanKey === "signal_elevate";
   const snapshotDeliverables = parseSnapshotDeliverables(data);
+  const elevateDeliverables = parseElevateDeliverables(data);
+  const elevateGaps = parseElevateGaps(data);
+  const elevateUnlockPreview = parseElevateUnlockPreview(data);
+  const recommendedPlanKey =
+    (snapshotDeliverables?.recommended_plan?.key as PlanInquiryKey | undefined) ?? null;
 
   function normalizePeriodLabel(input: string): string {
     return input
@@ -833,8 +851,19 @@ export function RestaurantSnapshotTemplate({
         </div>
       </section>
 
+      {isFreeSnapshotPlan ? (
+        <PortalPlanUpgradePanel
+          recommendedPlanKey={recommendedPlanKey}
+          restaurantSlug={restaurant.slug}
+          restaurantName={restaurant.name}
+        />
+      ) : null}
+
       {snapshotDeliverables ? (
-        <SnapshotDeliverablesPanel deliverables={snapshotDeliverables} />
+        <SnapshotDeliverablesPanel
+          deliverables={snapshotDeliverables}
+          showPlanCta={!isFreeSnapshotPlan}
+        />
       ) : isFreeSnapshotPlan ? (
         <section className="mt-10 rounded-2xl border border-amber-200/80 bg-amber-50/50 p-6 text-sm text-slate-700">
           <p className="font-semibold text-slate-900">Snapshot deliverables</p>
@@ -843,6 +872,22 @@ export function RestaurantSnapshotTemplate({
             refresh GBP, website, SEO, priorities, and plan-fit notes in the portal.
           </p>
         </section>
+      ) : null}
+
+      {elevateDeliverables ? (
+        <ElevateDeliverablesPanel deliverables={elevateDeliverables} />
+      ) : null}
+
+      {isFreeSnapshotPlan && elevateUnlockPreview ? (
+        <ElevateUnlockPreviewPanel preview={elevateUnlockPreview} />
+      ) : null}
+
+      {elevateGaps.length > 0 ? (
+        <ElevateGapsPanel
+          gaps={elevateGaps}
+          restaurantSlug={restaurant.slug}
+          isElevatePlan={isElevatePlan}
+        />
       ) : null}
 
       {categoryBreakdown.length > 0 ? (
@@ -1275,36 +1320,29 @@ export function RestaurantSnapshotTemplate({
       </section>
       ) : null}
 
+      {!isFreeSnapshotPlan ? (
       <section aria-labelledby="upgrade-heading">
-        <div className="rounded-3xl border-2 border-amber-200/60 bg-gradient-to-br from-amber-50/40 via-white to-stone-50 p-8 shadow-lg sm:p-10">
+        <div className="rounded-3xl border border-stone-200 bg-stone-50/80 p-8 sm:p-10">
           <h2
             id="upgrade-heading"
-            className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl"
+            className="text-xl font-semibold tracking-tight text-slate-900"
           >
-            Turn this snapshot into ongoing intelligence
+            Account &amp; cadence
           </h2>
-          <p className="mt-4 max-w-2xl leading-relaxed text-slate-600">
-            Monthly reporting keeps scores, sentiment, and SWOT themes
-            current—so leadership can prioritize improvements with confidence.
-            When you&apos;re ready, we&apos;ll align on the right monitoring tier
-            and consultation cadence for your team.
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-slate-600">
+            Your plan includes recurring scorecards and alerts per your agreement. For plan changes
+            or additional locations,{" "}
             <Link
               href="/contact/"
-              className="btn-primary text-center sm:inline-flex"
+              className="font-semibold text-amber-900 underline-offset-2 hover:underline"
             >
-              Book a consultation
+              book a consultation
             </Link>
-            <Link
-              href="/services/"
-              className="btn-secondary text-center sm:inline-flex"
-            >
-              View plans &amp; monthly reporting
-            </Link>
-          </div>
+            .
+          </p>
         </div>
       </section>
+      ) : null}
     </div>
   );
 }

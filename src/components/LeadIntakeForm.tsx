@@ -104,6 +104,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
   const showCompetitorField =
     planKey === "signal_growth" || planKey === "signal_elevate";
   const showSocialPresenceField = planKey === "signal_elevate";
+  const showMenuFields = planKey === "signal_elevate";
+  const upgradeFromPortal = searchParams?.get("upgrade") === "1";
+  const portalVenueSlug = searchParams?.get("venue")?.trim() || null;
   const isServiceIntake = planKey !== null;
   const serviceRouteBase = "/services/inquiry/";
 
@@ -158,6 +161,8 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
     const websiteUrl = (formData.get("websiteUrl") as string) || "";
     const operatingHoursNote =
       (formData.get("operatingHoursNote") as string) || "";
+    const menuText = (formData.get("menuText") as string) || "";
+    const menuSourceUrl = (formData.get("menuSourceUrl") as string) || "";
 
     const endpoint =
       process.env.NEXT_PUBLIC_CONTACT_ENDPOINT || DEFAULT_CONTACT_ENDPOINT;
@@ -183,6 +188,8 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
         venuePhone,
         websiteUrl,
         operatingHoursNote,
+        menuText,
+        menuSourceUrl,
         message,
       });
 
@@ -247,6 +254,8 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
       requestBody.append("venuePhone", venuePhone || "—");
       requestBody.append("websiteUrl", websiteUrl || "—");
       requestBody.append("operatingHoursNote", operatingHoursNote || "—");
+      requestBody.append("menuText", menuText || "—");
+      requestBody.append("menuSourceUrl", menuSourceUrl || "—");
       requestBody.append("message", message || "—");
       requestBody.append("leadIntakeId", supabaseResult.leadIntakeId ?? "—");
       requestBody.append(
@@ -422,6 +431,15 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
             {heading}
           </h1>
           <p className="mt-3 text-slate-600">{subcopy}</p>
+
+          {mode === "service" && upgradeFromPortal ? (
+            <p className="mt-5 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950/90">
+              <span className="font-semibold">Upgrading from your portal snapshot.</span> Use the same
+              email and restaurant name as your free snapshot
+              {portalVenueSlug ? ` (${portalVenueSlug})` : ""} so we link this intake to your existing
+              scorecard. Paste your menu below on Elevate to unlock menu intelligence faster.
+            </p>
+          ) : null}
 
           {mode === "contact" ? (
             <p className="mt-5 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950/90">
@@ -649,6 +667,39 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
                         className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
                       />
                     </label>
+                  ) : null}
+
+                  {showMenuFields ? (
+                    <fieldset className="grid gap-4 rounded-2xl border border-violet-200/80 bg-violet-50/30 p-4">
+                      <legend className="px-1 text-sm font-semibold text-slate-900">
+                        Menu for intelligence (Elevate)
+                      </legend>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium">Paste your menu</span>
+                        <span className="text-xs text-slate-500">
+                          Sections, items, and prices if available. This resolves most menu clustering
+                          without a separate call—we match guest review language to dishes on your menu.
+                        </span>
+                        <textarea
+                          name="menuText"
+                          rows={8}
+                          placeholder={"Appetizers\nHouse salad — $12\n...\nEntrees\n..."}
+                          className="rounded-xl border border-slate-300 px-4 py-3 font-mono text-xs outline-none focus:ring-2 focus:ring-slate-200"
+                        />
+                      </label>
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium">
+                          Or public menu link (PDF or web page)
+                        </span>
+                        <input
+                          name="menuSourceUrl"
+                          type="url"
+                          inputMode="url"
+                          placeholder="https://"
+                          className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                        />
+                      </label>
+                    </fieldset>
                   ) : null}
 
                   {showSocialPresenceField ? (

@@ -841,6 +841,15 @@ async function main() {
       if (venuePhone && venuePhone !== "—") {
         updates.phone = venuePhone;
       }
+      const menuText = String(lead.menu_text ?? "").trim();
+      if (menuText && menuText !== "—") {
+        updates.menu_text = menuText;
+        updates.menu_updated_at = new Date().toISOString();
+      }
+      const menuSourceUrl = String(lead.menu_source_url ?? "").trim();
+      if (menuSourceUrl && menuSourceUrl !== "—") {
+        updates.menu_source_url = menuSourceUrl;
+      }
       const profilePatch = restaurantPatchFromGooglePlaceProfile(googlePlaceProfile);
       Object.assign(updates, profilePatch);
       if (Object.keys(profilePatch).length) {

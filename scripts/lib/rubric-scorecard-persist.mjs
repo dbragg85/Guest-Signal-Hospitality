@@ -14,6 +14,7 @@ import {
   buildRubricReviewAttributionRows,
 } from "./guest-signal-rubric.mjs";
 import { buildSnapshotDeliverablesForScorecard } from "./snapshot-deliverables.mjs";
+import { buildElevatePackage } from "./elevate-deliverables.mjs";
 
 export const SERVICE_INQUIRY_PLANS = [
   "free_snapshot",
@@ -293,10 +294,43 @@ export async function persistRubricSnapshotFromPeriodReviews({
       periodLabel,
       competitors,
     });
+    const elevatePkg = buildElevatePackage({
+      lead,
+      restaurant,
+      categoryScores: categoryScoresPayload,
+      overallScore: effectiveOverallScore,
+      periodLabel,
+      inquiryPlan: planNorm,
+    });
     scorecardData = {
       ...scorecardData,
       snapshot_deliverables,
       swot,
+      elevate_gaps: elevatePkg.elevate_gaps,
+      ...(elevatePkg.elevate_deliverables
+        ? { elevate_deliverables: elevatePkg.elevate_deliverables }
+        : {}),
+      ...(elevatePkg.elevate_unlock_preview
+        ? { elevate_unlock_preview: elevatePkg.elevate_unlock_preview }
+        : {}),
+    };
+  }
+
+  if (lead && planNorm === "signal_elevate" && canPersistSnapshot) {
+    const elevatePkg = buildElevatePackage({
+      lead,
+      restaurant,
+      categoryScores: categoryScoresPayload,
+      overallScore: effectiveOverallScore,
+      periodLabel,
+      inquiryPlan: planNorm,
+    });
+    scorecardData = {
+      ...scorecardData,
+      elevate_gaps: elevatePkg.elevate_gaps,
+      ...(elevatePkg.elevate_deliverables
+        ? { elevate_deliverables: elevatePkg.elevate_deliverables }
+        : {}),
     };
   }
 
