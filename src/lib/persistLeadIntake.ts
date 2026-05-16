@@ -80,6 +80,7 @@ export async function persistLeadIntakeToSupabase(
       p_city: payload.city?.trim() ?? "",
       p_state: payload.state?.trim() ?? "",
       p_zip: payload.zip?.trim() ?? "",
+      p_inquiry_plan: payload.inquiryPlan.trim(),
     },
   );
 

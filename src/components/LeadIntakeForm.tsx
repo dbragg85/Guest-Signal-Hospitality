@@ -198,8 +198,12 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
           supabaseResult.blockedDuplicateCode === "active_venue_profile"
             ? `We already have an intake in progress for this restaurant name, contact name, and location (city / state / ZIP). If you submitted earlier, please wait for processing to finish. For help, email ${brand.email}.`
             : supabaseResult.blockedDuplicateCode === "recent_converted_email"
-              ? `We already processed an intake for this email address in the last few days. Check your inbox for the portal invite, or email ${brand.email} if you need a new link or another location onboarded.`
-              : `This email address already has an intake in progress. Please wait for our team to finish setting up your snapshot (or check your inbox). To reach us directly, email ${brand.email}.`;
+              ? upgradeFromPortal && isPaidPlan
+                ? `We could not queue this upgrade yet — another intake for this email may still be processing. Email ${brand.email} and mention your portal upgrade.`
+                : `We already processed an intake for this email address in the last few days. Check your inbox for the portal invite, or email ${brand.email} if you need a new link or another location onboarded.`
+              : upgradeFromPortal && isPaidPlan
+                ? `Another intake for this email is still processing. Wait for your snapshot to finish, then submit again — or email ${brand.email} to upgrade manually.`
+                : `This email address already has an intake in progress. Please wait for our team to finish setting up your snapshot (or check your inbox). To reach us directly, email ${brand.email}.`;
         setSubmitError(dupMsg);
         trackEvent("lead_intake_duplicate_blocked", {
           planKey: planKey ?? "general",
@@ -437,7 +441,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
               <span className="font-semibold">Upgrading from your portal snapshot.</span> Use the same
               email and restaurant name as your free snapshot
               {portalVenueSlug ? ` (${portalVenueSlug})` : ""} so we link this intake to your existing
-              scorecard. Paste your menu below on Elevate to unlock menu intelligence faster.
+              scorecard. Paid plan upgrades are allowed even right after your snapshot — duplicate
+              protection only blocks a second free snapshot or an intake still processing. Paste your
+              menu below on Elevate to unlock menu intelligence faster.
             </p>
           ) : null}
 
