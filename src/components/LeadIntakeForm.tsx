@@ -72,6 +72,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
   const [serviceIntakeSavedOnline, setServiceIntakeSavedOnline] = useState<
     boolean | null
   >(null);
+  const [emailNotifyOk, setEmailNotifyOk] = useState<boolean | null>(null);
   /** Next `useSearchParams()` can miss `plan` on static export (e.g. /inquiry?plan= without trailing slash). */
   const [planFromLocation, setPlanFromLocation] = useState<string | null>(null);
 
@@ -277,27 +278,44 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
       requestBody.append("_template", "table");
       requestBody.append("_captcha", "false");
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: requestBody,
-        headers: {
-          Accept: "application/json",
-        },
-      });
+      let emailNotifyOk = false;
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          body: requestBody,
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        emailNotifyOk = response.ok;
+        if (!response.ok) {
+          console.warn("FormSubmit notification failed:", response.status);
+        }
+      } catch (notifyErr) {
+        console.warn("FormSubmit notification error:", notifyErr);
+      }
 
-      if (!response.ok) {
-        throw new Error(`Contact submit failed: ${response.status}`);
+      if (supabaseResult.attempted && !supabaseResult.rowInserted) {
+        throw new Error("Lead intake was not saved to the database.");
       }
 
       form.reset();
       setServiceIntakeSavedOnline(
         isServiceIntake ? supabaseResult.rowInserted : null,
       );
+      setEmailNotifyOk(emailNotifyOk);
       setSubmitted(true);
       trackEvent("contact_submit_success", {
         planKey: planKey ?? "general",
         isServiceIntake,
+        emailNotifyOk,
       });
+      if (!emailNotifyOk) {
+        trackEvent("lead_intake_formsubmit_failed", {
+          planKey: planKey ?? "general",
+          leadIntakeId: supabaseResult.leadIntakeId,
+        });
+      }
     } catch (error) {
       console.error(error);
       setSubmitError(
@@ -330,7 +348,19 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
                 Your message has been received. We&apos;ll respond to you at the
                 email address you provided within 24 hours.
               </p>
-              {serviceIntakeSavedOnline === false ? (
+              {serviceIntakeSavedOnline ? (
+                <p className="mt-5 max-w-xl mx-auto text-sm leading-relaxed text-green-800/90">
+                  Your intake is queued in Guest Signal and linked to automation. You do
+                  not need to submit again.
+                  {emailNotifyOk === false ? (
+                    <>
+                      {" "}
+                      Inbox notification email is temporarily unavailable (FormSubmit);
+                      we still received your data.
+                    </>
+                  ) : null}
+                </p>
+              ) : serviceIntakeSavedOnline === false ? (
                 <p className="mt-5 max-w-xl mx-auto text-left text-sm leading-relaxed text-amber-950/90">
                   We also delivered your request to our team by email. If you
                   don&apos;t hear from us within one business day, reach us at{" "}
