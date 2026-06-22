@@ -1,15 +1,15 @@
 ---
 title: "This Week in Hospitality Signals: Restaurant delivery wait times"
 seoTitle: "Restaurant trends: Restaurant delivery wait times"
-metaDescription: "Weekly hospitality signals for restaurant owners—Restaurant delivery wait times. Also rising: Restaurant value menus. restaurant reputation management takeaways"
+metaDescription: "Weekly hospitality signals for restaurant owners—Restaurant delivery wait times. Also rising: Restaurant value menus. restaurant sentiment analysis takeaways an"
 slug: "restaurant-delivery-wait-times"
-legacySlug: "2026-05-18-this-week-in-hospitality-signals-restaurant-delivery-wait-times"
+legacySlug: "2026-06-22-this-week-in-hospitality-signals-restaurant-delivery-wait-times"
 excerpt: "This week: Restaurant delivery wait times. Operator lens: menu value positioning. Related search theme: Restaurant value menus."
-publishedDate: "2026-05-18T14:33:08.466Z"
-updatedDate: "2026-05-18T14:33:08.468Z"
+publishedDate: "2026-06-22T15:56:44.051Z"
+updatedDate: "2026-06-22T15:56:44.053Z"
 category: Newsletter
 topicCategory: menu-engineering
-tags: ["restaurant reputation management", "restaurant trends", "Restaurant delivery wait times", "Restaurant value menus", "guest experience", "hospitality intelligence"]
+tags: ["restaurant sentiment analysis", "restaurant trends", "Restaurant delivery wait times", "Restaurant value menus", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
 canonicalUrl: "https://guestsignalhospitality.com/insights/restaurant-delivery-wait-times/"
 heroImage: "/newsletter-banners/restaurant-delivery-wait-times.svg"
@@ -24,7 +24,7 @@ Search trends, guest behavior signals, and operator takeaways for restaurants.
 ## Opening Signal
 This week, the primary hospitality search theme is **Restaurant delivery wait times**. Search and review signals suggest guests are scrutinizing value communication more than discount size.
 Also watch search traction around **Restaurant value menus**—note whether your public listings and menu language already answer that intent.
-If one theme dominates local search, your menu, hours, and GBP copy should answer that intent in plain language—not buried in marketing fluff.
+Search spikes are only useful when paired with what guests already say in reviews: look for mismatches between promise and proof.
 
 ## Operator lens
 We are framing **Restaurant delivery wait times** through **menu value positioning**. Compare that search intent to the last few weeks of Google reviews at your location—if the words guests use do not match what people are searching for, update menu copy, response tone, and training priorities before you spend on promos.
