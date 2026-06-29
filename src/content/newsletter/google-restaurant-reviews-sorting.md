@@ -1,15 +1,15 @@
 ---
 title: "This Week in Hospitality Signals: Google restaurant reviews sorting"
 seoTitle: "Restaurant trends: Google restaurant reviews sorting"
-metaDescription: "Weekly hospitality signals for restaurant owners—Google restaurant reviews sorting. Also rising: Restaurant value menus. restaurant guest experience takeaways a"
+metaDescription: "Weekly hospitality signals for restaurant owners—Google restaurant reviews sorting. Also rising: Restaurant value menus. guest feedback takeaways and actions."
 slug: "google-restaurant-reviews-sorting"
-legacySlug: "2026-05-25-this-week-in-hospitality-signals-google-restaurant-reviews-sorting"
+legacySlug: "2026-06-29-this-week-in-hospitality-signals-google-restaurant-reviews-sorting"
 excerpt: "This week: Google restaurant reviews sorting. Operator lens: service consistency under pressure. Related search theme: Restaurant value menus."
-publishedDate: "2026-05-25T14:12:15.996Z"
-updatedDate: "2026-05-25T14:12:15.998Z"
+publishedDate: "2026-06-29T14:48:35.705Z"
+updatedDate: "2026-06-29T14:48:35.708Z"
 category: Newsletter
 topicCategory: front-of-house
-tags: ["restaurant guest experience", "restaurant trends", "Google restaurant reviews sorting", "Restaurant value menus", "guest experience", "hospitality intelligence"]
+tags: ["guest feedback", "restaurant trends", "Google restaurant reviews sorting", "Restaurant value menus", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
 canonicalUrl: "https://guestsignalhospitality.com/insights/google-restaurant-reviews-sorting/"
 heroImage: "/newsletter-banners/google-restaurant-reviews-sorting.svg"
@@ -24,7 +24,7 @@ Search trends, guest behavior signals, and operator takeaways for restaurants.
 ## Opening Signal
 This week, the primary hospitality search theme is **Google restaurant reviews sorting**. Operators are seeing demand variability expose handoff and speed inconsistencies during peak windows.
 Also watch search traction around **Restaurant value menus**—note whether your public listings and menu language already answer that intent.
-Teams that assign one owner to connect search themes to weekly service adjustments usually see fewer repeat complaints in the same category.
+If one theme dominates local search, your menu, hours, and GBP copy should answer that intent in plain language—not buried in marketing fluff.
 
 ## Operator lens
 We are framing **Google restaurant reviews sorting** through **service consistency under pressure**. Compare that search intent to the last few weeks of Google reviews at your location—if the words guests use do not match what people are searching for, update menu copy, response tone, and training priorities before you spend on promos.
