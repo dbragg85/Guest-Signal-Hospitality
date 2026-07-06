@@ -1,15 +1,15 @@
 ---
 title: "This Week in Hospitality Signals: Brunch reservations near me"
 seoTitle: "Restaurant trends: Brunch reservations near me"
-metaDescription: "Weekly hospitality signals for restaurant owners—Brunch reservations near me. Also rising: Restaurant value menus. hospitality intelligence takeaways and action"
+metaDescription: "Weekly hospitality signals for restaurant owners—Brunch reservations near me. Also rising: Restaurant value menus. restaurant marketing trends takeaways and act"
 slug: "brunch-reservations-near-me"
-legacySlug: "2026-06-01-this-week-in-hospitality-signals-brunch-reservations-near-me"
+legacySlug: "2026-07-06-this-week-in-hospitality-signals-brunch-reservations-near-me"
 excerpt: "This week: Brunch reservations near me. Operator lens: guest recovery playbooks. Related search theme: Restaurant value menus."
-publishedDate: "2026-06-01T16:42:05.525Z"
-updatedDate: "2026-06-01T16:42:05.528Z"
+publishedDate: "2026-07-06T14:29:47.787Z"
+updatedDate: "2026-07-06T14:29:47.791Z"
 category: Newsletter
 topicCategory: service-recovery
-tags: ["hospitality intelligence", "restaurant trends", "Brunch reservations near me", "Restaurant value menus", "guest experience"]
+tags: ["restaurant marketing trends", "restaurant trends", "Brunch reservations near me", "Restaurant value menus", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
 canonicalUrl: "https://guestsignalhospitality.com/insights/brunch-reservations-near-me/"
 heroImage: "/newsletter-banners/brunch-reservations-near-me.svg"
@@ -24,7 +24,7 @@ Search trends, guest behavior signals, and operator takeaways for restaurants.
 ## Opening Signal
 This week, the primary hospitality search theme is **Brunch reservations near me**. This week's pattern shows guests reward quick acknowledgement and clear recovery actions after mistakes.
 Also watch search traction around **Restaurant value menus**—note whether your public listings and menu language already answer that intent.
-Search spikes are only useful when paired with what guests already say in reviews: look for mismatches between promise and proof.
+Teams that assign one owner to connect search themes to weekly service adjustments usually see fewer repeat complaints in the same category.
 
 ## Operator lens
 We are framing **Brunch reservations near me** through **guest recovery playbooks**. Compare that search intent to the last few weeks of Google reviews at your location—if the words guests use do not match what people are searching for, update menu copy, response tone, and training priorities before you spend on promos.
