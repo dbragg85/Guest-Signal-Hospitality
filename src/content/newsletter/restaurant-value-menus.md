@@ -1,15 +1,15 @@
 ---
 title: "This Week in Hospitality Signals: Restaurant value menus"
-seoTitle: "Restaurant trends: Google review monitoring"
-metaDescription: "Weekly hospitality signals for restaurant owners—Restaurant value menus. Also rising: Restaurant delivery wait times. Google review monitoring takeaways and act"
+seoTitle: "Restaurant trends: restaurant review monitoring"
+metaDescription: "Weekly hospitality signals for restaurant owners—Restaurant value menus. Also rising: Restaurant delivery wait times. restaurant review monitoring takeaways and"
 slug: "restaurant-value-menus"
-legacySlug: "2026-06-15-this-week-in-hospitality-signals-restaurant-value-menus"
+legacySlug: "2026-07-20-this-week-in-hospitality-signals-restaurant-value-menus"
 excerpt: "This week: Restaurant value menus. Operator lens: review response speed. Related search theme: Restaurant delivery wait times."
-publishedDate: "2026-06-15T16:20:14.432Z"
-updatedDate: "2026-06-15T16:20:14.434Z"
+publishedDate: "2026-07-20T13:10:20.538Z"
+updatedDate: "2026-07-20T13:10:20.541Z"
 category: Newsletter
 topicCategory: reputation-management
-tags: ["Google review monitoring", "restaurant trends", "Restaurant value menus", "Restaurant delivery wait times", "guest experience", "hospitality intelligence"]
+tags: ["restaurant review monitoring", "restaurant trends", "Restaurant value menus", "Restaurant delivery wait times", "guest experience", "hospitality intelligence"]
 sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "https://restaurant.org/research-and-media/research/research-reports/state-of-the-industry/"]
 canonicalUrl: "https://guestsignalhospitality.com/insights/restaurant-value-menus/"
 heroImage: "/newsletter-banners/restaurant-value-menus.svg"
@@ -24,7 +24,7 @@ Search trends, guest behavior signals, and operator takeaways for restaurants.
 ## Opening Signal
 This week, the primary hospitality search theme is **Restaurant value menus**. Guest behavior this week points to tighter expectations around response quality and accountability.
 Also watch search traction around **Restaurant delivery wait times**—note whether your public listings and menu language already answer that intent.
-Teams that assign one owner to connect search themes to weekly service adjustments usually see fewer repeat complaints in the same category.
+If one theme dominates local search, your menu, hours, and GBP copy should answer that intent in plain language—not buried in marketing fluff.
 
 ## Operator lens
 We are framing **Restaurant value menus** through **review response speed**. Compare that search intent to the last few weeks of Google reviews at your location—if the words guests use do not match what people are searching for, update menu copy, response tone, and training priorities before you spend on promos.
