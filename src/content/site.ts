@@ -7,22 +7,19 @@ export type AudienceKey =
 
 export const brand = {
   name: "Guest Signal Hospitality",
-  tagline: "Operational intelligence for restaurant owners.",
+  tagline: "Clear review priorities for restaurant owners.",
   mission:
-    "We turn Google Reviews into clear, actionable insights—SWOT, reputation signals, competitive positioning, and a prioritized action plan that improves guest experience and profitability.",
-  phone: "(513) 000-0000",
+    "We turn restaurant reviews into a clear score, recurring themes, and a short action list owners and GMs can use immediately.",
+  phone: "",
   email: "audit@guestsignalhospitality.com",
   city: "Cincinnati, OH",
   instagram: "https://www.instagram.com/guest_signal_hospitality/",
 };
 
 export const nav = [
-  { label: "Home", href: "/" },
   { label: "Plans", href: "/services/" },
   { label: "Insights", href: "/insights/" },
-  { label: "Resources", href: "/resources/" },
   { label: "About", href: "/team/" },
-  { label: "Client Portal", href: "/portal/" },
   { label: "Contact", href: "/contact/" },
 ];
 
@@ -62,7 +59,7 @@ export const pricingPlans = [
     price: "$149",
     period: "month",
     badge: null,
-    description: "Foundational guest reputation and visibility monitoring.",
+    description: "A dependable monthly read on reviews, risks, and next steps.",
     features: [
       "Monthly Guest Signal Score with category breakdown",
       "Google review sentiment monitoring",
@@ -73,7 +70,7 @@ export const pricingPlans = [
       "AI-assisted review response suggestions, up to 10/month",
       "Quarterly owner checklist with next-step priorities",
     ],
-    buttonText: "Start With Signal Monitor",
+    buttonText: "Start Signal Monitor",
     popular: false,
   },
   {
@@ -83,7 +80,7 @@ export const pricingPlans = [
     period: "month",
     badge: "Most Popular",
     description:
-      "AI-powered restaurant visibility and performance intelligence—guest sentiment patterns, value perception trends, and monthly opportunity analysis grounded in how guests experience your operation.",
+      "A deeper monthly view of guest patterns, local position, and conversion opportunities.",
     features: [
       "Everything in Signal Monitor",
       "Restaurant Performance Insights",
@@ -99,7 +96,7 @@ export const pricingPlans = [
       "Review generation funnel recommendations",
       "Monthly growth summary and owner action list",
     ],
-    buttonText: "Choose Signal Growth",
+    buttonText: "Start Signal Growth",
     popular: true,
   },
   {
@@ -107,9 +104,9 @@ export const pricingPlans = [
     name: "Signal Elevate",
     price: "$999",
     period: "month",
-    badge: "Premium Managed Support",
+    badge: "Managed support",
     description:
-      "Premium managed reputation plus menu intelligence, pricing perception, throughput opportunities, and executive performance reporting for operators balancing guest experience, labor, and revenue.",
+      "Hands-on analysis for operators balancing reputation, menu, labor, and revenue.",
     features: [
       "Everything in Signal Growth",
       "Menu Intelligence Analysis",
@@ -126,16 +123,16 @@ export const pricingPlans = [
       "Website optimization recommendations and implementation guidance",
       "Quarterly competitive intelligence review",
     ],
-    buttonText: "Request Signal Elevate",
+    buttonText: "Start Signal Elevate",
     popular: false,
   },
 ];
 
 export const freeSnapshot = {
   inquiryKey: "free_snapshot" as const,
-  title: "Start With Your Free Guest Signal Snapshot",
+  title: "Start with a free Guest Signal Snapshot",
   price: "Free",
-  description: "See how your restaurant is performing through the eyes of your guests. Your complimentary snapshot provides immediate visibility into your reputation, strengths, and risk areas.",
+  description: "Get one clear score, the review themes behind it, and three priorities for your next manager meeting.",
   features: [
     "Guest Signal Score",
     "Review sentiment overview",
@@ -143,20 +140,20 @@ export const freeSnapshot = {
     "Executive summary",
     "Delivered within 48 hours",
   ],
-  buttonText: "Get Your Free Snapshot",
-  trustText: "No obligation. No credit card required.",
+  buttonText: "Get your free snapshot",
+  trustText: "No card. No obligation.",
 };
 
 /** /services page: SEO hero and snapshot scope (restaurant reputation, SEO, GBP). */
 export const servicesPageSeo = {
   title: "Restaurant Reputation, SEO & Google Visibility Plans",
   intro:
-    "Guest Signal Hospitality delivers AI-powered restaurant visibility and performance intelligence—reviews, Google visibility, local SEO, and guest feedback translated into operational priorities owners can run.",
+    "Choose how much help you want turning reviews and visibility data into a short, useful action list.",
   supporting:
-    "Whether you need restaurant reputation management, restaurant review monitoring, Google Business Profile optimization, or local restaurant marketing that matches what guests are already searching for—we deliver guest experience intelligence with plain-English action plans. Cincinnati restaurant marketing roots, nationwide delivery for independent restaurant growth.",
-  snapshotHeading: "Start With a Free Guest Signal Snapshot",
+    "Every plan includes a scorecard, recurring guest themes, and clear next steps. Higher tiers add competitor, conversion, menu, and hands-on support.",
+  snapshotHeading: "Start with a free snapshot",
   snapshotLead:
-    "Before you choose a paid plan, get a complimentary baseline. Your snapshot is restaurant reputation management without a long contract—so you can see plan fit before you commit.",
+    "See your baseline and our work before choosing monthly support.",
   snapshotReviews: [
     "Google review sentiment and recurring guest themes",
     "Guest Signal Score with strengths and risk areas",

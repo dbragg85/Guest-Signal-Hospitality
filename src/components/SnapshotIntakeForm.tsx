@@ -277,15 +277,19 @@ export function SnapshotIntakeForm() {
             </label>
 
             <label className="grid gap-2">
-              <span className="text-sm font-semibold">Website URL</span>
+              <span className="text-sm font-semibold">
+                Website URL <span className="font-normal text-slate-500">(optional)</span>
+              </span>
               <input
                 name="websiteUrl"
                 type="url"
                 inputMode="url"
-                required
                 placeholder="https://"
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
               />
+              <span className="text-xs text-slate-500">
+                No website? Leave this blank—we can use your address and public listings.
+              </span>
             </label>
 
             <label className="grid gap-2">

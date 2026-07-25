@@ -5,9 +5,9 @@ export function CTA({
   title,
   desc,
   primaryHref = "/snapshot/",
-  primaryLabel = "Get a Free Snapshot",
+  primaryLabel = "Get your free snapshot",
   secondaryHref = "/services/",
-  secondaryLabel = "See Services",
+  secondaryLabel = "Compare plans",
   align = "start",
   className,
 }: {

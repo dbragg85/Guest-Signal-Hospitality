@@ -40,23 +40,11 @@ export default function ServicesPage() {
         <ServicesHero seo={seo} />
       </section>
 
-      <Section title={seo.snapshotHeading} kicker="Free baseline">
-        <ServicesSnapshotBlock />
+      <Section id="plans" title="Choose your level of support" kicker="Monthly plans">
+        <ServicesPlanGrid />
       </Section>
 
-      <Section title={servicesPricingContext.title} kicker="Plan progression">
-        <ServicesPricingContext />
-      </Section>
-
-      <Section title={seo.plansTitle} kicker={seo.plansKicker}>
-        <ServicesPlans seo={seo} />
-      </Section>
-
-      <Section>
-        <ServicesAuthority />
-      </Section>
-
-      <Section title="Frequently asked questions" kicker="Plans & reputation">
+      <Section title="Questions before you choose?" kicker="Plain answers" className="bg-stone-50">
         <ServicesFaq />
       </Section>
 
@@ -71,38 +59,24 @@ function ServicesHero({ seo }: { seo: typeof servicesPageSeo }) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 md:py-20">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-800/80">
-          Restaurant reputation management &amp; local SEO
+        <p className="text-sm font-semibold text-amber-800">
+          Monthly support for independent restaurants
         </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">{seo.title}</h1>
+        <h1 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">
+          Keep reviews from becoming background noise.
+        </h1>
         <p className="mt-5 text-lg text-slate-700 md:text-xl">{seo.intro}</p>
-        <p className="mx-auto mt-6 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
+        <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
           {seo.supporting}
         </p>
-        <p className="mx-auto mt-4 max-w-2xl text-sm text-slate-600">
-          Explore{" "}
-          <Link
-            href="/resources/restaurant-review-monitoring/"
-            className="font-semibold text-amber-900 underline underline-offset-2"
-          >
-            restaurant review monitoring
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <ServicesIntakeLink href="/snapshot/" className="btn-primary px-6 py-3">
+            Get your free snapshot
+          </ServicesIntakeLink>
+          <Link href="#plans" className="btn-secondary px-6 py-3">
+            Compare plans
           </Link>
-          ,{" "}
-          <Link
-            href="/resources/google-reviews-for-restaurants/"
-            className="font-semibold text-amber-900 underline underline-offset-2"
-          >
-            Google Reviews intelligence
-          </Link>
-          , and{" "}
-          <Link
-            href="/resources/cincinnati-restaurant-reputation/"
-            className="font-semibold text-amber-900 underline underline-offset-2"
-          >
-            Cincinnati restaurant marketing
-          </Link>{" "}
-          guides—or start with a free snapshot below.
-        </p>
+        </div>
       </div>
     </div>
   );
@@ -173,13 +147,13 @@ function ServicesPlanGrid() {
           key={plan.name}
           className={`relative rounded-3xl border-2 p-8 shadow-sm ${
             plan.popular
-              ? "scale-105 border-slate-900 bg-gradient-to-br from-stone-50 to-white ring-1 ring-amber-500/20"
+              ? "border-amber-500 bg-amber-50/30"
               : "border-slate-200 bg-white"
           }`}
         >
           {plan.badge ? (
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 transform">
-              <span className="rounded-full bg-gradient-to-r from-slate-800 to-amber-600 px-4 py-1 text-xs font-semibold text-white">
+              <span className="rounded-full bg-slate-950 px-4 py-1 text-xs font-semibold text-white">
                 {plan.badge}
               </span>
             </div>

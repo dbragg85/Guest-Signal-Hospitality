@@ -1,5 +1,3 @@
-import { createAnonClientForLeadIntake } from "@/lib/supabase/client";
-
 const ALLOWED_EVENTS = new Set([
   "page_view",
   "cta_click",
@@ -60,18 +58,27 @@ export function trackEvent(name: string, payload: Record<string, unknown> = {}) 
     console.info("[tracking:event]", eventPayload);
   }
 
-  const supabase = createAnonClientForLeadIntake();
-  if (!supabase) return;
-
-  void supabase
-    .from("site_events")
-    .insert({
-      event_name: normalizedName,
-      path: window.location.pathname.slice(0, 300) || "/",
-      session_id: sessionId(),
-      properties,
-    })
-    .then(({ error }) => {
-      if (error) console.warn("[tracking:event] persistence failed", error.message);
+  const persist = () => {
+    void import("@/lib/supabase/client").then(({ createAnonClientForLeadIntake }) => {
+      const supabase = createAnonClientForLeadIntake();
+      if (!supabase) return;
+      void supabase
+        .from("site_events")
+        .insert({
+          event_name: normalizedName,
+          path: window.location.pathname.slice(0, 300) || "/",
+          session_id: sessionId(),
+          properties,
+        })
+        .then(({ error }) => {
+          if (error) console.warn("[tracking:event] persistence failed", error.message);
+        });
     });
+  };
+
+  if (normalizedName === "page_view") {
+    window.setTimeout(persist, 1200);
+  } else {
+    persist();
+  }
 }

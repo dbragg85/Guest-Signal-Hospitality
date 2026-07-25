@@ -19,7 +19,7 @@ export function Section({
         {title ? (
           <div className="mx-auto mb-8 max-w-4xl text-center">
             {kicker ? (
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-800/80">
+              <p className="mb-2 text-sm font-semibold text-amber-800">
                 {kicker}
               </p>
             ) : null}

@@ -70,8 +70,8 @@ export default function InsightsHubPage() {
             Hospitality Signals for Restaurant Operators
           </h1>
           <p className="mt-4 text-slate-600 md:text-lg">
-            Search trends, guest behavior signals, and weekly playbooks — not generic marketing tips.
-            Built for owners who run on review intelligence and service consistency.
+            Short, practical reads for independent restaurant owners and GMs.
+            One issue, why it matters, and what to do next.
           </p>
         </div>
       </section>
@@ -152,7 +152,7 @@ function InsightsArchiveCard({
           href={getInsightPath(item.frontmatter.slug)}
           className="btn-primary inline-block"
         >
-          Read operational intelligence brief
+          Read the brief
         </Link>
       </div>
     </>

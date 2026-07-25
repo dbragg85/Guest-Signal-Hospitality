@@ -23,7 +23,7 @@ export function MobileNavMenu({ items }: { items: NavItem[] }) {
         type="button"
         aria-expanded={open}
         aria-controls="mobile-primary-nav"
-        aria-label="Open navigation menu"
+        aria-label={open ? "Close navigation menu" : "Open navigation menu"}
         onClick={() => setOpen((prev) => !prev)}
         className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-stone-300 bg-white text-slate-700 shadow-sm transition-colors hover:bg-stone-50"
       >
@@ -49,7 +49,7 @@ export function MobileNavMenu({ items }: { items: NavItem[] }) {
       {open ? (
         <div
           id="mobile-primary-nav"
-          className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-stone-200 bg-white p-3 shadow-xl"
+          className="fixed inset-x-3 top-[4.4rem] z-50 rounded-2xl border border-stone-200 bg-white p-3 shadow-2xl"
           role="menu"
           aria-label="Mobile primary navigation"
         >
@@ -76,6 +76,22 @@ export function MobileNavMenu({ items }: { items: NavItem[] }) {
                 </Link>
               );
             })}
+            <div className="mt-2 border-t border-stone-200 pt-2">
+              <Link
+                href="/resources/"
+                role="menuitem"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-stone-50"
+              >
+                Resources
+              </Link>
+              <Link
+                href="/portal/"
+                role="menuitem"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-stone-50"
+              >
+                Client portal
+              </Link>
+            </div>
           </nav>
         </div>
       ) : null}
