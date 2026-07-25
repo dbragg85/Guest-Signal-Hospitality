@@ -35,8 +35,12 @@ const enrichOnly = ["1", "true", "yes"].includes(
 const requireNtfy = ["1", "true", "yes"].includes(
   (process.env.REQUIRE_NTFY ?? (dryRun ? "0" : "1")).toLowerCase(),
 );
-const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 10, 50));
+const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 100, 200));
+const perMarketLimit = Math.max(1, Math.min(Number(process.env.PROSPECT_PER_MARKET) || 10, 25));
 const minimumFit = Math.max(0, Math.min(Number(process.env.PROSPECT_MIN_FIT_SCORE) || 55, 100));
+const selectedMarketSlugs = process.env.PROSPECT_MARKETS?.trim()
+  ? process.env.PROSPECT_MARKETS.split(",").map((s) => s.trim().toLowerCase())
+  : null;
 const allMarkets = !["0", "false", "no"].includes(
   (process.env.PROSPECT_ALL_MARKETS ?? "1").toLowerCase(),
 );
@@ -73,6 +77,13 @@ function marketsForRun() {
   if (!allMarkets || process.env.PROSPECT_MARKET_SLUG?.trim() || process.env.PROSPECT_SEARCH_QUERY?.trim()) {
     return [forcedMarket];
   }
+  
+  // Filter to specific markets if PROSPECT_MARKETS is set (e.g., "cincinnati-oh,columbus-oh,nashville-tn")
+  if (selectedMarketSlugs?.length) {
+    const filtered = prospectMarkets.filter((m) => selectedMarketSlugs.includes(m.slug));
+    if (filtered.length) return filtered;
+  }
+  
   // Rotate starting market daily so all service markets get coverage over time.
   const dayNum = Math.floor(Date.now() / 86_400_000);
   const start = dayNum % prospectMarkets.length;
@@ -222,7 +233,6 @@ async function enhanceProspectsWithAI(prospects, maxConcurrent = 3) {
 
 async function researchAcrossMarkets({ token, actorId }) {
   const markets = marketsForRun();
-  const perMarket = Math.max(1, Math.ceil(maxProspects / Math.min(markets.length, maxProspects)));
   const collected = [];
   const seen = new Set();
   const marketsTouched = [];
@@ -230,9 +240,9 @@ async function researchAcrossMarkets({ token, actorId }) {
   for (const market of markets) {
     if (collected.length >= maxProspects) break;
     const remaining = maxProspects - collected.length;
-    const take = Math.min(perMarket, remaining);
+    const take = Math.min(perMarketLimit, remaining);
     console.log(
-      `Prospect market: ${market.slug} · ${market.searchPhrase} · need ${take}`,
+      `Prospect market: ${market.slug} · ${market.searchPhrase} · fetching ${take} prospects`,
     );
     const run = await startApifyRun({
       token,
