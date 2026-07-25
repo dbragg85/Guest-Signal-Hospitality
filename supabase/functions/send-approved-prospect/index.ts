@@ -44,6 +44,18 @@ function validUuid(value: unknown): value is string {
   );
 }
 
+function isServiceRoleJwt(token: string) {
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return false;
+    const json = atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(json) as { role?: string };
+    return payload.role === "service_role";
+  } catch {
+    return false;
+  }
+}
+
 function zonedParts(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -137,7 +149,8 @@ Deno.serve(async (req) => {
 
   const bearer = authorization.replace(/^Bearer\s+/i, "").trim();
   const serviceInvoke =
-    requestBody.serviceInvoke === true && bearer === serviceRoleKey;
+    requestBody.serviceInvoke === true &&
+    (bearer === serviceRoleKey || isServiceRoleJwt(bearer));
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
