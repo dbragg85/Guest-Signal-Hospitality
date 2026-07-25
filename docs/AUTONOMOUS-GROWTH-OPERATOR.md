@@ -6,6 +6,45 @@ The production design intentionally separates deterministic automation from the 
 - Supabase stores pseudonymous funnel events, commercial stages, run history, and approval-required outreach drafts.
 - Codex runs only on a private machine or VPS. This repository is public, so do not attach a self-hosted GitHub Actions runner containing ChatGPT-managed Codex credentials.
 
+## AI-powered prospect outreach
+
+The prospect research pipeline now supports AI-generated personalized outreach emails that:
+
+1. **Scrape website metadata** — Extracts business history, founding year, ownership type, awards, food philosophy, and key people from the prospect's website (about page, story page, etc.)
+
+2. **Reference business context** — Uses the scraped context to write emails that acknowledge specific details about the business, not generic templates
+
+3. **Senior VP of Marketing voice** — AI assumes an executive marketing perspective that's confident, specific, and respectful of operators' time
+
+### Configuration
+
+Add to GitHub Secrets:
+
+- `OPENAI_API_KEY` — Your OpenAI API key for GPT-4o (or configure `OPENAI_MODEL` for alternatives)
+
+Optional environment variables:
+
+- `OPENAI_MODEL` — Model to use (default: `gpt-4o`, options: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`)
+- `SKIP_AI_ENHANCEMENT` — Set to `1` to disable AI and use template-based copy
+- `AI_CONCURRENCY` — Max concurrent AI requests (default: 3)
+
+### How it works
+
+1. **Research phase** — Apify scrapes Google Places data (rating, reviews, category)
+2. **Context scraping** — For each prospect with a website, scrapes up to 4 pages to extract business context
+3. **AI generation** — GPT-4o generates personalized subject line and email body using the context
+4. **Fallback** — If AI fails or isn't configured, falls back to the proven template-based copy
+
+### Rewriting existing drafts
+
+To rewrite unsent prospect drafts with AI-personalized copy:
+
+```bash
+npm run growth:rewrite-outreach
+# or dry run first:
+DRY_RUN=1 npm run growth:rewrite-outreach
+```
+
 ## Required GitHub configuration
 
 Encrypted secrets:
