@@ -237,19 +237,20 @@ export function SnapshotIntakeForm() {
             Client portal sign-in
           </Link>
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">{freeSnapshot.title}</h1>
-        <p className="mt-3 text-slate-600">
-          Universal complimentary baseline for restaurant reputation management, restaurant review
-          monitoring, and Google visibility—not a paid plan signup. We use your priority to recommend
-          Signal Monitor ($149/mo), Signal Growth ($499/mo), or Signal Elevate ($999/mo) after the snapshot.
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
+          Free snapshot: your score, themes, and next three fixes
+        </h1>
+        <p className="mt-3 text-lg text-slate-600">
+          Takes about two minutes. No card. We read Google and Yelp, then send a private scorecard
+          you can use in the next manager meeting.
         </p>
 
-        <div className="mt-6 rounded-2xl border border-sky-200/70 bg-sky-50/60 px-4 py-4 text-sm text-slate-700">
-          <p className="font-semibold text-slate-900">Your snapshot will include:</p>
-          <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-            {SNAPSHOT_DELIVERABLES.map((d) => (
+        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/50 px-4 py-4 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">You get:</p>
+          <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            {SNAPSHOT_DELIVERABLES.slice(0, 4).map((d) => (
               <li key={d.key} className="flex items-start gap-2">
-                <span className="text-green-600">✔</span>
+                <span className="font-semibold text-amber-800">—</span>
                 <span>{d.label}</span>
               </li>
             ))}
@@ -304,16 +305,7 @@ export function SnapshotIntakeForm() {
             </label>
 
             <fieldset className="grid gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-              <legend className="px-1 text-sm font-semibold text-slate-800">Address / city</legend>
-              <label className="grid gap-2">
-                <span className="text-sm font-medium">Street address</span>
-                <input
-                  name="streetAddress"
-                  required
-                  autoComplete="street-address"
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-                />
-              </label>
+              <legend className="px-1 text-sm font-semibold text-slate-800">Location</legend>
               <div className="grid gap-4 sm:grid-cols-3">
                 <label className="grid gap-2 sm:col-span-1">
                   <span className="text-sm font-medium">City</span>
@@ -334,15 +326,29 @@ export function SnapshotIntakeForm() {
                   />
                 </label>
                 <label className="grid gap-2">
-                  <span className="text-sm font-medium">ZIP</span>
+                  <span className="text-sm font-medium">
+                    ZIP <span className="font-normal text-slate-500">(optional)</span>
+                  </span>
                   <input
                     name="zip"
-                    required
                     autoComplete="postal-code"
                     className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
                   />
                 </label>
               </div>
+              <label className="grid gap-2">
+                <span className="text-sm font-medium">
+                  Street address <span className="font-normal text-slate-500">(optional)</span>
+                </span>
+                <input
+                  name="streetAddress"
+                  autoComplete="street-address"
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                />
+                <span className="text-xs text-slate-500">
+                  City + state is enough if your Google listing is easy to find.
+                </span>
+              </label>
             </fieldset>
 
             <label className="grid gap-2">

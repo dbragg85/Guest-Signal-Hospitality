@@ -301,9 +301,9 @@ export function HomeConversionPage() {
             Your reviews already contain the next fix.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-600">
-            Start with a free snapshot. We will show you the score, the pattern, and where to begin.
+            Start free, or skip ahead if you already know you want a monthly scorecard.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <ServicesIntakeLink
               href="/snapshot/"
               className="btn-primary inline-block px-7 py-3"
@@ -311,6 +311,11 @@ export function HomeConversionPage() {
             >
               Get your free snapshot
             </ServicesIntakeLink>
+            <StripeCheckoutButton
+              planKey="signal_monitor"
+              label="Start Signal Monitor — $149/mo"
+              className="btn-secondary px-7 py-3"
+            />
           </div>
         </div>
       </section>
