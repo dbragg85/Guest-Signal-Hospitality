@@ -651,46 +651,70 @@ try {
     "compass~crawler-google-places";
   const { prospects: rawProspects, marketsTouched } = await researchAcrossMarkets({ token, actorId });
 
+  // Email discovery is the PRIMARY filter - run it first before any expensive operations
+  const emailEnrichedProspects = await enrichProspectsWithEmails(rawProspects);
+  
+  // Separate prospects by email availability
+  const prospectsWithEmails = emailEnrichedProspects.filter((p) => p.contact_email);
+  const prospectsWithoutEmails = emailEnrichedProspects.filter((p) => !p.contact_email);
+  
+  console.log(
+    `Email filter: ${prospectsWithEmails.length} contactable, ` +
+    `${prospectsWithoutEmails.length} skipped (no email found)`
+  );
+
+  // Only run AI enhancement on prospects we can actually contact
   const skipAIEnhancement = ["1", "true", "yes"].includes(
     (process.env.SKIP_AI_ENHANCEMENT ?? "").toLowerCase(),
   );
   const aiEnhancedProspects = skipAIEnhancement
-    ? rawProspects
-    : await enhanceProspectsWithAI(rawProspects);
+    ? prospectsWithEmails
+    : await enhanceProspectsWithAI(prospectsWithEmails);
 
-  const prospects = await enrichProspectsWithEmails(aiEnhancedProspects);
+  // Combine: AI-enhanced contactable prospects + non-contactable prospects (for record-keeping)
+  const prospects = [...aiEnhancedProspects, ...prospectsWithoutEmails];
 
   const rowsForUpsert = prospects.map(({ _place_emails, ...row }) => row);
 
   if (dryRun) {
-    const prospectsWithEmails = prospects.filter((p) => p.contact_email);
-    const enrichedPreview = prospects.slice(0, 10).map((prospect) => {
+    const contactablePreview = prospectsWithEmails.slice(0, 10).map((prospect) => {
       const signals = prospect.public_signals || {};
       return {
         business_name: prospect.business_name,
         website_url: prospect.website_url,
-        contact_email: prospect.contact_email || null,
+        contact_email: prospect.contact_email,
         contact_email_source: signals.contact_email_source || null,
         status: prospect.status,
         ai_enhanced: Boolean(signals.ai_model),
         ai_model: signals.ai_model || null,
         context_scraped: signals.context_scraped || false,
         context_useful: signals.context_useful || false,
-        business_context: signals.business_context || null,
         draft_subject: prospect.draft_subject,
         draft_body: prospect.draft_body?.slice(0, 300) + (prospect.draft_body?.length > 300 ? "..." : ""),
       };
     });
+    const skippedPreview = prospectsWithoutEmails.slice(0, 5).map((prospect) => ({
+      business_name: prospect.business_name,
+      website_url: prospect.website_url,
+      reason: "no_email_found",
+    }));
     const stats = {
+      total_researched: rawProspects.length,
+      contactable_with_email: prospectsWithEmails.length,
+      skipped_no_email: prospectsWithoutEmails.length,
       ai_available: isAIAvailable(),
       ai_enhanced_count: prospects.filter((p) => p.public_signals?.ai_model).length,
-      emails_found: prospectsWithEmails.length,
       approval_ready: prospects.filter((p) => p.status === "approval_required").length,
-      total_prospects: prospects.length,
     };
     console.log(
       JSON.stringify(
-        { markets_touched: marketsTouched, stats, prospects: rowsForUpsert, preview: enrichedPreview },
+        { 
+          markets_touched: marketsTouched, 
+          stats, 
+          contactable_prospects: contactablePreview,
+          skipped_prospects: skippedPreview,
+          all_prospects: rowsForUpsert,
+        },
         null,
         2,
       ),
@@ -711,21 +735,23 @@ try {
     : await enrichProspectEmails(supabase, prospects);
   const ntfyNotifications = dryRun ? 0 : await notifyPendingApprovals(supabase);
   const approvalCount = prospects.filter((item) => item.status === "approval_required").length;
-  const emailsFoundUpfront = prospects.filter((p) => p.contact_email).length;
+  const contactableCount = prospectsWithEmails.length;
+  const skippedNoEmailCount = prospectsWithoutEmails.length;
   const aiEnhancedCount = prospects.filter((p) => p.public_signals?.ai_model).length;
   const contextScrapedCount = prospects.filter((p) => p.public_signals?.context_scraped).length;
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
     summary:
-      `${prospects.length} public businesses researched across ${marketsTouched.length} market(s); ` +
-      `${emailsFoundUpfront} public email(s) discovered; ` +
-      `${aiEnhancedCount} AI-personalized draft(s); ` +
-      `${approvalCount} prospect(s) with emails ready for approval via ntfy.`,
+      `${rawProspects.length} businesses researched across ${marketsTouched.length} market(s); ` +
+      `${contactableCount} with emails (${skippedNoEmailCount} skipped - no email); ` +
+      `${aiEnhancedCount} AI-personalized; ` +
+      `${approvalCount} ready for approval.`,
     metrics: {
       markets_touched: marketsTouched,
       all_markets: allMarkets,
-      researched: prospects.length,
-      emails_found_upfront: emailsFoundUpfront,
+      total_researched: rawProspects.length,
+      contactable_with_email: contactableCount,
+      skipped_no_email: skippedNoEmailCount,
       approval_required: approvalCount,
       existing_emails_discovered: existingEmailEnrichment.discovered,
       approved_scheduled: existingEmailEnrichment.scheduled,
