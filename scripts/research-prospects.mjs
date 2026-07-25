@@ -212,6 +212,39 @@ async function enrichProspectEmails(supabase, researchedProspects = []) {
     }
   }
 
+  const { data: retryTargets, error: retryError } = await supabase
+    .from("prospect_queue")
+    .select("id,business_name")
+    .eq("status", "approved")
+    .not("contact_email", "is", null)
+    .in("send_status", ["failed", "pending", "not_ready"])
+    .limit(40);
+  if (retryError) throw retryError;
+
+  for (const row of retryTargets ?? []) {
+    const { error: pendingError } = await supabase
+      .from("prospect_queue")
+      .update({ send_status: "pending", send_error: null })
+      .eq("id", row.id);
+    if (pendingError) throw pendingError;
+    try {
+      await scheduleApprovedProspect(row.id);
+      scheduled += 1;
+    } catch (scheduleError) {
+      const message =
+        scheduleError instanceof Error
+          ? scheduleError.message
+          : String(scheduleError);
+      await supabase
+        .from("prospect_queue")
+        .update({
+          send_status: "failed",
+          send_error: message.slice(0, 1000),
+        })
+        .eq("id", row.id);
+    }
+  }
+
   return { discovered, scheduled };
 }
 
