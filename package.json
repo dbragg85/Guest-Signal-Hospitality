@@ -45,7 +45,8 @@
     "growth:flush-prospects": "node scripts/flush-scheduled-prospects.mjs",
     "growth:rewrite-outreach": "node scripts/rewrite-prospect-outreach.mjs",
     "growth:archive-old-drafts": "node scripts/archive-old-prospect-drafts.mjs",
-    "growth:evaluate-goal": "node scripts/evaluate-growth-goal.mjs"
+    "growth:evaluate-goal": "node scripts/evaluate-growth-goal.mjs",
+    "growth:cleanup-no-email": "node scripts/cleanup-prospects-without-email.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
