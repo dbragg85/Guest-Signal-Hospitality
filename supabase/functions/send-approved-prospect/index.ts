@@ -44,6 +44,63 @@ function validUuid(value: unknown): value is string {
   );
 }
 
+function zonedParts(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  return Object.fromEntries(parts.map((part) => [part.type, part.value]));
+}
+
+function zonedDateToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string,
+) {
+  const guess = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const atGuess = zonedParts(guess, timeZone);
+  const representedAsUtc = Date.UTC(
+    Number(atGuess.year),
+    Number(atGuess.month) - 1,
+    Number(atGuess.day),
+    Number(atGuess.hour),
+    Number(atGuess.minute),
+  );
+  return new Date(guess.getTime() - (representedAsUtc - guess.getTime()));
+}
+
+function nextRestaurantOwnerSendTime(now = new Date()) {
+  const timeZone = "America/New_York";
+  const local = zonedParts(now, timeZone);
+  const localDate = new Date(
+    Date.UTC(Number(local.year), Number(local.month) - 1, Number(local.day)),
+  );
+  for (let offset = 0; offset < 10; offset += 1) {
+    const date = new Date(localDate);
+    date.setUTCDate(date.getUTCDate() + offset);
+    const weekday = date.getUTCDay();
+    if (![2, 3, 4].includes(weekday)) continue;
+    const candidate = zonedDateToUtc(
+      date.getUTCFullYear(),
+      date.getUTCMonth() + 1,
+      date.getUTCDate(),
+      9,
+      45,
+      timeZone,
+    );
+    if (candidate.getTime() > now.getTime() + 30 * 60 * 1000) return candidate;
+  }
+  throw new Error("Unable to calculate the next outreach window.");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(req) });
@@ -138,14 +195,16 @@ Deno.serve(async (req) => {
   const complianceFooter =
     `\n\nGuest Signal Hospitality · ${postalAddress}\n` +
     `If you would rather not receive another message, reply “no thanks.”`;
-  const text = `${draftBody}${complianceFooter}`;
+  const snapshotUrl = `${SITE_ORIGIN}/snapshot/`;
+  const text = `${draftBody}\n\nSee how the snapshot works: ${snapshotUrl}${complianceFooter}`;
   const html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">${escapeHtml(
     draftBody,
-  ).replaceAll("\n", "<br>")}<hr style="margin:24px 0;border:0;border-top:1px solid #e5e7eb"><p style="font-size:12px;color:#6b7280">${escapeHtml(
+  ).replaceAll("\n", "<br>")}<p style="margin:24px 0"><a href="${snapshotUrl}" style="color:#92400e;font-weight:600">See how the free snapshot works</a></p><hr style="margin:24px 0;border:0;border-top:1px solid #e5e7eb"><p style="font-size:12px;color:#6b7280">${escapeHtml(
     `Guest Signal Hospitality · ${postalAddress}`,
   )}<br>If you would rather not receive another message, reply “no thanks.”</p></div>`;
 
   try {
+    const scheduledFor = nextRestaurantOwnerSendTime();
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -160,6 +219,7 @@ Deno.serve(async (req) => {
         subject,
         text,
         html,
+        scheduled_at: scheduledFor.toISOString(),
       }),
     });
     const responseBody = await response.text();
@@ -176,15 +236,18 @@ Deno.serve(async (req) => {
     const { error: finishError } = await admin
       .from("prospect_queue")
       .update({
-        status: "contacted",
-        contacted_at: new Date().toISOString(),
-        send_status: "sent",
+        send_status: "scheduled",
+        scheduled_for: scheduledFor.toISOString(),
         send_error: null,
         sent_message_id: messageId,
       })
       .eq("id", prospectId);
     if (finishError) throw finishError;
-    return json(req, { ok: true, message_id: messageId });
+    return json(req, {
+      ok: true,
+      message_id: messageId,
+      scheduled_for: scheduledFor.toISOString(),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await admin

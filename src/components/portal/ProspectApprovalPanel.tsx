@@ -14,11 +14,37 @@ type Prospect = {
   rationale: string | null;
   draft_subject: string | null;
   draft_body: string | null;
-  status: "approval_required" | "approved";
+  status: "approval_required" | "approved" | "contacted";
   contact_email: string | null;
-  send_status: "not_ready" | "pending" | "sending" | "failed";
+  send_status:
+    | "not_ready"
+    | "pending"
+    | "sending"
+    | "scheduled"
+    | "sent"
+    | "failed"
+    | "bounced"
+    | "complained";
   send_error: string | null;
+  scheduled_for: string | null;
+  first_opened_at: string | null;
+  last_opened_at: string | null;
+  open_count: number;
+  first_clicked_at: string | null;
+  last_clicked_at: string | null;
+  click_count: number;
+  last_clicked_url: string | null;
 };
+
+function formatDateTime(value: string | null) {
+  if (!value) return null;
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }) {
   const [prospects, setProspects] = useState<Prospect[]>([]);
@@ -33,12 +59,11 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     const { data, error: queryError } = await supabase
       .from("prospect_queue")
       .select(
-        "id,business_name,website_url,source_url,city,state,fit_score,rationale,draft_subject,draft_body,status,contact_email,send_status,send_error",
+        "id,business_name,website_url,source_url,city,state,fit_score,rationale,draft_subject,draft_body,status,contact_email,send_status,send_error,scheduled_for,first_opened_at,last_opened_at,open_count,first_clicked_at,last_clicked_at,click_count,last_clicked_url",
       )
-      .in("status", ["approval_required", "approved"])
-      .neq("send_status", "sent")
-      .order("fit_score", { ascending: false })
-      .limit(20);
+      .in("status", ["approval_required", "approved", "contacted"])
+      .order("updated_at", { ascending: false })
+      .limit(30);
     if (queryError) setError(queryError.message);
     else {
       const nextProspects = (data ?? []) as Prospect[];
@@ -95,8 +120,8 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
       await load();
       return;
     }
-    setProspects((current) => current.filter((item) => item.id !== prospect.id));
     setSendingId(null);
+    await load();
   }
 
   async function dismiss(id: string) {
@@ -148,7 +173,16 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
       ) : null}
 
       <div className="mt-5 grid gap-4">
-        {prospects.map((prospect) => (
+        {prospects.map((prospect) => {
+          const deliveryLocked = [
+            "pending",
+            "sending",
+            "scheduled",
+            "sent",
+            "bounced",
+            "complained",
+          ].includes(prospect.send_status);
+          return (
           <article key={prospect.id} className="rounded-2xl border border-stone-200 bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -177,7 +211,8 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
               <p className="font-semibold">{prospect.draft_subject}</p>
               <p className="mt-2 whitespace-pre-line">{prospect.draft_body}</p>
             </div>
-            <label className="mt-4 block text-sm font-medium text-slate-800">
+            {!deliveryLocked ? (
+              <label className="mt-4 block text-sm font-medium text-slate-800">
               Verified public business email
               <input
                 type="email"
@@ -192,18 +227,47 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
                 className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
                 autoComplete="off"
               />
-            </label>
-            {prospect.status === "approved" ? (
+              </label>
+            ) : null}
+            {prospect.status === "approved" && !deliveryLocked ? (
               <p className="mt-3 text-xs font-semibold text-amber-800">
-                Already approved; add the recipient and send when ready.
+                Already approved; add the recipient and schedule when ready.
               </p>
+            ) : null}
+            {deliveryLocked ? (
+              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm text-slate-700">
+                <div className="flex flex-wrap gap-x-5 gap-y-2">
+                  <span>
+                    Status: <strong className="capitalize">{prospect.send_status}</strong>
+                  </span>
+                  {prospect.scheduled_for ? (
+                    <span>Scheduled: <strong>{formatDateTime(prospect.scheduled_for)}</strong></span>
+                  ) : null}
+                  <span>Opens: <strong>{prospect.open_count}</strong></span>
+                  <span>Clicks: <strong>{prospect.click_count}</strong></span>
+                </div>
+                {prospect.first_opened_at ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    First open {formatDateTime(prospect.first_opened_at)}
+                    {prospect.last_opened_at && prospect.last_opened_at !== prospect.first_opened_at
+                      ? ` · latest ${formatDateTime(prospect.last_opened_at)}`
+                      : ""}
+                  </p>
+                ) : null}
+                {prospect.last_clicked_url ? (
+                  <p className="mt-2 break-all text-xs text-slate-500">
+                    Last clicked: {prospect.last_clicked_url}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
             {prospect.send_error ? (
               <p className="mt-3 text-xs text-red-700">
                 Previous delivery error: {prospect.send_error}
               </p>
             ) : null}
-            <div className="mt-4 flex flex-wrap gap-2">
+            {!deliveryLocked ? (
+              <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => void approveAndSend(prospect)}
@@ -211,10 +275,10 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
                 disabled={sendingId === prospect.id}
               >
                 {sendingId === prospect.id
-                  ? "Sending…"
+                  ? "Scheduling…"
                   : prospect.status === "approved"
-                    ? "Send approved draft"
-                    : "Approve & send"}
+                    ? "Schedule approved draft"
+                    : "Approve & schedule"}
               </button>
               <button
                 type="button"
@@ -224,9 +288,11 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
               >
                 Dismiss
               </button>
-            </div>
+              </div>
+            ) : null}
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

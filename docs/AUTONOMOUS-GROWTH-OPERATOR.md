@@ -61,3 +61,29 @@ The operator:
 - cannot deploy, merge, send outreach, change prices, create migrations, or spend money.
 
 Outreach remains an approval queue until a human changes prospect status. Only `sales_opportunities.stage = 'won'` is counted as revenue.
+
+## Approved outreach delivery
+
+An approved draft is scheduled for the next Tuesday, Wednesday, or Thursday at
+9:45 AM Eastern. This avoids overnight delivery and restaurant lunch/dinner
+service. Resend accepts the schedule; its signed webhook updates delivery,
+bounce, complaint, open, and click status in the portal.
+
+Required Supabase Edge Function secrets:
+
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+- `OUTREACH_POSTAL_ADDRESS`
+- `OUTREACH_REPLY_TO`
+- `RESEND_WEBHOOK_SECRET`
+
+Create a Resend webhook for `email.sent`, `email.delivered`, `email.opened`,
+`email.clicked`, `email.bounced`, and `email.complained`, targeting:
+
+`https://sqsleiwtacqiweyfacmj.supabase.co/functions/v1/resend-engagement-webhook`
+
+Enable open and click tracking in Resend only after the sending domain and a
+branded tracking domain are verified. Open counts are approximate because
+privacy proxies and image caching can create or suppress events. Email clients
+do not expose reliable reading duration, so the portal reports first/latest
+open and click timestamps instead.

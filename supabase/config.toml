@@ -13,3 +13,7 @@ verify_jwt = true
 [functions.prospect-approval-action]
 # ntfy calls this without a user JWT; a short-lived one-time token is required.
 verify_jwt = false
+
+[functions.resend-engagement-webhook]
+# Resend signs requests with Svix; the function verifies the raw payload.
+verify_jwt = false
