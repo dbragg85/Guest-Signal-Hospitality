@@ -1,7 +1,11 @@
 /**
  * Senior VP of marketing voice for restaurant outreach.
- * Personalizes from public Google profile signals — no generic "we found your profile" openers.
+ * Uses AI to generate personalized copy when available, with template fallback.
+ * Scrapes website metadata to reference business history and philosophy.
  */
+
+import { generateAIOutreachCopy, isAIAvailable } from "./ai-outreach-copy.mjs";
+import { scrapeBusinessContext, hasUsefulContext } from "./scrape-business-context.mjs";
 
 function text(value, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -25,7 +29,7 @@ function cleanBrandName(name) {
 function possessive(name) {
   const brand = text(name, 200);
   if (!brand) return "Your";
-  return /s$/i.test(brand) ? `${brand}’` : `${brand}’s`;
+  return /s$/i.test(brand) ? `${brand}'` : `${brand}'s`;
 }
 
 function formatReviews(count) {
@@ -66,8 +70,8 @@ function observation({ brand, city, rating, reviewsCount, category }) {
   if (vBand === "destination" && (rBand === "strong" || rBand === "elite")) {
     return (
       `${brand} is clearly a ${city} demand engine — ${reviews} public reviews and a ${ratingText} average ` +
-      `is the kind of proof most independents never build. At that volume, the marketing risk isn’t discovery; ` +
-      `it’s a quiet theme spike (speed, consistency, value) that starts converting first-time guests away in Maps ` +
+      `is the kind of proof most independents never build. At that volume, the marketing risk isn't discovery; ` +
+      `it's a quiet theme spike (speed, consistency, value) that starts converting first-time guests away in Maps ` +
       `before your team feels it on the floor.`
     );
   }
@@ -75,7 +79,7 @@ function observation({ brand, city, rating, reviewsCount, category }) {
   if (rBand === "elite") {
     return (
       `A ${ratingText} public rating in ${city} is rare air for a ${cat} concept. Guests are already pre-sold — ` +
-      `which means the reviews that matter now are the ones that chip at expectation. I’d want a crisp monthly ` +
+      `which means the reviews that matter now are the ones that chip at expectation. I'd want a crisp monthly ` +
       `read on which themes are protecting that rating versus the ones that could flatten it.`
     );
   }
@@ -91,23 +95,23 @@ function observation({ brand, city, rating, reviewsCount, category }) {
 
   if (rBand === "solid" || rBand === "vulnerable") {
     return (
-      `At ${ratingText}${reviews ? ` with ${reviews} reviews` : ""} in ${city}, you’re close enough to the local pack ` +
+      `At ${ratingText}${reviews ? ` with ${reviews} reviews` : ""} in ${city}, you're close enough to the local pack ` +
       `that small reputation swings change who gets the reservation. Most owners watch the star number; ` +
-      `I’d rather know which recurring themes are capping you below the next tenth of a point.`
+      `I'd rather know which recurring themes are capping you below the next tenth of a point.`
     );
   }
 
   if (rBand === "at_risk") {
     return (
       `Your public rating (${ratingText}${reviews ? `, ${reviews} reviews` : ""}) in ${city} is already shaping ` +
-      `who never walks through the door. Before spending more on traffic, I’d want a plain-English snapshot ` +
+      `who never walks through the door. Before spending more on traffic, I'd want a plain-English snapshot ` +
       `of the guest themes dragging trust — because acquisition without reputation repair usually leaks.`
     );
   }
 
   return (
-    `I pulled ${brand}’s public guest feedback footprint in ${city}` +
-    `${category ? ` (${cat})` : ""}. There’s enough signal there to turn into a short operator brief — ` +
+    `I pulled ${brand}'s public guest feedback footprint in ${city}` +
+    `${category ? ` (${cat})` : ""}. There's enough signal there to turn into a short operator brief — ` +
     `what guests reward, what they ding, and what would most improve first-visit conversion.`
   );
 }
@@ -122,7 +126,7 @@ function askLine(rBand) {
   return "Want me to prepare a complimentary Guest Signal snapshot with the recurring themes and a short priority list your GM can use this week?";
 }
 
-export function buildProspectOutreachCopy({
+function buildTemplateCopy({
   businessName,
   city,
   state,
@@ -139,10 +143,10 @@ export function buildProspectOutreachCopy({
 
   const subjectOptions = [
     r != null && reviews
-      ? `${brand}: ${r.toFixed(1)} stars · ${reviewsLabel} reviews — what’s actually driving them`
+      ? `${brand}: ${r.toFixed(1)} stars · ${reviewsLabel} reviews — what's actually driving them`
       : null,
     r != null
-      ? `Quick read on ${brand}’s ${r.toFixed(1)} Google rating in ${marketCity}`
+      ? `Quick read on ${brand}'s ${r.toFixed(1)} Google rating in ${marketCity}`
       : null,
     `What ${marketCity} guests are signaling about ${brand}`,
   ].filter(Boolean);
@@ -164,4 +168,106 @@ export function buildProspectOutreachCopy({
     rating_band: rBand,
     volume_band: volumeBand(reviews),
   };
+}
+
+/**
+ * Build prospect outreach copy using AI when available, with template fallback.
+ * Scrapes website for business context to enable personalized messaging.
+ */
+export async function buildProspectOutreachCopyAsync({
+  businessName,
+  city,
+  state,
+  rating,
+  reviewsCount,
+  category,
+  websiteUrl,
+  skipAI = false,
+}) {
+  const r = number(rating);
+  const reviews = number(reviewsCount);
+
+  if (skipAI || !isAIAvailable()) {
+    return {
+      ...buildTemplateCopy({ businessName, city, state, rating, reviewsCount, category }),
+      ai_used: false,
+      context_scraped: false,
+    };
+  }
+
+  let context = null;
+  if (websiteUrl) {
+    try {
+      context = await scrapeBusinessContext({
+        websiteUrl,
+        businessName,
+        maxPages: 4,
+      });
+    } catch (error) {
+      console.warn(`Context scrape failed for ${businessName}: ${error.message}`);
+    }
+  }
+
+  try {
+    const aiResult = await generateAIOutreachCopy({
+      businessName,
+      city,
+      state,
+      rating: r,
+      reviewsCount: reviews,
+      category,
+      context: hasUsefulContext(context) ? context : null,
+    });
+
+    if (aiResult.success && aiResult.draft_subject && aiResult.draft_body) {
+      return {
+        draft_subject: aiResult.draft_subject,
+        draft_body: aiResult.draft_body,
+        voice: aiResult.voice,
+        rating_band: aiResult.rating_band,
+        volume_band: aiResult.volume_band,
+        ai_used: true,
+        ai_model: aiResult.ai_model,
+        context_scraped: Boolean(context && !context.error),
+        context_useful: aiResult.context_used,
+        business_context: hasUsefulContext(context)
+          ? {
+              founded_year: context.foundedYear,
+              years_in_business: context.yearsInBusiness,
+              ownership: context.ownership,
+              awards: context.awards,
+              food_philosophy: context.foodPhilosophy,
+              people: context.people,
+              content_summary: context.contentSummary,
+            }
+          : null,
+      };
+    }
+
+    console.warn(`AI generation failed for ${businessName}: ${aiResult.error}`);
+  } catch (error) {
+    console.warn(`AI outreach error for ${businessName}: ${error.message}`);
+  }
+
+  return {
+    ...buildTemplateCopy({ businessName, city, state, rating, reviewsCount, category }),
+    ai_used: false,
+    ai_error: "Fallback to template",
+    context_scraped: Boolean(context && !context.error),
+  };
+}
+
+/**
+ * Synchronous template-based copy generation (legacy compatibility).
+ * Use buildProspectOutreachCopyAsync for AI-powered personalization.
+ */
+export function buildProspectOutreachCopy({
+  businessName,
+  city,
+  state,
+  rating,
+  reviewsCount,
+  category,
+}) {
+  return buildTemplateCopy({ businessName, city, state, rating, reviewsCount, category });
 }
