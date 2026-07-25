@@ -112,20 +112,14 @@ function candidatePaths(websiteUrl) {
     "/",
     "/contact",
     "/contact-us",
-    "/contactus",
     "/about",
-    "/about-us",
-    "/reservations",
-    "/reserve",
-    "/private-events",
-    "/events",
   ];
   return roots.map((path) => new URL(path, base).toString());
 }
 
 async function fetchText(url) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 9000);
+  const timer = setTimeout(() => controller.abort(), 5000);
   try {
     const response = await fetch(url, {
       redirect: "follow",
