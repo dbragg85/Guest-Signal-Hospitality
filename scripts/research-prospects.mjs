@@ -19,7 +19,11 @@ import {
   prospectMarkets,
   resolveProspectMarket,
 } from "./lib/prospect-markets.mjs";
-import { buildProspectOutreachCopy } from "./lib/prospect-outreach-copy.mjs";
+import {
+  buildProspectOutreachCopy,
+  buildProspectOutreachCopyAsync,
+} from "./lib/prospect-outreach-copy.mjs";
+import { isAIAvailable } from "./lib/ai-outreach-copy.mjs";
 
 const dryRun = ["1", "true", "yes"].includes((process.env.DRY_RUN ?? "").toLowerCase());
 const notifyOnly = ["1", "true", "yes"].includes(
@@ -149,6 +153,71 @@ function normalizePlace(item, market) {
     draft_subject: copy.draft_subject,
     draft_body: copy.draft_body,
   };
+}
+
+async function enhanceProspectWithAI(prospect) {
+  if (!prospect.website_url || !isAIAvailable()) {
+    return prospect;
+  }
+
+  try {
+    const signals = prospect.public_signals || {};
+    const copy = await buildProspectOutreachCopyAsync({
+      businessName: prospect.business_name,
+      city: prospect.city,
+      state: prospect.state,
+      rating: signals.rating,
+      reviewsCount: signals.reviews_count,
+      category: signals.category,
+      websiteUrl: prospect.website_url,
+      skipAI: false,
+    });
+
+    if (copy.ai_used) {
+      return {
+        ...prospect,
+        draft_subject: copy.draft_subject,
+        draft_body: copy.draft_body,
+        public_signals: {
+          ...signals,
+          outreach_voice: copy.voice,
+          rating_band: copy.rating_band,
+          volume_band: copy.volume_band,
+          ai_model: copy.ai_model,
+          context_scraped: copy.context_scraped,
+          context_useful: copy.context_useful,
+          business_context: copy.business_context,
+        },
+      };
+    }
+  } catch (error) {
+    console.warn(`AI enhancement failed for ${prospect.business_name}: ${error.message}`);
+  }
+
+  return prospect;
+}
+
+async function enhanceProspectsWithAI(prospects, maxConcurrent = 3) {
+  if (!isAIAvailable()) {
+    console.log("OPENAI_API_KEY not configured; using template-based copy.");
+    return prospects;
+  }
+
+  console.log(`Enhancing ${prospects.length} prospect(s) with AI-generated copy...`);
+  const enhanced = [];
+  let aiEnhanced = 0;
+
+  for (let i = 0; i < prospects.length; i += maxConcurrent) {
+    const batch = prospects.slice(i, i + maxConcurrent);
+    const results = await Promise.all(batch.map(enhanceProspectWithAI));
+    for (const result of results) {
+      if (result.public_signals?.ai_model) aiEnhanced++;
+      enhanced.push(result);
+    }
+  }
+
+  console.log(`AI enhancement complete: ${aiEnhanced}/${prospects.length} prospects enhanced.`);
+  return enhanced;
 }
 
 async function researchAcrossMarkets({ token, actorId }) {
@@ -519,7 +588,15 @@ try {
   const actorId =
     process.env.APIFY_PROSPECT_ACTOR_ID?.trim() ||
     "compass~crawler-google-places";
-  const { prospects, marketsTouched } = await researchAcrossMarkets({ token, actorId });
+  const { prospects: rawProspects, marketsTouched } = await researchAcrossMarkets({ token, actorId });
+
+  const skipAIEnhancement = ["1", "true", "yes"].includes(
+    (process.env.SKIP_AI_ENHANCEMENT ?? "").toLowerCase(),
+  );
+  const prospects = skipAIEnhancement
+    ? rawProspects
+    : await enhanceProspectsWithAI(rawProspects);
+
   const rowsForUpsert = prospects.map(({ _place_emails, ...row }) => row);
 
   if (dryRun) {
@@ -529,16 +606,29 @@ try {
         websiteUrl: prospect.website_url,
         placeEmails: prospect._place_emails ?? [],
       });
+      const signals = prospect.public_signals || {};
       enrichedPreview.push({
         business_name: prospect.business_name,
         website_url: prospect.website_url,
         contact_email: discovery.email,
         contact_email_source: discovery.source,
+        ai_enhanced: Boolean(signals.ai_model),
+        ai_model: signals.ai_model || null,
+        context_scraped: signals.context_scraped || false,
+        context_useful: signals.context_useful || false,
+        business_context: signals.business_context || null,
+        draft_subject: prospect.draft_subject,
+        draft_body: prospect.draft_body?.slice(0, 300) + (prospect.draft_body?.length > 300 ? "..." : ""),
       });
     }
+    const aiStats = {
+      ai_available: isAIAvailable(),
+      ai_enhanced_count: prospects.filter((p) => p.public_signals?.ai_model).length,
+      total_prospects: prospects.length,
+    };
     console.log(
       JSON.stringify(
-        { markets_touched: marketsTouched, prospects: rowsForUpsert, email_preview: enrichedPreview },
+        { markets_touched: marketsTouched, ai_stats: aiStats, prospects: rowsForUpsert, email_preview: enrichedPreview },
         null,
         2,
       ),
@@ -559,10 +649,13 @@ try {
     : await enrichProspectEmails(supabase, prospects);
   const ntfyNotifications = dryRun ? 0 : await notifyPendingApprovals(supabase);
   const approvalCount = prospects.filter((item) => item.status === "approval_required").length;
+  const aiEnhancedCount = prospects.filter((p) => p.public_signals?.ai_model).length;
+  const contextScrapedCount = prospects.filter((p) => p.public_signals?.context_scraped).length;
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
     summary:
       `${prospects.length} public businesses researched across ${marketsTouched.length} market(s); ` +
+      `${aiEnhancedCount} AI-personalized draft(s); ` +
       `${emailEnrichment.discovered} public email(s) found; ` +
       `${emailEnrichment.scheduled} approved draft(s) scheduled; ` +
       `${approvalCount} draft(s) require approval via ntfy.`,
@@ -575,6 +668,9 @@ try {
       approved_scheduled: emailEnrichment.scheduled,
       ntfy_notifications: ntfyNotifications,
       dry_run: dryRun,
+      ai_available: isAIAvailable(),
+      ai_enhanced: aiEnhancedCount,
+      context_scraped: contextScrapedCount,
     },
   });
 } catch (error) {
