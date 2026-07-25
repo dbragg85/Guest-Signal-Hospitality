@@ -192,6 +192,25 @@ Deno.serve(async (req) => {
     return json(req, { error: "incomplete_draft" }, 400);
   }
 
+  const { data: suppressed } = await admin
+    .from("prospect_queue")
+    .select("id")
+    .eq("contact_email", contactEmail)
+    .in("send_status", ["bounced", "complained"])
+    .neq("id", prospectId)
+    .limit(1)
+    .maybeSingle();
+  if (suppressed) {
+    await admin
+      .from("prospect_queue")
+      .update({
+        send_status: "failed",
+        send_error: "Recipient suppressed after a prior bounce or complaint.",
+      })
+      .eq("id", prospectId);
+    return json(req, { error: "recipient_suppressed" }, 409);
+  }
+
   const complianceFooter =
     `\n\nGuest Signal Hospitality · ${postalAddress}\n` +
     `If you would rather not receive another message, reply “no thanks.”`;
