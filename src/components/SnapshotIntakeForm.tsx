@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { useRef, useState } from "react";
 import { brand, freeSnapshot } from "@/content/site";
 import { persistLeadIntakeToSupabase } from "@/lib/persistLeadIntake";
@@ -200,12 +201,23 @@ export function SnapshotIntakeForm() {
               </p>
               <h2 className="mt-2 text-xl font-semibold text-slate-900">{recommendation.planName}</h2>
               <p className="mt-2 text-sm text-slate-600">{recommendation.rationale}</p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <ServicesIntakeLink href={recommendation.ctaHref} className="btn-primary inline-block">
-                  {recommendation.ctaLabel}
+              <p className="mt-3 text-sm font-medium text-slate-800">
+                Want the monthly version while we build your snapshot? Start now — cancel anytime.
+              </p>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <StripeCheckoutButton
+                  planKey={recommendation.planKey}
+                  label={`Start ${recommendation.planName}`}
+                  className="btn-primary"
+                />
+                <ServicesIntakeLink
+                  href={recommendation.ctaHref}
+                  className="btn-secondary inline-block text-center"
+                >
+                  Ask a question first
                 </ServicesIntakeLink>
-                <Link href="/snapshot/" className="btn-secondary inline-block">
-                  Request another snapshot
+                <Link href="/snapshot/" className="inline-block px-4 py-3 text-center text-sm font-semibold text-slate-600 underline underline-offset-4">
+                  Another location
                 </Link>
               </div>
             </div>
