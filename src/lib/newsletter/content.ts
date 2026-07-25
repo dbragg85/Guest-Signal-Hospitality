@@ -105,10 +105,7 @@ export function getPublishedNewsletters(): ParsedNewsletter[] {
 }
 
 export function getFeaturedNewsletters(limit = 3): ParsedNewsletter[] {
-  const published = getPublishedNewsletters();
-  const featured = published.filter((item) => item.frontmatter.featured);
-  if (featured.length >= limit) return featured.slice(0, limit);
-  return published.slice(0, limit);
+  return getPublishedNewsletters().slice(0, limit);
 }
 
 function getLegacySlugMap(): Record<string, string> {
