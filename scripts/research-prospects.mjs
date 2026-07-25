@@ -477,7 +477,14 @@ try {
     },
   });
 } catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
+  const message =
+    error instanceof Error
+      ? error.message
+      : error && typeof error === "object"
+        ? [error.message, error.code, error.details, error.hint]
+            .filter(Boolean)
+            .join(" | ") || JSON.stringify(error)
+        : String(error);
   if (runId) {
     await finishAutomationRun(supabase, runId, {
       status: "failed",
