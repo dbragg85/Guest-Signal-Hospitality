@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { Section } from "@/components/Section";
 import { brand } from "@/content/site";
 
@@ -78,13 +79,20 @@ export default function GoogleRestaurantRatingsPage() {
             .
           </p>
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <ServicesIntakeLink href="/snapshot/" className="btn-primary">
               Get your free snapshot
             </ServicesIntakeLink>
+            <div className="min-w-[14rem]">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label="Start Signal Monitor — $149/mo"
+                className="btn-secondary w-full"
+              />
+            </div>
             <Link
               href="/resources/restaurant-seo-google-ratings/"
-              className="text-sm font-semibold text-amber-900 underline underline-offset-2"
+              className="px-2 py-3 text-sm font-semibold text-amber-900 underline underline-offset-2"
             >
               Restaurant SEO + ratings
             </Link>

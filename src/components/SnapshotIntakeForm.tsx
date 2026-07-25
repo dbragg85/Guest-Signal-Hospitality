@@ -289,37 +289,51 @@ export function SnapshotIntakeForm() {
               />
             </label>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">
-                Website URL <span className="font-normal text-slate-500">(optional)</span>
-              </span>
-              <input
-                name="websiteUrl"
-                type="url"
-                inputMode="url"
-                placeholder="https://"
-                className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-              />
-              <span className="text-xs text-slate-500">
-                No website? Leave this blank—we can use your address and public listings.
-              </span>
-            </label>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold">Your name</span>
+                <input
+                  name="name"
+                  required
+                  autoComplete="name"
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                />
+              </label>
+              <label className="grid gap-2">
+                <span className="text-sm font-semibold">Work email</span>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                />
+              </label>
+            </div>
 
             <label className="grid gap-2">
-              <span className="text-sm font-semibold">Google Business Profile link (if available)</span>
-              <input
-                name="gbpUrl"
-                type="url"
-                inputMode="url"
-                placeholder="https://maps.google.com/..."
-                className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-              />
+              <span className="text-sm font-semibold">What should we prioritize?</span>
+              <select
+                name="snapshotPriority"
+                required
+                defaultValue=""
+                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+              >
+                <option value="" disabled>
+                  Select one
+                </option>
+                {SNAPSHOT_PRIORITY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <fieldset className="grid gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
               <legend className="px-1 text-sm font-semibold text-slate-800">Location</legend>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <label className="grid gap-2 sm:col-span-1">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="grid gap-2">
                   <span className="text-sm font-medium">City</span>
                   <input
                     name="city"
@@ -337,84 +351,59 @@ export function SnapshotIntakeForm() {
                     className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
                   />
                 </label>
-                <label className="grid gap-2">
-                  <span className="text-sm font-medium">
-                    ZIP <span className="font-normal text-slate-500">(optional)</span>
-                  </span>
-                  <input
-                    name="zip"
-                    autoComplete="postal-code"
-                    className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-                  />
-                </label>
               </div>
-              <label className="grid gap-2">
-                <span className="text-sm font-medium">
-                  Street address <span className="font-normal text-slate-500">(optional)</span>
-                </span>
-                <input
-                  name="streetAddress"
-                  autoComplete="street-address"
-                  className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-                />
-                <span className="text-xs text-slate-500">
-                  City + state is enough if your Google listing is easy to find.
-                </span>
-              </label>
+              <details className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <summary className="cursor-pointer text-sm font-medium text-slate-700">
+                  Optional details (website, Google listing, street)
+                </summary>
+                <div className="mt-4 grid gap-4">
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium">Website URL</span>
+                    <input
+                      name="websiteUrl"
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://"
+                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium">Google Business Profile link</span>
+                    <input
+                      name="gbpUrl"
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://maps.google.com/..."
+                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium">Street address</span>
+                    <input
+                      name="streetAddress"
+                      autoComplete="street-address"
+                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium">ZIP</span>
+                    <input
+                      name="zip"
+                      autoComplete="postal-code"
+                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium">Anything else?</span>
+                    <textarea
+                      name="message"
+                      rows={2}
+                      className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                  </label>
+                </div>
+              </details>
             </fieldset>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">Contact name</span>
-              <input
-                name="name"
-                required
-                autoComplete="name"
-                className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">Email</span>
-              <input
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-              />
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">Current priority</span>
-              <select
-                name="snapshotPriority"
-                required
-                defaultValue=""
-                className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-              >
-                <option value="" disabled>
-                  Select one
-                </option>
-                {SNAPSHOT_PRIORITY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <span className="text-xs text-slate-500">
-                Helps us recommend Signal Monitor, Signal Growth, or Signal Elevate—you are not
-                committing to a paid plan.
-              </span>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">Anything else? (optional)</span>
-              <textarea
-                name="message"
-                rows={3}
-                className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
-              />
-            </label>
 
             <button
               type="submit"
