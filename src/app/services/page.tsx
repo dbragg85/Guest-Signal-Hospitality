@@ -70,12 +70,17 @@ function ServicesHero({ seo }: { seo: typeof servicesPageSeo }) {
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
           {seo.supporting}
         </p>
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:flex-wrap">
           <ServicesIntakeLink href="/snapshot/" className="btn-primary px-6 py-3">
             Get your free snapshot
           </ServicesIntakeLink>
-          <Link href="#plans" className="btn-secondary px-6 py-3">
-            Compare plans
+          <StripeCheckoutButton
+            planKey="signal_monitor"
+            label="Start Signal Monitor — $149/mo"
+            className="btn-secondary px-6 py-3"
+          />
+          <Link href="#plans" className="px-6 py-3 text-sm font-semibold text-slate-700 underline underline-offset-4">
+            Compare all plans
           </Link>
         </div>
       </div>

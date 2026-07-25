@@ -1,4 +1,5 @@
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { pricingPlans, type PlanInquiryKey } from "@/content/site";
 
 export function PortalPlanUpgradePanel({
@@ -33,10 +34,9 @@ export function PortalPlanUpgradePanel({
         Turn this scorecard into ongoing intelligence
       </h2>
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
-        You already have your baseline Guest Signal Score and deliverables
-        {restaurantName ? ` for ${restaurantName}` : ""}. Choose a monthly plan to add recurring
-        runs, alerts, competitor tracking, and—on Elevate—menu intelligence and managed review
-        responses.
+        You already have your baseline Guest Signal Score
+        {restaurantName ? ` for ${restaurantName}` : ""}. Start a monthly plan now — checkout takes
+        about a minute — or ask a question first if you prefer.
       </p>
       <ul className="mt-8 grid gap-4 lg:grid-cols-3">
         {pricingPlans.map((plan) => {
@@ -81,15 +81,24 @@ export function PortalPlanUpgradePanel({
                   </li>
                 ))}
               </ul>
-              <ServicesIntakeLink
-                href={`/services/inquiry/?plan=${plan.inquiryKey}${upgradeQs}`}
-                className={`mt-4 inline-block w-full text-center text-sm ${
-                  isRec ? "btn-primary" : "btn-secondary"
-                }`}
-                data-track={`portal_upgrade_${plan.inquiryKey}`}
-              >
-                {plan.buttonText}
-              </ServicesIntakeLink>
+              <div className="mt-4 grid gap-2">
+                <StripeCheckoutButton
+                  planKey={plan.inquiryKey}
+                  label={isRec ? `Start ${plan.name}` : plan.buttonText}
+                  className={`w-full rounded-xl px-4 py-3 text-sm font-semibold ${
+                    isRec
+                      ? "btn-primary"
+                      : "border border-stone-300 text-slate-900 hover:bg-stone-50"
+                  }`}
+                />
+                <ServicesIntakeLink
+                  href={`/services/inquiry/?plan=${plan.inquiryKey}${upgradeQs}`}
+                  className="block w-full text-center text-xs font-semibold text-slate-600 underline-offset-2 hover:underline"
+                  data-track={`portal_upgrade_${plan.inquiryKey}`}
+                >
+                  Prefer a call first?
+                </ServicesIntakeLink>
+              </div>
             </li>
           );
         })}
