@@ -34,6 +34,20 @@ type Prospect = {
   last_clicked_at: string | null;
   click_count: number;
   last_clicked_url: string | null;
+  public_signals?: {
+    market_slug?: string;
+    ai_model?: string;
+    context_useful?: boolean;
+    rating?: number;
+    reviews_count?: number;
+  };
+};
+
+type MarketGroup = {
+  market: string;
+  city: string;
+  state: string;
+  prospects: Prospect[];
 };
 
 function formatDateTime(value: string | null) {
@@ -59,11 +73,11 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     const { data, error: queryError } = await supabase
       .from("prospect_queue")
       .select(
-        "id,business_name,website_url,source_url,city,state,fit_score,rationale,draft_subject,draft_body,status,contact_email,send_status,send_error,scheduled_for,first_opened_at,last_opened_at,open_count,first_clicked_at,last_clicked_at,click_count,last_clicked_url",
+        "id,business_name,website_url,source_url,city,state,fit_score,rationale,draft_subject,draft_body,status,contact_email,send_status,send_error,scheduled_for,first_opened_at,last_opened_at,open_count,first_clicked_at,last_clicked_at,click_count,last_clicked_url,public_signals",
       )
       .in("status", ["approval_required", "approved", "contacted"])
-      .order("updated_at", { ascending: false })
-      .limit(30);
+      .order("fit_score", { ascending: false })
+      .limit(100);
     if (queryError) setError(queryError.message);
     else {
       const nextProspects = (data ?? []) as Prospect[];
@@ -79,6 +93,22 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     }
     setLoading(false);
   }, [supabase]);
+
+  const groupedByMarket = prospects.reduce<MarketGroup[]>((groups, prospect) => {
+    const marketSlug = prospect.public_signals?.market_slug || `${prospect.city.toLowerCase()}-${prospect.state.toLowerCase()}`;
+    const existing = groups.find((g) => g.market === marketSlug);
+    if (existing) {
+      existing.prospects.push(prospect);
+    } else {
+      groups.push({
+        market: marketSlug,
+        city: prospect.city,
+        state: prospect.state,
+        prospects: [prospect],
+      });
+    }
+    return groups;
+  }, []);
 
   useEffect(() => {
     void load();
@@ -161,8 +191,39 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
         <p className="mt-5 text-sm text-slate-600">No active outreach drafts.</p>
       ) : null}
 
-      <div className="mt-5 grid gap-4">
-        {prospects.map((prospect) => {
+      {!loading && !error && groupedByMarket.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="text-xs font-medium text-slate-500">Markets:</span>
+          {groupedByMarket.map((group) => (
+            <span
+              key={group.market}
+              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+            >
+              {group.city}, {group.state}
+              <span className="rounded-full bg-amber-200 px-1.5 text-[10px]">
+                {group.prospects.length}
+              </span>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-5 space-y-8">
+        {groupedByMarket.map((group) => (
+          <div key={group.market}>
+            <h3 className="mb-3 flex items-center gap-2 border-b border-stone-200 pb-2 text-sm font-semibold text-slate-700">
+              <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-900">
+                {group.city}, {group.state}
+              </span>
+              <span className="text-slate-400">
+                {group.prospects.length} prospect{group.prospects.length !== 1 ? "s" : ""}
+              </span>
+              <span className="text-xs font-normal text-slate-400">
+                {group.prospects.filter((p) => p.status === "approval_required").length} pending
+              </span>
+            </h3>
+            <div className="grid gap-4">
+              {group.prospects.map((prospect) => {
           const deliveryLocked = [
             "pending",
             "sending",
@@ -179,11 +240,23 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="font-semibold text-slate-900">
+                  <h3 className="flex items-center gap-2 font-semibold text-slate-900">
                     {prospect.business_name}
+                    {prospect.public_signals?.ai_model ? (
+                      <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                        AI
+                      </span>
+                    ) : null}
+                    {prospect.public_signals?.context_useful ? (
+                      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                        Context
+                      </span>
+                    ) : null}
                   </h3>
                   <p className="text-xs text-slate-500">
                     {prospect.city}, {prospect.state} · Fit {prospect.fit_score}/100
+                    {prospect.public_signals?.rating ? ` · ${prospect.public_signals.rating.toFixed(1)}★` : ""}
+                    {prospect.public_signals?.reviews_count ? ` · ${prospect.public_signals.reviews_count} reviews` : ""}
                     {awaitingNtfy ? " · Waiting on ntfy" : ""}
                   </p>
                 </div>
@@ -299,9 +372,12 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
                 </div>
               ) : null}
             </article>
-          );
-        })}
-      </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
     </section>
   );
 }
