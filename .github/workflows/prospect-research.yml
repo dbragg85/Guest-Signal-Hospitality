@@ -2,7 +2,7 @@ name: Research restaurant prospects
 
 on:
   schedule:
-    # Daily 10:15 AM Eastern — 10 prospects across all service markets.
+    # Daily 10:15 AM Eastern — 10 prospects per market for configured markets.
     - cron: "15 14 * * *"
   workflow_dispatch:
     inputs:
@@ -27,10 +27,15 @@ on:
         type: boolean
         default: false
       market_slug:
-        description: Optional market slug (e.g. columbus-oh). Empty = all markets.
+        description: Optional market slug (e.g. columbus-oh). Empty = use PROSPECT_MARKETS or all.
         required: false
         type: string
         default: ""
+      clear_old_drafts:
+        description: Archive old template-based drafts before researching
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -96,6 +101,13 @@ jobs:
           fi
           echo "ntfy topic configured"
 
+      - name: Archive old drafts (if requested)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.clear_old_drafts == true }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run growth:archive-old-drafts
+
       - name: Research public businesses and notify ntfy approvals
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
@@ -106,8 +118,13 @@ jobs:
           PROSPECT_ALL_MARKETS: ${{ vars.PROSPECT_ALL_MARKETS || '1' }}
           PROSPECT_MARKET_SLUG: ${{ github.event_name == 'workflow_dispatch' && inputs.market_slug || vars.PROSPECT_MARKET_SLUG || '' }}
           PROSPECT_SEARCH_QUERY: ${{ vars.PROSPECT_SEARCH_QUERY || '' }}
-          PROSPECT_MAX_RESULTS: ${{ vars.PROSPECT_MAX_RESULTS || '10' }}
+          PROSPECT_MARKETS: ${{ vars.PROSPECT_MARKETS || '' }}
+          PROSPECT_PER_MARKET: ${{ vars.PROSPECT_PER_MARKET || '10' }}
+          PROSPECT_MAX_RESULTS: ${{ vars.PROSPECT_MAX_RESULTS || '100' }}
           PROSPECT_MIN_FIT_SCORE: ${{ vars.PROSPECT_MIN_FIT_SCORE || '55' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o' }}
+          AI_CONCURRENCY: ${{ vars.AI_CONCURRENCY || '3' }}
           NTFY_SERVER_URL: ${{ vars.NTFY_SERVER_URL || 'https://ntfy.sh' }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NTFY_ACCESS_TOKEN: ${{ secrets.NTFY_ACCESS_TOKEN }}
