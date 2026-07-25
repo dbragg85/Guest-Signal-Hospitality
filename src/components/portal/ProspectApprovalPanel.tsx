@@ -1,7 +1,9 @@
 "use client";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+type ProspectStatus = "approval_required" | "approved" | "contacted" | "dismissed";
 
 type Prospect = {
   id: string;
@@ -14,7 +16,7 @@ type Prospect = {
   rationale: string | null;
   draft_subject: string | null;
   draft_body: string | null;
-  status: "approval_required" | "approved" | "contacted";
+  status: ProspectStatus;
   contact_email: string | null;
   send_status:
     | "not_ready"
@@ -43,6 +45,16 @@ type Prospect = {
   };
 };
 
+type StatusFilter = "all" | "pending" | "approved" | "sent" | "dismissed";
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "sent", label: "Sent" },
+  { value: "dismissed", label: "Dismissed" },
+];
+
 type MarketGroup = {
   market: string;
   city: string;
@@ -67,6 +79,10 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [marketFilter, setMarketFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -75,9 +91,9 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
       .select(
         "id,business_name,website_url,source_url,city,state,fit_score,rationale,draft_subject,draft_body,status,contact_email,send_status,send_error,scheduled_for,first_opened_at,last_opened_at,open_count,first_clicked_at,last_clicked_at,click_count,last_clicked_url,public_signals",
       )
-      .in("status", ["approval_required", "approved", "contacted"])
+      .in("status", ["approval_required", "approved", "contacted", "dismissed"])
       .order("fit_score", { ascending: false })
-      .limit(100);
+      .limit(500);
     if (queryError) setError(queryError.message);
     else {
       const nextProspects = (data ?? []) as Prospect[];
@@ -94,7 +110,49 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     setLoading(false);
   }, [supabase]);
 
-  const groupedByMarket = prospects.reduce<MarketGroup[]>((groups, prospect) => {
+  const availableMarkets = useMemo(() => {
+    const marketMap = new Map<string, { city: string; state: string }>();
+    for (const prospect of prospects) {
+      const slug =
+        prospect.public_signals?.market_slug ||
+        `${prospect.city.toLowerCase()}-${prospect.state.toLowerCase()}`;
+      if (!marketMap.has(slug)) {
+        marketMap.set(slug, { city: prospect.city, state: prospect.state });
+      }
+    }
+    return Array.from(marketMap.entries())
+      .map(([slug, { city, state }]) => ({ slug, city, state }))
+      .sort((a, b) => `${a.city}, ${a.state}`.localeCompare(`${b.city}, ${b.state}`));
+  }, [prospects]);
+
+  const filteredProspects = useMemo(() => {
+    return prospects.filter((prospect) => {
+      if (statusFilter !== "all") {
+        if (statusFilter === "pending" && prospect.status !== "approval_required") return false;
+        if (statusFilter === "approved" && prospect.status !== "approved") return false;
+        if (statusFilter === "sent" && prospect.send_status !== "sent") return false;
+        if (statusFilter === "dismissed" && prospect.status !== "dismissed") return false;
+      }
+
+      if (marketFilter !== "all") {
+        const prospectMarket =
+          prospect.public_signals?.market_slug ||
+          `${prospect.city.toLowerCase()}-${prospect.state.toLowerCase()}`;
+        if (prospectMarket !== marketFilter) return false;
+      }
+
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = prospect.business_name.toLowerCase().includes(query);
+        const matchesCity = prospect.city.toLowerCase().includes(query);
+        if (!matchesName && !matchesCity) return false;
+      }
+
+      return true;
+    });
+  }, [prospects, statusFilter, marketFilter, searchQuery]);
+
+  const groupedByMarket = filteredProspects.reduce<MarketGroup[]>((groups, prospect) => {
     const marketSlug = prospect.public_signals?.market_slug || `${prospect.city.toLowerCase()}-${prospect.state.toLowerCase()}`;
     const existing = groups.find((g) => g.market === marketSlug);
     if (existing) {
@@ -109,6 +167,18 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     }
     return groups;
   }, []);
+
+  const statusCounts = useMemo(() => {
+    const counts = { all: 0, pending: 0, approved: 0, sent: 0, dismissed: 0 };
+    for (const prospect of prospects) {
+      counts.all++;
+      if (prospect.status === "approval_required") counts.pending++;
+      else if (prospect.status === "approved") counts.approved++;
+      else if (prospect.status === "dismissed") counts.dismissed++;
+      if (prospect.send_status === "sent") counts.sent++;
+    }
+    return counts;
+  }, [prospects]);
 
   useEffect(() => {
     void load();
@@ -181,6 +251,80 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
         </button>
       </div>
 
+      {!loading && prospects.length > 0 ? (
+        <div className="mt-5 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {STATUS_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                onClick={() => setStatusFilter(filter.value)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  statusFilter === filter.value
+                    ? "bg-amber-600 text-white"
+                    : "bg-white text-slate-700 hover:bg-amber-100"
+                }`}
+              >
+                {filter.label}
+                <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px]">
+                  {statusCounts[filter.value]}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label htmlFor="market-filter" className="text-xs font-medium text-slate-600">
+                Market:
+              </label>
+              <select
+                id="market-filter"
+                value={marketFilter}
+                onChange={(e) => setMarketFilter(e.target.value)}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800"
+              >
+                <option value="all">All markets ({availableMarkets.length})</option>
+                {availableMarkets.map((market) => (
+                  <option key={market.slug} value={market.slug}>
+                    {market.city}, {market.state}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label htmlFor="search-query" className="text-xs font-medium text-slate-600">
+                Search:
+              </label>
+              <input
+                id="search-query"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Business name or city…"
+                className="w-48 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-xs text-slate-500 hover:text-slate-800"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {filteredProspects.length !== prospects.length ? (
+            <p className="text-xs text-slate-500">
+              Showing {filteredProspects.length} of {prospects.length} prospects
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {loading ? <p className="mt-5 text-sm text-slate-600">Loading drafts…</p> : null}
       {error ? (
         <p className="mt-5 text-sm font-medium text-red-700" role="alert">
@@ -190,22 +334,8 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
       {!loading && !error && prospects.length === 0 ? (
         <p className="mt-5 text-sm text-slate-600">No active outreach drafts.</p>
       ) : null}
-
-      {!loading && !error && groupedByMarket.length > 0 ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="text-xs font-medium text-slate-500">Markets:</span>
-          {groupedByMarket.map((group) => (
-            <span
-              key={group.market}
-              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
-            >
-              {group.city}, {group.state}
-              <span className="rounded-full bg-amber-200 px-1.5 text-[10px]">
-                {group.prospects.length}
-              </span>
-            </span>
-          ))}
-        </div>
+      {!loading && !error && prospects.length > 0 && filteredProspects.length === 0 ? (
+        <p className="mt-5 text-sm text-slate-600">No prospects match your filters.</p>
       ) : null}
 
       <div className="mt-5 space-y-8">
@@ -233,15 +363,40 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
             "complained",
           ].includes(prospect.send_status);
           const awaitingNtfy = prospect.status === "approval_required";
+          const isDismissed = prospect.status === "dismissed";
+          const isSent = prospect.send_status === "sent";
           return (
             <article
               key={prospect.id}
-              className="rounded-2xl border border-stone-200 bg-white p-5"
+              className={`rounded-2xl border p-5 ${
+                isDismissed
+                  ? "border-stone-300 bg-stone-50 opacity-75"
+                  : isSent
+                    ? "border-green-200 bg-green-50/50"
+                    : "border-stone-200 bg-white"
+              }`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="flex items-center gap-2 font-semibold text-slate-900">
                     {prospect.business_name}
+                    {isDismissed ? (
+                      <span className="rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium text-stone-600">
+                        Dismissed
+                      </span>
+                    ) : isSent ? (
+                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">
+                        Sent
+                      </span>
+                    ) : awaitingNtfy ? (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                        Pending
+                      </span>
+                    ) : prospect.status === "approved" ? (
+                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                        Approved
+                      </span>
+                    ) : null}
                     {prospect.public_signals?.ai_model ? (
                       <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
                         AI
@@ -257,7 +412,6 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
                     {prospect.city}, {prospect.state} · Fit {prospect.fit_score}/100
                     {prospect.public_signals?.rating ? ` · ${prospect.public_signals.rating.toFixed(1)}★` : ""}
                     {prospect.public_signals?.reviews_count ? ` · ${prospect.public_signals.reviews_count} reviews` : ""}
-                    {awaitingNtfy ? " · Waiting on ntfy" : ""}
                   </p>
                 </div>
                 <div className="flex gap-3 text-xs">
