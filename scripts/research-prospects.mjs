@@ -6,6 +6,10 @@ import {
   waitForApifyRun,
 } from "./lib/apify-yelp-actor.mjs";
 import {
+  discoverBusinessEmail,
+  emailsFromPlaceItem,
+} from "./lib/discover-business-email.mjs";
+import {
   finishAutomationRun,
   recordAutomationRun,
   requiredEnv,
@@ -15,6 +19,9 @@ import {
 const dryRun = ["1", "true", "yes"].includes((process.env.DRY_RUN ?? "").toLowerCase());
 const notifyOnly = ["1", "true", "yes"].includes(
   (process.env.NOTIFY_ONLY ?? "").toLowerCase(),
+);
+const enrichOnly = ["1", "true", "yes"].includes(
+  (process.env.ENRICH_EMAILS_ONLY ?? "").toLowerCase(),
 );
 const requireNtfy = ["1", "true", "yes"].includes(
   (process.env.REQUIRE_NTFY ?? (dryRun ? "0" : "1")).toLowerCase(),
@@ -43,6 +50,8 @@ function actorInput() {
     maxCrawledPlacesPerSearch: maxProspects,
     language: "en",
     skipClosedPlaces: true,
+    scrapeContacts: true,
+    maxImages: 0,
   };
 }
 
@@ -84,6 +93,7 @@ function normalizePlace(item) {
     ? `Public profile signals: ${signalParts.join(", ")}.`
     : "Public restaurant profile found in the Cincinnati market.";
 
+  const placeEmails = emailsFromPlaceItem(item);
   return {
     business_name: businessName,
     website_url: website,
@@ -97,7 +107,9 @@ function normalizePlace(item) {
       rating,
       reviews_count: reviewsCount,
       category,
+      place_emails: placeEmails,
     },
+    _place_emails: placeEmails,
     draft_subject: `Complimentary Guest Signal snapshot for ${businessName}`,
     draft_body:
       `Hi ${businessName} team,\n\n` +
@@ -106,6 +118,101 @@ function normalizePlace(item) {
       `Would you like me to prepare one for your team? There is no obligation or credit card required.\n\n` +
       `— Guest Signal Hospitality`,
   };
+}
+
+async function scheduleApprovedProspect(prospectId) {
+  const supabaseUrl = requiredEnv("SUPABASE_URL").replace(/\/+$/, "");
+  const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const response = await fetch(`${supabaseUrl}/functions/v1/send-approved-prospect`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ prospectId, serviceInvoke: true }),
+  });
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(`schedule failed (${response.status}): ${body.slice(0, 400)}`);
+  }
+}
+
+async function enrichProspectEmails(supabase, researchedProspects = []) {
+  const byKey = new Map(
+    researchedProspects.map((prospect) => [
+      `${prospect.business_name}|${prospect.city}|${prospect.state}`.toLowerCase(),
+      prospect,
+    ]),
+  );
+
+  const { data: targets, error } = await supabase
+    .from("prospect_queue")
+    .select(
+      "id,business_name,city,state,website_url,contact_email,status,send_status,public_signals",
+    )
+    .in("status", ["approval_required", "approved"])
+    .is("contact_email", null)
+    .order("fit_score", { ascending: false })
+    .limit(40);
+  if (error) throw error;
+
+  let discovered = 0;
+  let scheduled = 0;
+  for (const row of targets ?? []) {
+    const key = `${row.business_name}|${row.city}|${row.state}`.toLowerCase();
+    const researched = byKey.get(key);
+    const placeEmails =
+      researched?._place_emails ??
+      (Array.isArray(row.public_signals?.place_emails)
+        ? row.public_signals.place_emails
+        : []);
+    const { email, source } = await discoverBusinessEmail({
+      websiteUrl: row.website_url,
+      placeEmails,
+    });
+    if (!email) continue;
+
+    const nextSignals = {
+      ...(row.public_signals && typeof row.public_signals === "object"
+        ? row.public_signals
+        : {}),
+      contact_email_source: source,
+    };
+    const { error: updateError } = await supabase
+      .from("prospect_queue")
+      .update({
+        contact_email: email,
+        public_signals: nextSignals,
+        send_status: row.status === "approved" ? "pending" : row.send_status,
+        send_error: null,
+      })
+      .eq("id", row.id)
+      .is("contact_email", null);
+    if (updateError) throw updateError;
+    discovered += 1;
+
+    if (row.status === "approved") {
+      try {
+        await scheduleApprovedProspect(row.id);
+        scheduled += 1;
+      } catch (scheduleError) {
+        const message =
+          scheduleError instanceof Error
+            ? scheduleError.message
+            : String(scheduleError);
+        await supabase
+          .from("prospect_queue")
+          .update({
+            send_status: "failed",
+            send_error: message.slice(0, 1000),
+          })
+          .eq("id", row.id);
+      }
+    }
+  }
+
+  return { discovered, scheduled };
 }
 
 function actionToken() {
@@ -127,7 +234,9 @@ async function notifyPendingApprovals(supabase, { force = false } = {}) {
 
   let query = supabase
     .from("prospect_queue")
-    .select("id,business_name,fit_score,rationale,draft_subject,draft_body")
+    .select(
+      "id,business_name,fit_score,rationale,draft_subject,draft_body,contact_email",
+    )
     .eq("status", "approval_required")
     .order("fit_score", { ascending: false })
     .limit(20);
@@ -164,8 +273,12 @@ async function notifyPendingApprovals(supabase, { force = false } = {}) {
     if (tokenError) throw tokenError;
 
     const actionBase = `${requiredEnv("SUPABASE_URL").replace(/\/+$/, "")}/functions/v1/prospect-approval-action`;
+    const recipient = text(prospect.contact_email, 180);
     const message = [
       `Fit score: ${prospect.fit_score}/100`,
+      recipient
+        ? `To: ${recipient} · Approve schedules Tue–Thu 9:45 AM ET`
+        : "No public email found yet — Approve will ask for one",
       text(prospect.rationale, 240),
       "",
       text(prospect.draft_subject, 180),
@@ -181,14 +294,16 @@ async function notifyPendingApprovals(supabase, { force = false } = {}) {
       headers,
       body: JSON.stringify({
         topic,
-        title: `Approve outreach: ${prospect.business_name}`,
+        title: recipient
+          ? `Approve send: ${prospect.business_name}`
+          : `Approve outreach: ${prospect.business_name}`,
         message,
         priority: 4,
         tags: ["email", "memo"],
         actions: [
           {
             action: "http",
-            label: "Approve",
+            label: recipient ? "Approve & schedule" : "Approve",
             url: `${actionBase}?token=${encodeURIComponent(approve.token)}`,
             method: "POST",
             clear: true,
@@ -233,9 +348,40 @@ let runId;
 
 try {
   runId = await recordAutomationRun(supabase, {
-    run_kind: notifyOnly ? "prospect_ntfy_notify" : "prospect_research",
+    run_kind: enrichOnly
+      ? "prospect_email_enrich"
+      : notifyOnly
+        ? "prospect_ntfy_notify"
+        : "prospect_research",
     status: "started",
   });
+
+  if (enrichOnly) {
+    if (dryRun) {
+      await finishAutomationRun(supabase, runId, {
+        status: "skipped",
+        summary: "Dry-run email enrichment skipped writes.",
+        metrics: { dry_run: true, enrich_only: true },
+      });
+      process.exit(0);
+    }
+    const emailEnrichment = await enrichProspectEmails(supabase);
+    const ntfyNotifications = await notifyPendingApprovals(supabase, { force: true });
+    await finishAutomationRun(supabase, runId, {
+      status: "succeeded",
+      summary:
+        `Found ${emailEnrichment.discovered} public email(s); ` +
+        `scheduled ${emailEnrichment.scheduled} already-approved draft(s); ` +
+        `sent ${ntfyNotifications} ntfy approval ping(s).`,
+      metrics: {
+        emails_discovered: emailEnrichment.discovered,
+        approved_scheduled: emailEnrichment.scheduled,
+        ntfy_notifications: ntfyNotifications,
+        enrich_only: true,
+      },
+    });
+    process.exit(0);
+  }
 
   if (notifyOnly) {
     if (dryRun) {
@@ -281,13 +427,27 @@ try {
     datasetId: completed.defaultDatasetId,
   });
   const prospects = items.map(normalizePlace).filter(Boolean).slice(0, maxProspects);
+  const rowsForUpsert = prospects.map(({ _place_emails, ...row }) => row);
 
   if (dryRun) {
-    console.log(JSON.stringify(prospects, null, 2));
-  } else if (prospects.length) {
+    const enrichedPreview = [];
+    for (const prospect of prospects.slice(0, 5)) {
+      const discovery = await discoverBusinessEmail({
+        websiteUrl: prospect.website_url,
+        placeEmails: prospect._place_emails ?? [],
+      });
+      enrichedPreview.push({
+        business_name: prospect.business_name,
+        website_url: prospect.website_url,
+        contact_email: discovery.email,
+        contact_email_source: discovery.source,
+      });
+    }
+    console.log(JSON.stringify({ prospects: rowsForUpsert, email_preview: enrichedPreview }, null, 2));
+  } else if (rowsForUpsert.length) {
     const { error } = await supabase
       .from("prospect_queue")
-      .upsert(prospects, {
+      .upsert(rowsForUpsert, {
         onConflict: "business_name,city,state",
         // Never reset a human-approved/contacted/dismissed prospect on a later research run.
         ignoreDuplicates: true,
@@ -295,14 +455,23 @@ try {
     if (error) throw error;
   }
 
+  const emailEnrichment = dryRun
+    ? { discovered: 0, scheduled: 0 }
+    : await enrichProspectEmails(supabase, prospects);
   const ntfyNotifications = dryRun ? 0 : await notifyPendingApprovals(supabase);
   const approvalCount = prospects.filter((item) => item.status === "approval_required").length;
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
-    summary: `${prospects.length} public businesses researched; ${approvalCount} draft(s) require approval via ntfy.`,
+    summary:
+      `${prospects.length} public businesses researched; ` +
+      `${emailEnrichment.discovered} public email(s) found; ` +
+      `${emailEnrichment.scheduled} approved draft(s) scheduled; ` +
+      `${approvalCount} draft(s) require approval via ntfy.`,
     metrics: {
       researched: prospects.length,
       approval_required: approvalCount,
+      emails_discovered: emailEnrichment.discovered,
+      approved_scheduled: emailEnrichment.scheduled,
       ntfy_notifications: ntfyNotifications,
       dry_run: dryRun,
     },

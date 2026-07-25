@@ -23,6 +23,7 @@
     "resend:portal-invites": "node scripts/resend-portal-invites.mjs",
     "test:lead-intake-webhook": "node scripts/test-lead-intake-webhook-edge.mjs",
     "test:yelp-integration": "node --test scripts/tests/yelp-integration.test.mjs",
+    "test:business-email": "node --test scripts/tests/discover-business-email.test.mjs",
     "pipeline:google:gss": "node scripts/run-google-gss-monthly.mjs",
     "pipeline:google:apify-ingest-all": "node scripts/run-google-apify-monthly-ingest.mjs",
     "pipeline:aggregator:apify-ingest-all": "node scripts/run-restaurant-aggregator-ingest.mjs",

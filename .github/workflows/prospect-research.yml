@@ -16,6 +16,11 @@ on:
         required: false
         type: boolean
         default: false
+      enrich_emails_only:
+        description: Pull public business emails for existing drafts and schedule already-approved ones
+        required: false
+        type: boolean
+        default: false
       test_ntfy:
         description: Send one ntfy configuration test instead of researching
         required: false
@@ -102,5 +107,6 @@ jobs:
           SITE_ORIGIN: https://guestsignalhospitality.com
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true && '1' || '0' }}
           NOTIFY_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.notify_only == true && '1' || '0' }}
+          ENRICH_EMAILS_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.enrich_emails_only == true && '1' || '0' }}
           REQUIRE_NTFY: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
         run: npm run growth:prospects
