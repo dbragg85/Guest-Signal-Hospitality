@@ -16,6 +16,25 @@ async function sha256(value: string) {
     .join("");
 }
 
+async function notifyNtfy(message: string, title: string) {
+  const topic = Deno.env.get("NTFY_TOPIC")?.trim();
+  if (!topic) return;
+  const server =
+    Deno.env.get("NTFY_SERVER_URL")?.trim().replace(/\/+$/, "") || "https://ntfy.sh";
+  const headers: Record<string, string> = {
+    Title: title,
+    Priority: "default",
+    Tags: "email,white_check_mark",
+  };
+  const accessToken = Deno.env.get("NTFY_ACCESS_TOKEN")?.trim();
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  await fetch(`${server}/${topic}`, {
+    method: "POST",
+    headers,
+    body: message,
+  }).catch(() => {});
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
 
@@ -47,14 +66,19 @@ Deno.serve(async (req) => {
 
   const update =
     actionRow.action === "approve"
-      ? { status: "approved", approved_at: now }
+      ? {
+          status: "approved",
+          approved_at: now,
+          send_status: "pending",
+          send_error: null,
+        }
       : { status: "dismissed", send_status: "not_ready", send_error: null };
   const { data: prospect, error: decisionError } = await admin
     .from("prospect_queue")
     .update(update)
     .eq("id", actionRow.prospect_id)
     .eq("status", "approval_required")
-    .select("id,business_name,status")
+    .select("id,business_name,status,contact_email,send_status")
     .maybeSingle();
   if (decisionError) return json({ error: "decision_failed" }, 500);
 
@@ -67,10 +91,100 @@ Deno.serve(async (req) => {
   if (!prospect) {
     return json({ error: "already_decided" }, 409);
   }
-  return json({
-    ok: true,
-    decision: actionRow.action,
-    business_name: prospect.business_name,
-    portal: "https://guestsignalhospitality.com/portal/dashboard/",
-  });
+
+  if (actionRow.action === "deny") {
+    await notifyNtfy(
+      `Denied outreach for ${prospect.business_name}.`,
+      "Prospect denied",
+    );
+    return json({
+      ok: true,
+      decision: "deny",
+      business_name: prospect.business_name,
+    });
+  }
+
+  const contactEmail = String(prospect.contact_email ?? "").trim().toLowerCase();
+  if (!contactEmail) {
+    await admin
+      .from("prospect_queue")
+      .update({
+        send_status: "not_ready",
+        send_error: "Approved via ntfy. Add contact_email in the portal to schedule send.",
+      })
+      .eq("id", prospect.id);
+    await notifyNtfy(
+      `${prospect.business_name} approved. Add the public business email in the portal to schedule delivery.`,
+      "Approved — email needed",
+    );
+    return json({
+      ok: true,
+      decision: "approve",
+      needs_contact_email: true,
+      business_name: prospect.business_name,
+      portal: "https://guestsignalhospitality.com/portal/dashboard/",
+    });
+  }
+
+  // Schedule send through the existing authenticated sender path using service invocation.
+  const sendUrl = `${supabaseUrl.replace(/\/+$/, "")}/functions/v1/send-approved-prospect`;
+  try {
+    const sendResponse = await fetch(sendUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+        apikey: serviceRoleKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prospectId: prospect.id,
+        serviceInvoke: true,
+      }),
+    });
+    const sendBody = await sendResponse.text();
+    if (!sendResponse.ok) {
+      await admin
+        .from("prospect_queue")
+        .update({
+          send_status: "failed",
+          send_error: `Post-approve schedule failed: ${sendBody.slice(0, 500)}`,
+        })
+        .eq("id", prospect.id);
+      await notifyNtfy(
+        `${prospect.business_name} approved, but scheduling failed. Check the portal.`,
+        "Approved — schedule failed",
+      );
+      return json({
+        ok: true,
+        decision: "approve",
+        scheduled: false,
+        business_name: prospect.business_name,
+      });
+    }
+    await notifyNtfy(
+      `${prospect.business_name} approved and scheduled for the next Tue–Thu 9:45 AM ET window.`,
+      "Approved & scheduled",
+    );
+    return json({
+      ok: true,
+      decision: "approve",
+      scheduled: true,
+      business_name: prospect.business_name,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await admin
+      .from("prospect_queue")
+      .update({
+        send_status: "failed",
+        send_error: `Post-approve schedule failed: ${message.slice(0, 500)}`,
+      })
+      .eq("id", prospect.id);
+    return json({
+      ok: true,
+      decision: "approve",
+      scheduled: false,
+      business_name: prospect.business_name,
+    });
+  }
 });

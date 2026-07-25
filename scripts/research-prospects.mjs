@@ -13,6 +13,12 @@ import {
 } from "./lib/growth-operator.mjs";
 
 const dryRun = ["1", "true", "yes"].includes((process.env.DRY_RUN ?? "").toLowerCase());
+const notifyOnly = ["1", "true", "yes"].includes(
+  (process.env.NOTIFY_ONLY ?? "").toLowerCase(),
+);
+const requireNtfy = ["1", "true", "yes"].includes(
+  (process.env.REQUIRE_NTFY ?? (dryRun ? "0" : "1")).toLowerCase(),
+);
 const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 20, 50));
 const minimumFit = Math.max(0, Math.min(Number(process.env.PROSPECT_MIN_FIT_SCORE) || 55, 100));
 const searchQuery =
@@ -108,25 +114,36 @@ function actionToken() {
   return { token, tokenHash };
 }
 
-async function notifyPendingApprovals(supabase) {
+async function notifyPendingApprovals(supabase, { force = false } = {}) {
   const topic = process.env.NTFY_TOPIC?.trim();
   const server = process.env.NTFY_SERVER_URL?.trim().replace(/\/+$/, "") || "https://ntfy.sh";
   if (!topic) {
+    if (requireNtfy) {
+      throw new Error("NTFY_TOPIC is required for prospect approval notifications.");
+    }
     console.log("NTFY_TOPIC is not configured; approval notifications skipped.");
     return 0;
   }
 
-  const { data: pending, error: pendingError } = await supabase
+  let query = supabase
     .from("prospect_queue")
     .select("id,business_name,fit_score,rationale,draft_subject,draft_body")
     .eq("status", "approval_required")
-    .is("approval_notified_at", null)
     .order("fit_score", { ascending: false })
     .limit(20);
+  if (!force) query = query.is("approval_notified_at", null);
+  const { data: pending, error: pendingError } = await query;
   if (pendingError) throw pendingError;
 
   let sent = 0;
   for (const prospect of pending ?? []) {
+    if (force) {
+      await supabase
+        .from("prospect_approval_actions")
+        .delete()
+        .eq("prospect_id", prospect.id)
+        .is("used_at", null);
+    }
     const approve = actionToken();
     const deny = actionToken();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -216,9 +233,33 @@ let runId;
 
 try {
   runId = await recordAutomationRun(supabase, {
-    run_kind: "prospect_research",
+    run_kind: notifyOnly ? "prospect_ntfy_notify" : "prospect_research",
     status: "started",
   });
+
+  if (notifyOnly) {
+    if (dryRun) {
+      const { count, error } = await supabase
+        .from("prospect_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "approval_required");
+      if (error) throw error;
+      await finishAutomationRun(supabase, runId, {
+        status: "skipped",
+        summary: `Dry-run notify-only: ${count ?? 0} draft(s) would be sent to ntfy.`,
+        metrics: { approval_required: count ?? 0, dry_run: true, notify_only: true },
+      });
+      process.exit(0);
+    }
+
+    const ntfyNotifications = await notifyPendingApprovals(supabase, { force: true });
+    await finishAutomationRun(supabase, runId, {
+      status: ntfyNotifications > 0 ? "approval_required" : "succeeded",
+      summary: `Re-sent ${ntfyNotifications} ntfy Approve/Deny notification(s).`,
+      metrics: { ntfy_notifications: ntfyNotifications, notify_only: true },
+    });
+    process.exit(0);
+  }
 
   const token = requiredEnv("APIFY_TOKEN");
   const actorId =
@@ -258,7 +299,7 @@ try {
   const approvalCount = prospects.filter((item) => item.status === "approval_required").length;
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
-    summary: `${prospects.length} public businesses researched; ${approvalCount} draft(s) require approval.`,
+    summary: `${prospects.length} public businesses researched; ${approvalCount} draft(s) require approval via ntfy.`,
     metrics: {
       researched: prospects.length,
       approval_required: approvalCount,

@@ -49,7 +49,7 @@ function formatDateTime(value: string | null) {
 export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }) {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [contactEmails, setContactEmails] = useState<Record<string, string>>({});
-  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,58 +84,47 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     void load();
   }, [load]);
 
-  async function approveAndSend(prospect: Prospect) {
+  async function saveContactEmail(prospect: Prospect) {
     setError(null);
     const contactEmail = (contactEmails[prospect.id] ?? "").trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
       setError(`Enter a valid public business email for ${prospect.business_name}.`);
       return;
     }
-    setSendingId(prospect.id);
+    setSavingId(prospect.id);
+    const update: Record<string, unknown> = {
+      contact_email: contactEmail,
+      send_error: null,
+    };
+    if (prospect.status === "approved") {
+      update.send_status = "pending";
+    }
     const { error: updateError } = await supabase
       .from("prospect_queue")
-      .update({
-        contact_email: contactEmail,
-        status: "approved",
-        approved_at: new Date().toISOString(),
-        send_status: "pending",
-        send_error: null,
-      })
+      .update(update)
       .eq("id", prospect.id);
     if (updateError) {
       setError(updateError.message);
-      setSendingId(null);
+      setSavingId(null);
       return;
     }
 
-    const { error: sendError } = await supabase.functions.invoke(
-      "send-approved-prospect",
-      { body: { prospectId: prospect.id } },
-    );
-    if (sendError) {
-      setError(
-        `Draft approved, but delivery failed: ${sendError.message}. Verify sender configuration and retry.`,
+    if (prospect.status === "approved") {
+      const { error: sendError } = await supabase.functions.invoke(
+        "send-approved-prospect",
+        { body: { prospectId: prospect.id } },
       );
-      setSendingId(null);
-      await load();
-      return;
+      if (sendError) {
+        setError(
+          `Email saved, but scheduling failed: ${sendError.message}. Retry after checking sender config.`,
+        );
+        setSavingId(null);
+        await load();
+        return;
+      }
     }
-    setSendingId(null);
+    setSavingId(null);
     await load();
-  }
-
-  async function dismiss(id: string) {
-    setError(null);
-    const { error: updateError } = await supabase
-      .from("prospect_queue")
-      .update({ status: "dismissed", send_status: "not_ready", send_error: null })
-      .eq("id", id)
-      .in("status", ["approval_required", "approved"]);
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-    setProspects((current) => current.filter((prospect) => prospect.id !== id));
   }
 
   return (
@@ -143,14 +132,14 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">
-            Owner approval queue
+            ntfy approval queue
           </p>
           <h2 className="mt-1 text-xl font-semibold text-slate-900">
             Prospect outreach drafts
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
-            Enter a verified public business email. Approval is the explicit
-            authorization to send this exact draft once.
+            Approve or deny drafts in the ntfy app. Use this panel to add a
+            public business email and watch open/click tracking after send.
           </p>
         </div>
         <button
@@ -169,7 +158,7 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
         </p>
       ) : null}
       {!loading && !error && prospects.length === 0 ? (
-        <p className="mt-5 text-sm text-slate-600">No drafts currently require approval.</p>
+        <p className="mt-5 text-sm text-slate-600">No active outreach drafts.</p>
       ) : null}
 
       <div className="mt-5 grid gap-4">
@@ -182,115 +171,134 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
             "bounced",
             "complained",
           ].includes(prospect.send_status);
+          const awaitingNtfy = prospect.status === "approval_required";
           return (
-          <article key={prospect.id} className="rounded-2xl border border-stone-200 bg-white p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="font-semibold text-slate-900">{prospect.business_name}</h3>
-                <p className="text-xs text-slate-500">
-                  {prospect.city}, {prospect.state} · Fit {prospect.fit_score}/100
-                </p>
-              </div>
-              <div className="flex gap-3 text-xs">
-                {prospect.website_url ? (
-                  <a className="font-semibold text-amber-900 underline" href={prospect.website_url} target="_blank" rel="noreferrer">
-                    Website
-                  </a>
-                ) : null}
-                {prospect.source_url ? (
-                  <a className="font-semibold text-amber-900 underline" href={prospect.source_url} target="_blank" rel="noreferrer">
-                    Public profile
-                  </a>
-                ) : null}
-              </div>
-            </div>
-            {prospect.rationale ? (
-              <p className="mt-3 text-sm text-slate-600">{prospect.rationale}</p>
-            ) : null}
-            <div className="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-slate-700">
-              <p className="font-semibold">{prospect.draft_subject}</p>
-              <p className="mt-2 whitespace-pre-line">{prospect.draft_body}</p>
-            </div>
-            {!deliveryLocked ? (
-              <label className="mt-4 block text-sm font-medium text-slate-800">
-              Verified public business email
-              <input
-                type="email"
-                value={contactEmails[prospect.id] ?? ""}
-                onChange={(event) =>
-                  setContactEmails((current) => ({
-                    ...current,
-                    [prospect.id]: event.target.value,
-                  }))
-                }
-                placeholder="hello@restaurant.com"
-                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
-                autoComplete="off"
-              />
-              </label>
-            ) : null}
-            {prospect.status === "approved" && !deliveryLocked ? (
-              <p className="mt-3 text-xs font-semibold text-amber-800">
-                Already approved; add the recipient and schedule when ready.
-              </p>
-            ) : null}
-            {deliveryLocked ? (
-              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm text-slate-700">
-                <div className="flex flex-wrap gap-x-5 gap-y-2">
-                  <span>
-                    Status: <strong className="capitalize">{prospect.send_status}</strong>
-                  </span>
-                  {prospect.scheduled_for ? (
-                    <span>Scheduled: <strong>{formatDateTime(prospect.scheduled_for)}</strong></span>
-                  ) : null}
-                  <span>Opens: <strong>{prospect.open_count}</strong></span>
-                  <span>Clicks: <strong>{prospect.click_count}</strong></span>
+            <article
+              key={prospect.id}
+              className="rounded-2xl border border-stone-200 bg-white p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-semibold text-slate-900">
+                    {prospect.business_name}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {prospect.city}, {prospect.state} · Fit {prospect.fit_score}/100
+                    {awaitingNtfy ? " · Waiting on ntfy" : ""}
+                  </p>
                 </div>
-                {prospect.first_opened_at ? (
-                  <p className="mt-2 text-xs text-slate-500">
-                    First open {formatDateTime(prospect.first_opened_at)}
-                    {prospect.last_opened_at && prospect.last_opened_at !== prospect.first_opened_at
-                      ? ` · latest ${formatDateTime(prospect.last_opened_at)}`
-                      : ""}
-                  </p>
-                ) : null}
-                {prospect.last_clicked_url ? (
-                  <p className="mt-2 break-all text-xs text-slate-500">
-                    Last clicked: {prospect.last_clicked_url}
-                  </p>
-                ) : null}
+                <div className="flex gap-3 text-xs">
+                  {prospect.website_url ? (
+                    <a
+                      className="font-semibold text-amber-900 underline"
+                      href={prospect.website_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Website
+                    </a>
+                  ) : null}
+                  {prospect.source_url ? (
+                    <a
+                      className="font-semibold text-amber-900 underline"
+                      href={prospect.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Public profile
+                    </a>
+                  ) : null}
+                </div>
               </div>
-            ) : null}
-            {prospect.send_error ? (
-              <p className="mt-3 text-xs text-red-700">
-                Previous delivery error: {prospect.send_error}
-              </p>
-            ) : null}
-            {!deliveryLocked ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void approveAndSend(prospect)}
-                className="btn-primary text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={sendingId === prospect.id}
-              >
-                {sendingId === prospect.id
-                  ? "Scheduling…"
-                  : prospect.status === "approved"
-                    ? "Schedule approved draft"
-                    : "Approve & schedule"}
-              </button>
-              <button
-                type="button"
-                onClick={() => void dismiss(prospect.id)}
-                className="btn-secondary text-sm"
-                disabled={sendingId === prospect.id}
-              >
-                Dismiss
-              </button>
+              {prospect.rationale ? (
+                <p className="mt-3 text-sm text-slate-600">{prospect.rationale}</p>
+              ) : null}
+              <div className="mt-4 rounded-xl bg-stone-50 p-4 text-sm text-slate-700">
+                <p className="font-semibold">{prospect.draft_subject}</p>
+                <p className="mt-2 whitespace-pre-line">{prospect.draft_body}</p>
               </div>
-            ) : null}
-          </article>
+              {awaitingNtfy ? (
+                <p className="mt-3 text-xs font-semibold text-amber-800">
+                  Decision required in ntfy (Approve / Deny). Optionally save the
+                  recipient email below first so Approve can schedule immediately.
+                </p>
+              ) : null}
+              {!deliveryLocked ? (
+                <label className="mt-4 block text-sm font-medium text-slate-800">
+                  Verified public business email
+                  <input
+                    type="email"
+                    value={contactEmails[prospect.id] ?? ""}
+                    onChange={(event) =>
+                      setContactEmails((current) => ({
+                        ...current,
+                        [prospect.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="hello@restaurant.com"
+                    className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+                    autoComplete="off"
+                  />
+                </label>
+              ) : null}
+              {deliveryLocked ? (
+                <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm text-slate-700">
+                  <div className="flex flex-wrap gap-x-5 gap-y-2">
+                    <span>
+                      Status:{" "}
+                      <strong className="capitalize">{prospect.send_status}</strong>
+                    </span>
+                    {prospect.scheduled_for ? (
+                      <span>
+                        Scheduled:{" "}
+                        <strong>{formatDateTime(prospect.scheduled_for)}</strong>
+                      </span>
+                    ) : null}
+                    <span>
+                      Opens: <strong>{prospect.open_count}</strong>
+                    </span>
+                    <span>
+                      Clicks: <strong>{prospect.click_count}</strong>
+                    </span>
+                  </div>
+                  {prospect.first_opened_at ? (
+                    <p className="mt-2 text-xs text-slate-500">
+                      First open {formatDateTime(prospect.first_opened_at)}
+                      {prospect.last_opened_at &&
+                      prospect.last_opened_at !== prospect.first_opened_at
+                        ? ` · latest ${formatDateTime(prospect.last_opened_at)}`
+                        : ""}
+                    </p>
+                  ) : null}
+                  {prospect.last_clicked_url ? (
+                    <p className="mt-2 break-all text-xs text-slate-500">
+                      Last clicked: {prospect.last_clicked_url}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+              {prospect.send_error ? (
+                <p className="mt-3 text-xs text-red-700">
+                  Previous delivery error: {prospect.send_error}
+                </p>
+              ) : null}
+              {!deliveryLocked ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void saveContactEmail(prospect)}
+                    className="btn-primary text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={savingId === prospect.id}
+                  >
+                    {savingId === prospect.id
+                      ? "Saving…"
+                      : prospect.status === "approved"
+                        ? "Save email & schedule"
+                        : "Save email for ntfy Approve"}
+                  </button>
+                </div>
+              ) : null}
+            </article>
           );
         })}
       </div>

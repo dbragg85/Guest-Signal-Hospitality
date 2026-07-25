@@ -128,34 +128,42 @@ Deno.serve(async (req) => {
   const authorization = req.headers.get("Authorization");
   if (!authorization) return json(req, { error: "unauthorized" }, 401);
 
-  const authClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authorization } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const {
-    data: { user },
-    error: userError,
-  } = await authClient.auth.getUser();
-  if (userError || !user) return json(req, { error: "unauthorized" }, 401);
-
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: profile, error: profileError } = await admin
-    .from("profiles")
-    .select("is_super_admin")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profileError || profile?.is_super_admin !== true) {
-    return json(req, { error: "forbidden" }, 403);
-  }
-
   let requestBody: Record<string, unknown>;
   try {
     requestBody = await req.json();
   } catch {
     return json(req, { error: "invalid_json" }, 400);
   }
+
+  const bearer = authorization.replace(/^Bearer\s+/i, "").trim();
+  const serviceInvoke =
+    requestBody.serviceInvoke === true && bearer === serviceRoleKey;
+
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  if (!serviceInvoke) {
+    const authClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const {
+      data: { user },
+      error: userError,
+    } = await authClient.auth.getUser();
+    if (userError || !user) return json(req, { error: "unauthorized" }, 401);
+
+    const { data: profile, error: profileError } = await admin
+      .from("profiles")
+      .select("is_super_admin")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileError || profile?.is_super_admin !== true) {
+      return json(req, { error: "forbidden" }, 403);
+    }
+  }
+
   const prospectId = requestBody.prospectId;
   if (!validUuid(prospectId)) return json(req, { error: "invalid_prospect_id" }, 400);
 
