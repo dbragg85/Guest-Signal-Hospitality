@@ -1,5 +1,60 @@
 import { getEnv } from "./guest-signal-rubric.mjs";
 
+function normalizeName(value) {
+  return String(value ?? "")
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function normalizePhone(value) {
+  return String(value ?? "").replace(/\D/g, "").slice(-10);
+}
+
+function nameSimilarity(left, right) {
+  const a = new Set(normalizeName(left).split(" ").filter(Boolean));
+  const b = new Set(normalizeName(right).split(" ").filter(Boolean));
+  if (!a.size || !b.size) return 0;
+  let intersection = 0;
+  for (const token of a) {
+    if (b.has(token)) intersection += 1;
+  }
+  return intersection / new Set([...a, ...b]).size;
+}
+
+export function selectBestYelpBusiness(businesses, lead) {
+  const targetName = String(lead?.business ?? "").trim();
+  const targetPhone = normalizePhone(lead?.venue_phone ?? lead?.phone);
+  const targetCity = normalizeName(lead?.city);
+  const targetState = normalizeName(lead?.state);
+  const targetZip = String(lead?.zip ?? "").trim();
+
+  const ranked = businesses
+    .map((business) => {
+      const url = typeof business?.url === "string" ? business.url.trim() : "";
+      if (!url.startsWith("https://www.yelp.com/biz")) return null;
+
+      const similarity = nameSimilarity(targetName, business?.name);
+      const candidatePhone = normalizePhone(business?.phone ?? business?.display_phone);
+      const phoneMatch = Boolean(targetPhone && candidatePhone && targetPhone === candidatePhone);
+      const location = business?.location ?? {};
+      let score = similarity * 60;
+      if (phoneMatch) score += 100;
+      if (targetZip && String(location.zip_code ?? "").trim() === targetZip) score += 30;
+      if (targetCity && normalizeName(location.city) === targetCity) score += 15;
+      if (targetState && normalizeName(location.state) === targetState) score += 10;
+      return { business, url, score, similarity, phoneMatch };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score);
+
+  const best = ranked[0];
+  if (!best || (!best.phoneMatch && best.similarity < 0.5)) return null;
+  return best.business;
+}
+
 /**
  * Resolve a Yelp business page URL from lead fields using Yelp Fusion API v3
  * (https://docs.developer.yelp.com/docs/fusion-intro). No customer input required.
@@ -48,10 +103,6 @@ export async function resolveYelpBusinessUrlFromLead(lead) {
   }
 
   const businesses = Array.isArray(body?.businesses) ? body.businesses : [];
-  for (const b of businesses) {
-    const url = typeof b?.url === "string" ? b.url.trim() : "";
-    if (url.startsWith("https://www.yelp.com/biz")) return url;
-  }
-
-  return null;
+  const best = selectBestYelpBusiness(businesses, lead);
+  return typeof best?.url === "string" ? best.url.trim() : null;
 }

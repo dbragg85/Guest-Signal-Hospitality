@@ -22,6 +22,10 @@ on:
   schedule:
     - cron: "15 5 1 * *"
 
+concurrency:
+  group: monthly-combined-gss-pipeline
+  cancel-in-progress: false
+
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
@@ -38,15 +42,46 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run monthly Yelp pipeline
-        run: npm run pipeline:yelp:monthly
+      - name: Require pipeline credentials
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
-          APIFY_YELP_ACTOR_ID: ${{ secrets.APIFY_YELP_ACTOR_ID }}
+          APIFY_YELP_ACTOR_ID: ${{ secrets.APIFY_YELP_ACTOR_ID || vars.APIFY_YELP_ACTOR_ID }}
+        run: |
+          if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
+            echo "::error::Set SUPABASE_SERVICE_ROLE_KEY and SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL."
+            exit 1
+          fi
+          if [ "${{ github.event.inputs.dry_run }}" != "true" ] && { [ -z "${APIFY_TOKEN}" ] || [ -z "${APIFY_YELP_ACTOR_ID}" ]; }; then
+            echo "::error::Set APIFY_TOKEN and APIFY_YELP_ACTOR_ID."
+            exit 1
+          fi
+
+      - name: Ingest monthly Yelp reviews
+        run: npm run pipeline:yelp:monthly
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_YELP_ACTOR_ID: ${{ secrets.APIFY_YELP_ACTOR_ID || vars.APIFY_YELP_ACTOR_ID }}
+          YELP_MAX_ITEMS: ${{ vars.YELP_MAX_ITEMS || '50' }}
+          APIFY_YELP_TIMEOUT_MS: ${{ vars.APIFY_YELP_TIMEOUT_MS || '600000' }}
+          YELP_MONTHLY_INGEST_ONLY: "1"
           PERIOD_START: ${{ github.event.inputs.period_start }}
           PERIOD_END: ${{ github.event.inputs.period_end }}
           PERIOD_LABEL: ${{ github.event.inputs.period_label }}
           RESTAURANT_SLUGS: ${{ github.event.inputs.restaurant_slugs }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
+
+      - name: Rebuild authoritative combined GSS scorecards
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: npm run pipeline:google:gss
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PERIOD_START: ${{ github.event.inputs.period_start }}
+          PERIOD_END: ${{ github.event.inputs.period_end }}
+          PERIOD_LABEL: ${{ github.event.inputs.period_label }}
+          RESTAURANT_SLUGS: ${{ github.event.inputs.restaurant_slugs }}
+          GSS_REVIEW_SOURCES: google,yelp

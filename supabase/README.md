@@ -244,21 +244,21 @@ npm run pipeline:yelp:monthly
 
 ---
 
-## Guest Signal Score™ — Google (`review_observations`)
+## Guest Signal Score™ — Google + Yelp (`review_observations`)
 
-Runs the **Google-only** monthly methodology from the board prompt (sentiment scale, category ratios, ÷0.9 normalization, trend modifier vs prior month).
+Runs the authoritative monthly methodology across Google and Yelp observations. Category evidence supplies 80% of the base score, the cross-source rating baseline supplies 20%, and the existing trend modifier is applied against the prior GSS period. If no category terms are recognized, the rating baseline is used instead of leaving the score stale.
 
 ```bash
 npm run pipeline:google:gss
 ```
 
-**Prerequisite:** rows in `public.review_observations` with `source = 'google'` for each restaurant in the window (your own Google review ingest).
+**Prerequisite:** rows in `public.review_observations` with `source in ('google', 'yelp')` for each restaurant in the window.
 
 **Required env:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
-**Optional:** `PERIOD_START`, `PERIOD_END` (`YYYY-MM-DD`), `PERIOD_LABEL` (e.g. `Mar 2026`), `RESTAURANT_SLUGS`, `DRY_RUN=1`
+**Optional:** `PERIOD_START`, `PERIOD_END` (`YYYY-MM-DD`), `PERIOD_LABEL` (e.g. `Mar 2026`), `RESTAURANT_SLUGS`, `GSS_REVIEW_SOURCES` (default `google,yelp`), `DRY_RUN=1`
 
-Writes `snapshots`, `snapshot_category_scores` (food/service/cleanliness/speed/atmosphere), and `scorecards` with `gss_google_base`, trend fields, and final published score.
+Writes `snapshots`, replaces `snapshot_category_scores` for the period (food/service/cleanliness/speed/atmosphere), and writes `scorecards` with `gss_base`, source counts, trend fields, and the final published score.
 
 ## I. Ratings Source-Of-Truth + QA checklist
 

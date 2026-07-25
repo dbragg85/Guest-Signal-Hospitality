@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 /**
- * Guest Signal Score™ — Google monthly methodology (board spec).
- * Uses review_observations within PERIOD_START..PERIOD_END (default source: google only).
- * Optional GSS_REVIEW_SOURCES=google,yelp when Google rows are empty but Yelp text exists.
+ * Guest Signal Score™ — authoritative monthly methodology.
+ * Uses review_observations within PERIOD_START..PERIOD_END.
+ * Set GSS_REVIEW_SOURCES=google,yelp for the production combined score.
  *
  * Sentiment per category per review: only when category is mentioned in text; else 0.
- * Star rating maps to Strong +2 … Strong −2 for mentioned categories.
+ * Star rating maps to Strong +2 … Strong −2 for mentioned categories. A rating
+ * baseline contributes 20% when category evidence exists and is the fallback
+ * when reviews contain ratings but no recognized category terms.
  *
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PERIOD_START, PERIOD_END (YYYY-MM-DD),
  *      PERIOD_LABEL (e.g. Mar 2026), optional RESTAURANT_SLUGS, GSS_REVIEW_SOURCES, DRY_RUN=1
  */
 import { createClient } from "@supabase/supabase-js";
+import { pathToFileURL } from "node:url";
 
 const GSS_CATEGORY_KEYS = ["food", "service", "cleanliness", "speed", "atmosphere"];
 
@@ -135,10 +138,19 @@ function normalizeText(input) {
   return String(input ?? "").toLowerCase();
 }
 
-function mentionsCategory(text, category) {
+function keywordPattern(keyword) {
+  const escaped = keyword
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("\\s+");
+  return new RegExp(`\\b${escaped}\\b`, "i");
+}
+
+export function mentionsCategory(text, category) {
   const normalized = normalizeText(text);
   const keywords = CATEGORY_KEYWORDS[category] ?? [];
-  return keywords.some((k) => normalized.includes(k));
+  return keywords.some((keyword) => keywordPattern(keyword).test(normalized));
 }
 
 function parseRating(raw) {
@@ -178,6 +190,24 @@ function weightedGuestSignalRenormalized(scoresByCategory) {
   }
   if (!wSum) return null;
   return Math.round(sum / wSum);
+}
+
+export function ratingBaselineFromReviews(reviews) {
+  const ratings = reviews
+    .map((review) => parseRating(review.rating))
+    .filter((rating) => rating != null);
+  if (!ratings.length) return null;
+  const totalSentiment = ratings.reduce(
+    (sum, rating) => sum + starToSentiment(rating),
+    0,
+  );
+  return categoryScoreFromSentiments(totalSentiment, ratings.length);
+}
+
+export function blendCategoryAndRatingBase(categoryBase, ratingBaseline) {
+  if (categoryBase == null) return ratingBaseline;
+  if (ratingBaseline == null) return categoryBase;
+  return Math.round(categoryBase * 0.8 + ratingBaseline * 0.2);
 }
 
 function trendModifier(delta) {
@@ -283,6 +313,38 @@ function legacyPillarsFromGssCategories(c) {
   };
 }
 
+const SCORECARD_SCORING_FIELDS = new Set([
+  "review_scoring_model",
+  "confidence_level",
+  "category_scores",
+  "total_reviews_analyzed",
+  "google_reviews_analyzed",
+  "yelp_reviews_analyzed",
+  "experience_quality",
+  "service_hospitality",
+  "food_beverage",
+  "operational_reliability",
+  "emotional_connection",
+  "total_score_breakdown",
+  "review_batch_id",
+  "written_review_score",
+  "star_only_score",
+  "star_only_review_count",
+]);
+
+function withoutPriorScoringFields(data) {
+  const source = data && typeof data === "object" ? data : {};
+  return Object.fromEntries(
+    Object.entries(source).filter(
+      ([key]) =>
+        !SCORECARD_SCORING_FIELDS.has(key) &&
+        !key.startsWith("gss_") &&
+        !key.startsWith("pillar_") &&
+        !key.startsWith("rubric_"),
+    ),
+  );
+}
+
 async function main() {
   const supabaseUrl = getEnv("SUPABASE_URL", { required: true });
   const supabaseKey = getEnv("SUPABASE_SERVICE_ROLE_KEY", { required: true });
@@ -308,7 +370,7 @@ async function main() {
       .filter(Boolean),
   );
 
-  const reviewSources = getEnv("GSS_REVIEW_SOURCES", { fallback: "google" })
+  const reviewSources = getEnv("GSS_REVIEW_SOURCES", { fallback: "google,yelp" })
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
@@ -337,7 +399,7 @@ async function main() {
   const prevPeriod = previousMonthLabel(periodLabel);
 
   console.log(
-    `Google GSS pipeline — ${periodLabel} (${periodStartIso} → ${periodEndIso}), sources=[${reviewSources.join(",")}], prior period: ${prevPeriod ?? "n/a"}`,
+    `GSS pipeline — ${periodLabel} (${periodStartIso} → ${periodEndIso}), sources=[${reviewSources.join(",")}], prior period: ${prevPeriod ?? "n/a"}`,
   );
 
   for (const restaurant of candidates) {
@@ -392,10 +454,12 @@ async function main() {
         mc > 0 ? categoryScoreFromSentiments(sentimentTotals[cat], mc) : null;
     }
 
-    const gssBase = weightedGuestSignalRenormalized(categoryScores);
+    const categoryBase = weightedGuestSignalRenormalized(categoryScores);
+    const ratingBaseline = ratingBaselineFromReviews(reviews);
+    const gssBase = blendCategoryAndRatingBase(categoryBase, ratingBaseline);
     if (gssBase == null) {
       console.warn(
-        `[${restaurant.slug}] No category keyword mentions in this window; skipping GSS write.`,
+        `[${restaurant.slug}] No usable category mentions or ratings in this window; skipping GSS write.`,
       );
       continue;
     }
@@ -413,7 +477,14 @@ async function main() {
       if (pErr) console.warn("prev scorecard fetch:", pErr.message);
       if (prevRow) {
         const d = prevRow.data && typeof prevRow.data === "object" ? prevRow.data : {};
-        prevBase = typeof d.gss_google_base === "number" ? d.gss_google_base : prevRow.score;
+        if (d.review_scoring_model === GSS_SCORING_MODEL) {
+          prevBase =
+            typeof d.gss_base === "number"
+              ? d.gss_base
+              : typeof d.gss_google_base === "number"
+                ? d.gss_google_base
+                : prevRow.score;
+        }
       }
     }
 
@@ -434,36 +505,14 @@ async function main() {
     const snapshotId = existingSnapshot?.id ?? crypto.randomUUID();
     const totalReviews = n;
 
-    const { data: existingCategoryRows, error: cErr } = await supabase
-      .from("snapshot_category_scores")
-      .select("category, score, mentions")
-      .eq("snapshot_id", snapshotId);
-    if (cErr) throw cErr;
-
-    const mergedByCategory = new Map();
-    for (const row of existingCategoryRows ?? []) {
-      if (!row?.category || row.score == null) continue;
-      mergedByCategory.set(String(row.category), {
-        score: Number(row.score),
-        mentions: Number(row.mentions ?? 0) || 0,
-      });
-    }
-
-    for (const cat of GSS_CATEGORY_KEYS) {
-      const s = categoryScores[cat];
-      const mc = mentionCounts[cat];
-      if (s != null && mc > 0) {
-        mergedByCategory.set(cat, { score: s, mentions: mc });
-      }
-    }
-
-    const mergedRows = [...mergedByCategory.entries()]
-      .filter(([, row]) => row.score != null && Number.isFinite(Number(row.score)))
-      .map(([category, row]) => ({
+    const currentCategoryRows = GSS_CATEGORY_KEYS.filter(
+      (category) =>
+        categoryScores[category] != null && mentionCounts[category] > 0,
+    ).map((category) => ({
         snapshot_id: snapshotId,
         category,
-        score: row.score,
-        mentions: row.mentions,
+        score: categoryScores[category],
+        mentions: mentionCounts[category],
       }));
 
     const categoryScoresPayload = GSS_CATEGORY_KEYS.filter((cat) => categoryScores[cat] != null).map(
@@ -489,10 +538,12 @@ async function main() {
       review_scoring_model: "guest_signal_google_gss_v1",
       confidence_level: confidenceLevel,
       gss_review_sources_used: reviewSources,
-      gss_google_base: gssBase,
-      gss_google_trend_delta_vs_prior: prevBase == null ? null : Number(delta.toFixed(2)),
-      gss_google_trend_modifier: trend,
-      gss_google_final: gssFinal,
+      gss_base: gssBase,
+      gss_category_base: categoryBase,
+      gss_rating_baseline: ratingBaseline,
+      gss_final: gssFinal,
+      gss_trend_delta_vs_prior: prevBase == null ? null : Number(delta.toFixed(2)),
+      gss_trend_modifier: trend,
       gss_sentiment_totals: sentimentTotals,
       gss_category_weights: GSS_CATEGORY_WEIGHTS,
       category_scores: [...categoryScoresPayload],
@@ -511,15 +562,26 @@ async function main() {
         scorecard_total_score: gssFinal,
         weighted_category_numerator: Number(weightedNumerator.toFixed(4)),
         weighted_category_weight_sum: Number(weightedDenominator.toFixed(4)),
+        category_base: categoryBase,
+        rating_baseline: ratingBaseline,
+        blended_base: gssBase,
+        trend_modifier: trend,
         source:
-          reviewSources.length === 1 && reviewSources[0] === "google"
-            ? "Guest Signal Score™ Google methodology (board): per-category sentiment ÷(2×mention count); weighted mean over mentioned categories only; trend vs prior"
-            : `Guest Signal Score™ methodology on sources [${reviewSources.join(",")}] (board math); mentioned categories only; prefer pure google when available`,
+          `Guest Signal Score™ methodology on sources [${reviewSources.join(
+            ",",
+          )}]: 80% mention-weighted category score + 20% rating baseline when both exist; trend vs prior`,
       },
     };
 
     if (dryRun) {
-      console.log(`[${restaurant.slug}] DRY_RUN`, JSON.stringify({ gssBase, trend, gssFinal, categoryScores, pillars }, null, 2));
+      console.log(
+        `[${restaurant.slug}] DRY_RUN`,
+        JSON.stringify(
+          { categoryBase, ratingBaseline, gssBase, trend, gssFinal, categoryScores, pillars },
+          null,
+          2,
+        ),
+      );
       continue;
     }
 
@@ -561,19 +623,27 @@ async function main() {
       if (updErr) throw updErr;
     }
 
-    if (mergedRows.length) {
+    const { error: categoryDeleteError } = await supabase
+      .from("snapshot_category_scores")
+      .delete()
+      .eq("snapshot_id", snapshotId);
+    if (categoryDeleteError) throw categoryDeleteError;
+
+    if (currentCategoryRows.length) {
       const { error: uErr } = await supabase
         .from("snapshot_category_scores")
-        .upsert(mergedRows, { onConflict: "snapshot_id,category" });
+        .insert(currentCategoryRows);
       if (uErr) throw uErr;
     }
 
     const reviewBatchMeta = {
       scoring_model: GSS_SCORING_MODEL,
-      gss_google_base: gssBase,
-      gss_google_final: gssFinal,
-      gss_google_trend_modifier: trend,
-      gss_google_trend_delta_vs_prior: prevBase == null ? null : Number(delta.toFixed(2)),
+      gss_base: gssBase,
+      gss_category_base: categoryBase,
+      gss_rating_baseline: ratingBaseline,
+      gss_final: gssFinal,
+      gss_trend_modifier: trend,
+      gss_trend_delta_vs_prior: prevBase == null ? null : Number(delta.toFixed(2)),
       total_reviews_in_window: totalReviews,
       google_reviews_in_window: googleInWindow,
       yelp_reviews_in_window: yelpInWindow,
@@ -620,8 +690,7 @@ async function main() {
       });
       if (sciErr) throw sciErr;
     } else {
-      const existingData =
-        existingScorecard.data && typeof existingScorecard.data === "object" ? existingScorecard.data : {};
+      const existingData = withoutPriorScoringFields(existingScorecard.data);
       const { error: scuErr } = await supabase
         .from("scorecards")
         .update({
@@ -637,14 +706,16 @@ async function main() {
     }
 
     console.log(
-      `[${restaurant.slug}] Updated snapshot + review_batch + review_scores + scorecard (Google GSS). Final=${gssFinal} base=${gssBase} trend=${trend}`,
+      `[${restaurant.slug}] Updated snapshot + review_batch + review_scores + scorecard (GSS). Final=${gssFinal} base=${gssBase} trend=${trend}`,
     );
   }
 
-  console.log("\nGoogle GSS pipeline complete.");
+  console.log("\nGSS pipeline complete.");
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

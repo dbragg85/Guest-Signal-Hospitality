@@ -234,9 +234,9 @@ export function portalGuestSignalHeadline(
   data: Record<string, unknown> | null | undefined,
   storedScore: number | null | undefined,
 ): number | null {
+  if (storedScore != null && Number.isFinite(storedScore)) return storedScore;
   const pillars = computePortalPillarScores(data).map(({ key, score }) => ({ key, score }));
   const fromPillars = guestSignalHeadlineFromDisplayPillars(pillars);
   if (fromPillars != null) return fromPillars;
-  if (storedScore != null && Number.isFinite(storedScore)) return storedScore;
   return null;
 }

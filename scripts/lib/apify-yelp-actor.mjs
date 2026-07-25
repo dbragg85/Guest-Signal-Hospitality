@@ -5,10 +5,9 @@ import { getEnv } from "./guest-signal-rubric.mjs";
  * agents/yelp-reviews: `maxItems`. tri_angle/yelp-review-scraper: `maxReviewsPerUrl`.
  */
 export function yelpMaxItemsPerRun() {
-  return Math.min(
-    500,
-    Math.max(1, Number(getEnv("YELP_MAX_ITEMS", { fallback: "10" }))),
-  );
+  const parsed = Number(getEnv("YELP_MAX_ITEMS", { fallback: "10" }));
+  const requested = Number.isFinite(parsed) ? parsed : 10;
+  return Math.min(500, Math.max(1, Math.floor(requested)));
 }
 
 /**
@@ -109,6 +108,9 @@ export async function startApifyRun({ token, actorId, input, runQuery = {} }) {
 }
 
 export async function waitForApifyRun({ token, runId }) {
+  const parsedTimeout = Number(getEnv("APIFY_YELP_TIMEOUT_MS", { fallback: "600000" }));
+  const timeoutMs = Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 600000;
+  const startedAt = Date.now();
   for (;;) {
     const response = await fetch(
       `https://api.apify.com/v2/actor-runs/${encodeURIComponent(runId)}?token=${encodeURIComponent(token)}`
@@ -120,6 +122,17 @@ export async function waitForApifyRun({ token, runId }) {
     const status = body.data?.status;
     if (["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
       return body.data;
+    }
+    if (Date.now() - startedAt >= timeoutMs) {
+      try {
+        await fetch(
+          `https://api.apify.com/v2/actor-runs/${encodeURIComponent(runId)}/abort?token=${encodeURIComponent(token)}`,
+          { method: "POST" },
+        );
+      } catch {
+        // Best effort: callers still receive a deterministic timeout.
+      }
+      throw new Error(`Apify Yelp run ${runId} exceeded ${timeoutMs}ms and was aborted.`);
     }
     await new Promise((resolve) => setTimeout(resolve, 4000));
   }

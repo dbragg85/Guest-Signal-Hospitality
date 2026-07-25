@@ -598,7 +598,7 @@ async function loadReviewsForLead(lead, periodStartIso, periodEndIso, options = 
       });
       yelpUrlUsed = effectiveYelpUrl;
       const room = Math.max(0, maxTotal - combined.length);
-      const sliced = rawYelp.slice(0, room || maxTotal);
+      const sliced = rawYelp.slice(0, room);
       const parsedY = sliced.map((item) => normalizeApifyItem(item, "yelp")).filter(Boolean);
       combined.push(...parsedY);
       sourceBits.push(`yelp_raw=${rawYelp.length}`);

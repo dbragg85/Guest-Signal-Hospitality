@@ -113,5 +113,5 @@ jobs:
           PERIOD_LABEL: ${{ github.event.inputs.period_label }}
           RESTAURANT_SLUGS: ${{ github.event.inputs.restaurant_slugs }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
-          GSS_REVIEW_SOURCES: google
+          GSS_REVIEW_SOURCES: google,yelp
         run: npm run pipeline:google:gss
