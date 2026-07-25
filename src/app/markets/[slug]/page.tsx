@@ -76,7 +76,7 @@ export default function MarketPage({ params }: { params: Params }) {
             {market.city} restaurant Google ratings, decoded for operators.
           </h1>
           <p className="mt-4 text-lg text-slate-600">{market.blurb}</p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <ServicesIntakeLink
               href="/snapshot/"
               className="btn-primary"
@@ -84,8 +84,15 @@ export default function MarketPage({ params }: { params: Params }) {
             >
               Free {market.city} snapshot
             </ServicesIntakeLink>
-            <Link href="/services/" className="btn-secondary">
-              Monthly plans
+            <div className="min-w-[14rem]">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label="Start Signal Monitor — $149/mo"
+                className="btn-secondary w-full"
+              />
+            </div>
+            <Link href="/services/" className="px-2 py-3 text-sm font-semibold text-slate-700 underline underline-offset-4">
+              Compare plans
             </Link>
           </div>
         </div>
