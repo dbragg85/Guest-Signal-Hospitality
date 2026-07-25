@@ -19,6 +19,7 @@ import {
   prospectMarkets,
   resolveProspectMarket,
 } from "./lib/prospect-markets.mjs";
+import { buildProspectOutreachCopy } from "./lib/prospect-outreach-copy.mjs";
 
 const dryRun = ["1", "true", "yes"].includes((process.env.DRY_RUN ?? "").toLowerCase());
 const notifyOnly = ["1", "true", "yes"].includes(
@@ -117,6 +118,14 @@ function normalizePlace(item, market) {
     : `Public restaurant profile found in the ${market.city} market.`;
 
   const placeEmails = emailsFromPlaceItem(item);
+  const copy = buildProspectOutreachCopy({
+    businessName,
+    city,
+    state,
+    rating,
+    reviewsCount,
+    category,
+  });
   return {
     business_name: businessName,
     website_url: website,
@@ -132,16 +141,13 @@ function normalizePlace(item, market) {
       category,
       place_emails: placeEmails,
       market_slug: market.slug,
+      outreach_voice: copy.voice,
+      rating_band: copy.rating_band,
+      volume_band: copy.volume_band,
     },
     _place_emails: placeEmails,
-    draft_subject: `Complimentary Guest Signal snapshot for ${businessName}`,
-    draft_body:
-      `Hi ${businessName} team,\n\n` +
-      `I was reviewing public guest-feedback signals for independent restaurants in ${market.city}` +
-      `${market.stateCode ? `, ${market.stateCode}` : ""} and found your profile. ` +
-      `Guest Signal Hospitality can prepare a complimentary snapshot showing recurring guest themes, reputation risks, and practical next steps.\n\n` +
-      `Would you like me to prepare one for your team? There is no obligation or credit card required.\n\n` +
-      `— Guest Signal Hospitality`,
+    draft_subject: copy.draft_subject,
+    draft_body: copy.draft_body,
   };
 }
 

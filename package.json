@@ -43,6 +43,7 @@
     "growth:codex-operator": "node scripts/run-codex-operator.mjs",
     "growth:prospects": "node scripts/research-prospects.mjs",
     "growth:flush-prospects": "node scripts/flush-scheduled-prospects.mjs",
+    "growth:rewrite-outreach": "node scripts/rewrite-prospect-outreach.mjs",
     "growth:evaluate-goal": "node scripts/evaluate-growth-goal.mjs"
   },
   "dependencies": {
