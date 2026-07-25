@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { brand, freeSnapshot } from "@/content/site";
 import { persistLeadIntakeToSupabase } from "@/lib/persistLeadIntake";
 import {
@@ -19,6 +19,7 @@ const DEFAULT_CONTACT_ENDPOINT =
   "https://formsubmit.co/ajax/audit@guestsignalhospitality.com";
 
 export function SnapshotIntakeForm() {
+  const formStartTracked = useRef(false);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -258,6 +259,11 @@ export function SnapshotIntakeForm() {
         <form
           className="mt-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
           onSubmit={handleSubmit}
+          onFocusCapture={() => {
+            if (formStartTracked.current) return;
+            formStartTracked.current = true;
+            trackEvent("form_start", { form: "free_snapshot" });
+          }}
         >
           <div className="grid gap-5">
             <label className="grid gap-2">

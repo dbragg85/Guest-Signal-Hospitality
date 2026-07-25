@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   brand,
   freeSnapshot,
@@ -66,6 +66,7 @@ function paidPlanGoalsHint(planKey: PlanInquiryKey | null): string | null {
 export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const formStartTracked = useRef(false);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -491,6 +492,14 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
           <form
             className="mt-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
             onSubmit={handleSubmit}
+            onFocusCapture={() => {
+              if (formStartTracked.current) return;
+              formStartTracked.current = true;
+              trackEvent("form_start", {
+                form: mode === "service" ? "service_intake" : "contact",
+                planKey: planKey ?? "general",
+              });
+            }}
           >
             <div className="grid gap-5">
               <label className="grid gap-2">

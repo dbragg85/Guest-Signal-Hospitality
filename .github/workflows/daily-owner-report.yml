@@ -1,0 +1,44 @@
+name: Daily growth owner report
+
+on:
+  schedule:
+    # 7:05 AM Eastern during daylight-saving time.
+    - cron: "5 11 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Generate the report without emailing it
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-growth-owner-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate and send owner report
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          OWNER_REPORT_EMAIL_TO: ${{ vars.OWNER_REPORT_EMAIL_TO || 'audit@guestsignalhospitality.com' }}
+          OWNER_REPORT_EMAIL_FROM: ${{ vars.OWNER_REPORT_EMAIL_FROM || 'Guest Signal Operator <audit@guestsignalhospitality.com>' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: npm run growth:daily-report

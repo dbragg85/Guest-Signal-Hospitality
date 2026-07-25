@@ -1,0 +1,47 @@
+name: Research Cincinnati prospects
+
+on:
+  schedule:
+    # Wednesday morning; drafts enter an approval queue and are never sent automatically.
+    - cron: "15 13 * * 3"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Research without writing prospects
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prospect-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Research public business profiles and draft outreach
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_PROSPECT_ACTOR_ID: ${{ vars.APIFY_PROSPECT_ACTOR_ID || 'compass~crawler-google-places' }}
+          APIFY_PROSPECT_INPUT_TEMPLATE_JSON: ${{ secrets.APIFY_PROSPECT_INPUT_TEMPLATE_JSON }}
+          PROSPECT_SEARCH_QUERY: ${{ vars.PROSPECT_SEARCH_QUERY || 'independent restaurants in Cincinnati Ohio' }}
+          PROSPECT_MAX_RESULTS: ${{ vars.PROSPECT_MAX_RESULTS || '20' }}
+          PROSPECT_MIN_FIT_SCORE: ${{ vars.PROSPECT_MIN_FIT_SCORE || '55' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: npm run growth:prospects

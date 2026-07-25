@@ -27,3 +27,7 @@ out/
 # Secrets (never commit)
 .env.local
 .env*.local
+
+# Autonomous operator runtime artifacts and credentials
+.operator/
+.codex/
