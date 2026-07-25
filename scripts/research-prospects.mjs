@@ -651,19 +651,28 @@ try {
     "compass~crawler-google-places";
   const { prospects: rawProspects, marketsTouched } = await researchAcrossMarkets({ token, actorId });
 
-  // Email discovery is the PRIMARY filter - run it first before any expensive operations
-  const emailEnrichedProspects = await enrichProspectsWithEmails(rawProspects);
+  // STEP 1: Filter by fit score FIRST (fast, no network calls)
+  const highFitProspects = rawProspects.filter((p) => p.fit_score >= minimumFit);
+  const lowFitProspects = rawProspects.filter((p) => p.fit_score < minimumFit);
   
-  // Separate prospects by email availability
+  console.log(
+    `Fit score filter: ${highFitProspects.length} high-fit (>=${minimumFit}), ` +
+    `${lowFitProspects.length} low-fit (skipped for email discovery)`
+  );
+
+  // STEP 2: Email discovery ONLY on high-fit prospects (saves time on low-fit ones)
+  const emailEnrichedProspects = await enrichProspectsWithEmails(highFitProspects);
+  
+  // Separate by email availability
   const prospectsWithEmails = emailEnrichedProspects.filter((p) => p.contact_email);
   const prospectsWithoutEmails = emailEnrichedProspects.filter((p) => !p.contact_email);
   
   console.log(
     `Email filter: ${prospectsWithEmails.length} contactable, ` +
-    `${prospectsWithoutEmails.length} skipped (no email found)`
+    `${prospectsWithoutEmails.length} high-fit but no email found`
   );
 
-  // Only run AI enhancement on prospects we can actually contact
+  // STEP 3: AI enhancement ONLY on contactable prospects
   const skipAIEnhancement = ["1", "true", "yes"].includes(
     (process.env.SKIP_AI_ENHANCEMENT ?? "").toLowerCase(),
   );
@@ -671,8 +680,8 @@ try {
     ? prospectsWithEmails
     : await enhanceProspectsWithAI(prospectsWithEmails);
 
-  // Combine: AI-enhanced contactable prospects + non-contactable prospects (for record-keeping)
-  const prospects = [...aiEnhancedProspects, ...prospectsWithoutEmails];
+  // Combine all for storage: contactable + high-fit-no-email + low-fit
+  const prospects = [...aiEnhancedProspects, ...prospectsWithoutEmails, ...lowFitProspects];
 
   const rowsForUpsert = prospects.map(({ _place_emails, ...row }) => row);
 
@@ -700,8 +709,10 @@ try {
     }));
     const stats = {
       total_researched: rawProspects.length,
+      high_fit_checked_for_email: highFitProspects.length,
+      low_fit_skipped: lowFitProspects.length,
       contactable_with_email: prospectsWithEmails.length,
-      skipped_no_email: prospectsWithoutEmails.length,
+      high_fit_no_email: prospectsWithoutEmails.length,
       ai_available: isAIAvailable(),
       ai_enhanced_count: prospects.filter((p) => p.public_signals?.ai_model).length,
       approval_ready: prospects.filter((p) => p.status === "approval_required").length,
@@ -736,22 +747,23 @@ try {
   const ntfyNotifications = dryRun ? 0 : await notifyPendingApprovals(supabase);
   const approvalCount = prospects.filter((item) => item.status === "approval_required").length;
   const contactableCount = prospectsWithEmails.length;
-  const skippedNoEmailCount = prospectsWithoutEmails.length;
+  const highFitNoEmailCount = prospectsWithoutEmails.length;
   const aiEnhancedCount = prospects.filter((p) => p.public_signals?.ai_model).length;
   const contextScrapedCount = prospects.filter((p) => p.public_signals?.context_scraped).length;
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
     summary:
-      `${rawProspects.length} businesses researched across ${marketsTouched.length} market(s); ` +
-      `${contactableCount} with emails (${skippedNoEmailCount} skipped - no email); ` +
-      `${aiEnhancedCount} AI-personalized; ` +
+      `${rawProspects.length} researched; ${highFitProspects.length} high-fit checked for email; ` +
+      `${contactableCount} contactable; ${aiEnhancedCount} AI-personalized; ` +
       `${approvalCount} ready for approval.`,
     metrics: {
       markets_touched: marketsTouched,
       all_markets: allMarkets,
       total_researched: rawProspects.length,
+      high_fit_checked: highFitProspects.length,
+      low_fit_skipped: lowFitProspects.length,
       contactable_with_email: contactableCount,
-      skipped_no_email: skippedNoEmailCount,
+      high_fit_no_email: highFitNoEmailCount,
       approval_required: approvalCount,
       existing_emails_discovered: existingEmailEnrichment.discovered,
       approved_scheduled: existingEmailEnrichment.scheduled,
