@@ -1,5 +1,6 @@
 "use client";
 
+import { ProspectApprovalPanel } from "@/components/portal/ProspectApprovalPanel";
 import { RestaurantSnapshotTemplate } from "@/components/portal/RestaurantSnapshotTemplate";
 import { usePortalSession } from "@/contexts/PortalSessionContext";
 import {
@@ -577,6 +578,10 @@ export function PortalDashboardClient() {
             </button>
           </div>
         </div>
+
+        {profile?.is_super_admin && supabase ? (
+          <ProspectApprovalPanel supabase={supabase} />
+        ) : null}
 
         {dataLoading ? (
           <p className="mt-10 text-slate-600">Loading restaurants…</p>
