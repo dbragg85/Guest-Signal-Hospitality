@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:internal-links": "node scripts/check-internal-links.mjs",
     "start": "next start",
     "lint": "next lint",
     "export": "next build",

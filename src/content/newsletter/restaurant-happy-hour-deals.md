@@ -14,7 +14,6 @@ sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "htt
 canonicalUrl: "https://guestsignalhospitality.com/insights/restaurant-happy-hour-deals/"
 heroImage: "/newsletter-banners/restaurant-happy-hour-deals.svg"
 relatedSlugs: ["service-consistency", "review-response-speed"]
-draft: true
 ---
 
 # This Week in Hospitality Signals: Restaurant happy hour deals

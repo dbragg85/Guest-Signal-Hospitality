@@ -346,11 +346,14 @@ function buildNewsletterBody(input: {
   themeLabel: string;
   topicCategory: NewsletterFrontmatter["topicCategory"];
   slug: string;
+  trendsAreLive: boolean;
 }): string {
   const trendSection = input.trends
     .map(
       (item, idx) =>
-        `- **${item.term}** — ${item.operatorAngle} Source: [Google Trends item ${idx + 1}](${item.trendUrl})`,
+        `- **${item.term}** — ${item.operatorAngle} Source: [${
+          item.source === "Google Trends" ? `Google Trends item ${idx + 1}` : "operator watchlist"
+        }](${item.trendUrl})`,
     )
     .join("\n");
   const articleSection = input.articles
@@ -365,7 +368,9 @@ function buildNewsletterBody(input: {
 
   const secondaryLine =
     input.secondaryTrendLabel && safeText(input.secondaryTrendLabel) !== safeText(input.mainFeature)
-      ? `\nAlso watch search traction around **${safeText(input.secondaryTrendLabel)}**—note whether your public listings and menu language already answer that intent.`
+      ? input.trendsAreLive
+        ? `\nAlso watch search traction around **${safeText(input.secondaryTrendLabel)}**—note whether your public listings and menu language already answer that intent.`
+        : `\nAlso monitor **${safeText(input.secondaryTrendLabel)}** as an operator watchlist topic—not a verified search spike.`
       : "";
 
   return [
@@ -374,9 +379,13 @@ function buildNewsletterBody(input: {
     input.subtitle,
     "",
     "## Opening Signal",
-    `This week, the primary hospitality search theme is **${safeText(input.mainFeature)}**. ${safeText(
-      input.openingDetail,
-    )}${secondaryLine}`,
+    input.trendsAreLive
+      ? `This week, the primary hospitality search theme is **${safeText(input.mainFeature)}**. ${safeText(
+          input.openingDetail,
+        )}${secondaryLine}`
+      : `This week's operator focus is **${safeText(input.mainFeature)}**. ${safeText(
+          input.openingDetail,
+        )}${secondaryLine}`,
     safeText(input.openingFollowup),
     "",
     "## Operator lens",
@@ -391,7 +400,7 @@ function buildNewsletterBody(input: {
     "## Common mistakes operators make",
     buildCommonMistakes(input.themeLabel),
     "",
-    "## What People Are Searching",
+    input.trendsAreLive ? "## What People Are Searching" : "## Operator Watchlist",
     trendSection,
     "",
     "## Restaurant Industry Watch",
@@ -419,8 +428,20 @@ function writeFailureLog(error: unknown): void {
 
 async function main() {
   ensureDir(NEWSLETTER_DIR);
-  const trendsFile = latestJsonFile(TRENDS_DIR);
-  const articlesFile = latestJsonFile(ARTICLES_DIR);
+  const forcedDate = process.env.NEWSLETTER_FORCE_DATE?.trim();
+  const forcedTrendsFile = forcedDate ? path.join(TRENDS_DIR, `${forcedDate}.json`) : null;
+  const forcedArticlesFile = forcedDate ? path.join(ARTICLES_DIR, `${forcedDate}.json`) : null;
+  if (
+    forcedDate &&
+    (!forcedTrendsFile ||
+      !forcedArticlesFile ||
+      !fs.existsSync(forcedTrendsFile) ||
+      !fs.existsSync(forcedArticlesFile))
+  ) {
+    throw new Error(`Missing trend/article data files for forced date ${forcedDate}.`);
+  }
+  const trendsFile = forcedTrendsFile ?? latestJsonFile(TRENDS_DIR);
+  const articlesFile = forcedArticlesFile ?? latestJsonFile(ARTICLES_DIR);
   if (!trendsFile || !articlesFile) {
     throw new Error("Missing data files. Run trend/article collectors first.");
   }
@@ -431,8 +452,8 @@ async function main() {
     throw new Error("Insufficient trend/article data to generate newsletter.");
   }
 
-  const baseDate = process.env.NEWSLETTER_FORCE_DATE
-    ? new Date(`${process.env.NEWSLETTER_FORCE_DATE}T12:00:00.000Z`)
+  const baseDate = forcedDate
+    ? new Date(`${forcedDate}T12:00:00.000Z`)
     : new Date();
   const weekIndex = Math.floor(baseDate.getTime() / (7 * 24 * 60 * 60 * 1000));
   const keyword = KEYWORD_ROTATION[weekIndex % KEYWORD_ROTATION.length];
@@ -443,16 +464,36 @@ async function main() {
   const { primary, orderedForIssue } = pickTrendPoolAndPrimary(trends, articles, weekIndex);
   const topTrends = orderedForIssue;
   const topArticles = articles.slice(0, 5);
+  const trendsAreLive = topTrends.some((trend) => {
+    const collectedAt = new Date(trend.collectedAt).getTime();
+    return (
+      trend.source === "Google Trends" &&
+      Number.isFinite(collectedAt) &&
+      collectedAt >= baseDate.getTime() - 14 * 24 * 60 * 60 * 1000
+    );
+  });
+  const hasFreshArticle = topArticles.some((article) => {
+    const publishedAt = new Date(article.publishedDate).getTime();
+    return (
+      Number.isFinite(publishedAt) &&
+      publishedAt >= baseDate.getTime() - 14 * 24 * 60 * 60 * 1000
+    );
+  });
   const secondaryTrendLabel = topTrends[1]?.term ?? null;
   const trendAnchoredFeature =
     primary.term.length > 70 ? primary.term.slice(0, 70) : primary.term;
-  const mainFeature = isBackfillRun ? pickBackfillMainTheme(theme.label, topTrends) : trendAnchoredFeature;
+  const mainFeature =
+    isBackfillRun || !trendsAreLive
+      ? pickBackfillMainTheme(theme.label, topTrends)
+      : trendAnchoredFeature;
   const slugTopic = slugify(mainFeature).slice(0, 48) || "restaurant-trends";
-  const slug = slugTopic;
+  const slug = `${today}-${slugTopic}`;
   const legacySlug = `${today}-this-week-in-hospitality-signals-${slugTopic.slice(0, 36)}`;
 
   const title = `This Week in Hospitality Signals: ${mainFeature}`;
-  const subtitle = "Search trends, guest behavior signals, and operator takeaways for restaurants.";
+  const subtitle = trendsAreLive
+    ? "Search trends, guest behavior signals, and operator takeaways for restaurants."
+    : "Recent industry coverage, operator watchlist topics, and practical restaurant takeaways.";
   const seoTrendPhrase = primary.term;
   const seoTitle = buildTrendAwareSeoTitle(seoTrendPhrase, keyword);
   const metaDescription = buildTrendAwareMetaDescription(seoTrendPhrase, secondaryTrendLabel, keyword);
@@ -462,7 +503,11 @@ async function main() {
     theme.label,
   );
   const sourceUrls = buildSourceList(topTrends, topArticles);
-  const draftMode = process.env.NEWSLETTER_AUTO_PUBLISH !== "true";
+  const autoPublishRequested = process.env.NEWSLETTER_AUTO_PUBLISH === "true";
+  const draftMode = !autoPublishRequested || !hasFreshArticle;
+  if (autoPublishRequested && !hasFreshArticle) {
+    console.warn("Auto-publish blocked: no source article from the last 14 days.");
+  }
   const checklist = theme.actions;
   const openingDetail = theme.opening;
   const guestTakeawayText = theme.takeaway;
@@ -491,6 +536,7 @@ async function main() {
     themeLabel: theme.label,
     topicCategory: theme.topicCategory,
     slug,
+    trendsAreLive,
   });
 
   const wordCount = estimateWordCount(body);
@@ -536,7 +582,11 @@ async function main() {
       html: markdownToHtml(body),
     });
   } else {
-    console.log("NEWSLETTER_AUTO_PUBLISH=false; generated draft only.");
+    console.log(
+      autoPublishRequested
+        ? "Newsletter kept as draft by the source-freshness quality gate."
+        : "NEWSLETTER_AUTO_PUBLISH=false; generated draft only.",
+    );
   }
 }
 

@@ -7,8 +7,8 @@ import {
 } from "@/lib/seo/redirects";
 import {
   getAllLegacySlugsForRedirect,
-  getAllNewsletters,
   getInsightPath,
+  getPublishedNewsletters,
 } from "@/lib/newsletter/content";
 import { getSiteOrigin } from "@/lib/site-url";
 
@@ -16,8 +16,7 @@ type Params = { slug: string };
 
 export function generateStaticParams() {
   const legacy = getAllLegacySlugsForRedirect().map((slug) => ({ slug }));
-  const published = getAllNewsletters()
-    .filter((n) => !n.frontmatter.draft)
+  const published = getPublishedNewsletters()
     .map((n) => ({ slug: n.frontmatter.slug.replace(/^\/+|\/+$/g, "") }));
   const seen = new Set<string>();
   return [...legacy, ...published].filter((entry) => {
@@ -30,7 +29,7 @@ export function generateStaticParams() {
 function resolveTargetPath(slug: string): string | null {
   const clean = slug.replace(/^\/+|\/+$/g, "");
   const legacyMap = buildLegacySlugMap(
-    getAllNewsletters().map((n) => ({
+    getPublishedNewsletters().map((n) => ({
       slug: n.frontmatter.slug,
       legacySlug: n.frontmatter.legacySlug,
     })),
@@ -38,7 +37,7 @@ function resolveTargetPath(slug: string): string | null {
   const legacyTarget = getLegacyRedirectTarget(clean, legacyMap);
   if (legacyTarget) return getInsightPath(legacyTarget);
 
-  const item = getAllNewsletters().find(
+  const item = getPublishedNewsletters().find(
     (n) => n.frontmatter.slug.replace(/^\/+|\/+$/g, "") === clean,
   );
   if (item) return getInsightPath(item.frontmatter.slug);

@@ -18,11 +18,11 @@ const QUERY_TERMS = [
 ];
 
 const RSS_FEEDS = [
-  "https://restaurantbusinessonline.com/rss.xml",
-  "https://www.qsrmagazine.com/rss.xml",
+  "https://news.google.com/rss/search?q=restaurant+operations+when%3A7d&hl=en-US&gl=US&ceid=US%3Aen",
+  "https://news.google.com/rss/search?q=restaurant+guest+experience+when%3A7d&hl=en-US&gl=US&ceid=US%3Aen",
+  "https://news.google.com/rss/search?q=Cincinnati+restaurants+when%3A7d&hl=en-US&gl=US&ceid=US%3Aen",
+  "https://www.restaurantbusinessonline.com/rss.xml",
   "https://www.nrn.com/rss.xml",
-  "https://www.fsrmagazine.com/rss.xml",
-  "https://www.citybeat.com/cincinnati/Rss.xml?section=17906432",
 ];
 const MANUAL_ARTICLES_FILE = path.join(process.cwd(), "src", "data", "newsletter_articles_manual.json");
 
@@ -56,15 +56,28 @@ function operatorTakeawayFor(title: string, summary: string): string {
   return "Map this signal to weekly operations: what changes in service, messaging, or review response cadence are needed now?";
 }
 
+function decodeXml(text: string): string {
+  return text
+    .replace(/^<!\[CDATA\[([\s\S]*)\]\]>$/i, "$1")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)))
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'")
+    .replaceAll("&nbsp;", " ");
+}
+
 function stripTags(text: string): string {
-  return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return decodeXml(text).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
 }
 
 function parseRssItems(xml: string): Array<Record<string, string>> {
-  const items = Array.from(xml.matchAll(/<item[\s\S]*?<\/item>/g)).map((match) => match[0]);
+  const items = Array.from(xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)).map((match) => match[0]);
   return items.map((item) => ({
     title: stripTags((item.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? "").trim()),
-    link: (item.match(/<link>([\s\S]*?)<\/link>/i)?.[1] ?? "").trim(),
+    link: decodeXml((item.match(/<link>([\s\S]*?)<\/link>/i)?.[1] ?? "").trim()),
     pubDate: (item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i)?.[1] ?? "").trim(),
     description: stripTags((item.match(/<description>([\s\S]*?)<\/description>/i)?.[1] ?? "").trim()),
     source: stripTags((item.match(/<source[^>]*>([\s\S]*?)<\/source>/i)?.[1] ?? "").trim()),
@@ -114,7 +127,12 @@ async function fetchFromRss(): Promise<ArticleRecord[]> {
 
   for (const feed of RSS_FEEDS) {
     try {
-      const res = await fetch(feed);
+      const res = await fetch(feed, {
+        headers: {
+          "User-Agent": "GuestSignalHospitality/1.0 (+https://guestsignalhospitality.com/)",
+          Accept: "application/rss+xml, application/xml, text/xml",
+        },
+      });
       if (!res.ok) continue;
       const xml = await res.text();
       const items = parseRssItems(xml);

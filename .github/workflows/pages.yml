@@ -47,6 +47,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
+      - name: Verify internal links
+        run: npm run check:internal-links
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

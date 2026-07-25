@@ -14,7 +14,6 @@ sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "htt
 canonicalUrl: "https://guestsignalhospitality.com/insights/brunch-reservations-near-me/"
 heroImage: "/newsletter-banners/brunch-reservations-near-me.svg"
 relatedSlugs: ["service-consistency", "review-response-speed"]
-draft: true
 ---
 
 # This Week in Hospitality Signals: Brunch reservations near me

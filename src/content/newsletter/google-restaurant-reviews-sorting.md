@@ -14,7 +14,6 @@ sources: ["https://trends.google.com/trending?geo=US&category=5&hours=168", "htt
 canonicalUrl: "https://guestsignalhospitality.com/insights/google-restaurant-reviews-sorting/"
 heroImage: "/newsletter-banners/google-restaurant-reviews-sorting.svg"
 relatedSlugs: ["service-consistency", "review-response-speed"]
-draft: true
 ---
 
 # This Week in Hospitality Signals: Google restaurant reviews sorting

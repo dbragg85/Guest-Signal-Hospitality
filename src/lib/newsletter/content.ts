@@ -137,7 +137,14 @@ export function getNewsletterBySlug(slug: string): ParsedNewsletter | null {
 }
 
 export function getAllLegacySlugsForRedirect(): string[] {
-  return Object.keys(getLegacySlugMap());
+  return Object.keys(
+    buildLegacySlugMap(
+      getPublishedNewsletters().map((item) => ({
+        slug: item.frontmatter.slug,
+        legacySlug: item.frontmatter.legacySlug,
+      })),
+    ),
+  );
 }
 
 export function getInsightPath(slug: string): string {
