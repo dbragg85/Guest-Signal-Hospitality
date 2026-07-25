@@ -2,8 +2,8 @@ name: Research restaurant prospects
 
 on:
   schedule:
-    # Daily 10:15 AM Eastern — 10 prospects per market for configured markets.
-    - cron: "15 14 * * *"
+    # Daily 9:00 AM Eastern — 10 prospects per market, review before 9:45 AM send window.
+    - cron: "0 13 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
