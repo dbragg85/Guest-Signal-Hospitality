@@ -227,6 +227,97 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     await load();
   }
 
+  async function approveProspect(prospect: Prospect) {
+    setError(null);
+    setSavingId(prospect.id);
+    const contactEmail = (contactEmails[prospect.id] ?? "").trim().toLowerCase();
+    const hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail);
+    
+    const update: Record<string, unknown> = {
+      status: "approved",
+      approved_at: new Date().toISOString(),
+      send_status: hasEmail ? "pending" : "not_ready",
+      send_error: hasEmail ? null : "Approved. Add contact email to schedule send.",
+    };
+    if (hasEmail) {
+      update.contact_email = contactEmail;
+    }
+
+    const { error: updateError } = await supabase
+      .from("prospect_queue")
+      .update(update)
+      .eq("id", prospect.id)
+      .eq("status", "approval_required");
+
+    if (updateError) {
+      setError(updateError.message);
+      setSavingId(null);
+      return;
+    }
+
+    if (hasEmail) {
+      const { error: sendError } = await supabase.functions.invoke(
+        "send-approved-prospect",
+        { body: { prospectId: prospect.id } },
+      );
+      if (sendError) {
+        setError(
+          `Approved, but scheduling failed: ${sendError.message}. Add email and retry.`,
+        );
+      }
+    }
+
+    setSavingId(null);
+    await load();
+  }
+
+  async function denyProspect(prospect: Prospect) {
+    setError(null);
+    setSavingId(prospect.id);
+
+    const { error: updateError } = await supabase
+      .from("prospect_queue")
+      .update({
+        status: "dismissed",
+        send_status: "not_ready",
+        send_error: null,
+      })
+      .eq("id", prospect.id)
+      .eq("status", "approval_required");
+
+    if (updateError) {
+      setError(updateError.message);
+    }
+
+    setSavingId(null);
+    await load();
+  }
+
+  async function recycleProspect(prospect: Prospect) {
+    setError(null);
+    setSavingId(prospect.id);
+
+    const { error: updateError } = await supabase
+      .from("prospect_queue")
+      .update({
+        status: "approval_required",
+        approved_at: null,
+        send_status: "not_ready",
+        send_error: null,
+        contacted_at: null,
+        scheduled_for: null,
+      })
+      .eq("id", prospect.id)
+      .eq("status", "dismissed");
+
+    if (updateError) {
+      setError(updateError.message);
+    }
+
+    setSavingId(null);
+    await load();
+  }
+
   return (
     <section className="mt-8 rounded-3xl border border-amber-200 bg-amber-50/60 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -238,8 +329,8 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
             Prospect outreach drafts
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
-            Approve or deny drafts in the ntfy app. Use this panel to add a
-            public business email and watch open/click tracking after send.
+            Approve or deny drafts here or in ntfy. Add a public business email
+            and watch open/click tracking after send.
           </p>
         </div>
         <button
@@ -445,10 +536,39 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
                 <p className="mt-2 whitespace-pre-line">{prospect.draft_body}</p>
               </div>
               {awaitingNtfy ? (
-                <p className="mt-3 text-xs font-semibold text-amber-800">
-                  Decision required in ntfy (Approve / Deny). Optionally save the
-                  recipient email below first so Approve can schedule immediately.
-                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void approveProspect(prospect)}
+                    disabled={savingId === prospect.id}
+                    className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingId === prospect.id ? "Saving…" : "Approve"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void denyProspect(prospect)}
+                    disabled={savingId === prospect.id}
+                    className="rounded-lg bg-stone-500 px-4 py-2 text-sm font-semibold text-white hover:bg-stone-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Deny
+                  </button>
+                  <span className="text-xs text-slate-500">
+                    Add email first to auto-schedule on approve
+                  </span>
+                </div>
+              ) : null}
+              {isDismissed ? (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => void recycleProspect(prospect)}
+                    disabled={savingId === prospect.id}
+                    className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingId === prospect.id ? "Recycling…" : "Re-queue for Review"}
+                  </button>
+                </div>
               ) : null}
               {!deliveryLocked ? (
                 <label className="mt-4 block text-sm font-medium text-slate-800">
@@ -521,7 +641,7 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
                       ? "Saving…"
                       : prospect.status === "approved"
                         ? "Save email & schedule"
-                        : "Save email for ntfy Approve"}
+                        : "Save email"}
                   </button>
                 </div>
               ) : null}
