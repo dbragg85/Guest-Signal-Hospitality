@@ -74,7 +74,8 @@ function actorInput(market, maxResults) {
 }
 
 function marketsForRun() {
-  if (!allMarkets || process.env.PROSPECT_MARKET_SLUG?.trim() || process.env.PROSPECT_SEARCH_QUERY?.trim()) {
+  // Single market override (legacy behavior)
+  if (process.env.PROSPECT_MARKET_SLUG?.trim() || process.env.PROSPECT_SEARCH_QUERY?.trim()) {
     return [forcedMarket];
   }
   
@@ -84,7 +85,12 @@ function marketsForRun() {
     if (filtered.length) return filtered;
   }
   
-  // Rotate starting market daily so all service markets get coverage over time.
+  // Default: run ALL markets (no rotation, all 16 markets get 10 prospects each)
+  if (allMarkets) {
+    return prospectMarkets;
+  }
+  
+  // Fallback: rotate starting market daily
   const dayNum = Math.floor(Date.now() / 86_400_000);
   const start = dayNum % prospectMarkets.length;
   return [...prospectMarkets.slice(start), ...prospectMarkets.slice(0, start)];
