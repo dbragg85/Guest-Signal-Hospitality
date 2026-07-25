@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -103,6 +104,9 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
     planKey === "signal_monitor" ||
     planKey === "signal_growth" ||
     planKey === "signal_elevate";
+  const paidPlan = isPaidPlan
+    ? pricingPlans.find((p) => p.inquiryKey === planKey) ?? null
+    : null;
   const showCompetitorField =
     planKey === "signal_growth" || planKey === "signal_elevate";
   const showSocialPresenceField = planKey === "signal_elevate";
@@ -466,6 +470,25 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
             {heading}
           </h1>
           <p className="mt-3 text-slate-600">{subcopy}</p>
+
+          {mode === "service" && paidPlan ? (
+            <div className="mt-6 rounded-2xl border border-amber-300 bg-amber-50/70 p-5">
+              <p className="text-sm font-semibold text-slate-950">
+                Ready to start {paidPlan.name}? Skip the form.
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                Checkout is live for {paidPlan.price}/{paidPlan.period}. Use the form below only if
+                you want a human reply first.
+              </p>
+              <div className="mt-4 max-w-sm">
+                <StripeCheckoutButton
+                  planKey={paidPlan.inquiryKey}
+                  label={`Start ${paidPlan.name} — ${paidPlan.price}/mo`}
+                  className="btn-primary w-full"
+                />
+              </div>
+            </div>
+          ) : null}
 
           {mode === "service" && upgradeFromPortal ? (
             <p className="mt-5 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950/90">
