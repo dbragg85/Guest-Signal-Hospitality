@@ -11,9 +11,11 @@ type Props = {
   planKey: Exclude<PlanInquiryKey, "free_snapshot">;
   label: string;
   className?: string;
+  /** Show cancel-anytime trust line under the button (default true). */
+  showTrust?: boolean;
 };
 
-export function StripeCheckoutButton({ planKey, label, className }: Props) {
+export function StripeCheckoutButton({ planKey, label, className, showTrust = true }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +54,7 @@ export function StripeCheckoutButton({ planKey, label, className }: Props) {
   }
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-1.5">
       <button
         type="button"
         onClick={() => void startCheckout()}
@@ -62,6 +64,11 @@ export function StripeCheckoutButton({ planKey, label, className }: Props) {
       >
         {loading ? "Starting checkout…" : label}
       </button>
+      {showTrust && !error ? (
+        <p className="text-center text-[11px] leading-snug text-slate-500">
+          Monthly billing. Cancel anytime. No long-term contract.
+        </p>
+      ) : null}
       {error ? (
         <p className="text-xs font-medium text-red-700" role="alert">
           {error}

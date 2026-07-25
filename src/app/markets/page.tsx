@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { markets } from "@/content/markets";
 import { brand } from "@/content/site";
 
@@ -36,12 +37,19 @@ export default function MarketsHubPage() {
             actually make—Google ratings, review monitoring, and clear next steps—across growing
             U.S. dining cities.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <ServicesIntakeLink href="/snapshot/" className="btn-primary" data-track="markets_hub_snapshot">
               Get a free snapshot
             </ServicesIntakeLink>
-            <Link href="/services/" className="btn-secondary">
-              See monthly plans
+            <div className="min-w-[14rem]">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label="Start Signal Monitor — $149/mo"
+                className="btn-secondary w-full"
+              />
+            </div>
+            <Link href="/services/" className="px-4 py-3 text-sm font-semibold text-slate-700 underline underline-offset-4">
+              Compare all plans
             </Link>
           </div>
         </div>
