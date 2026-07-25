@@ -9,7 +9,7 @@
 # Optional input `lead_id` limits processing to one row. The static Pages site cannot safely call GitHub;
 # use repository_dispatch (e.g. from Supabase Edge Function `github-dispatch-lead-intake` + Database Webhook).
 # repository_dispatch type `lead_intake_process` with JSON body `{ "lead_id": "<uuid>" }` (optional) also runs this job.
-# Timing: INSERT webhook → Edge Function → immediate dispatch (when configured). Scheduled fallback: every 5 minutes (GitHub max frequency for schedule).
+# Timing: INSERT webhook → Edge Function → immediate dispatch (when configured). Scheduled fallback: hourly.
 # If the job succeeds but logs "No pending lead_intake_submissions", open the run's **Summary** tab: the script
 # writes diagnostics there (counts + recent rows). The Action does **not** emit a .sql file — data is in Supabase.
 # The job log also prints the same. Typical causes: submission
@@ -32,8 +32,8 @@ on:
   repository_dispatch:
     types: [lead_intake_process]
   schedule:
-    # GitHub allows at most one scheduled run per 5 minutes — use Database Webhook + Edge for near-instant dispatch.
-    - cron: "*/5 * * * *"
+    # Webhook handles normal intake immediately; this catches missed dispatches without burning idle Actions minutes.
+    - cron: "7 * * * *"
 
 concurrency:
   group: lead-intake-snapshot
