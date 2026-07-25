@@ -2,8 +2,8 @@ name: Research restaurant prospects
 
 on:
   schedule:
-    # Daily 9:00 AM Eastern — 10 prospects per market, review before 9:45 AM send window.
-    - cron: "0 13 * * *"
+    # Daily 10:15 AM Eastern — 10 total prospects across service markets.
+    - cron: "15 14 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -42,7 +42,7 @@ permissions:
 
 concurrency:
   group: prospect-research
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   test-ntfy:
@@ -119,9 +119,10 @@ jobs:
           PROSPECT_MARKET_SLUG: ${{ github.event_name == 'workflow_dispatch' && inputs.market_slug || vars.PROSPECT_MARKET_SLUG || '' }}
           PROSPECT_SEARCH_QUERY: ${{ vars.PROSPECT_SEARCH_QUERY || '' }}
           PROSPECT_MARKETS: ${{ vars.PROSPECT_MARKETS || '' }}
-          PROSPECT_PER_MARKET: ${{ vars.PROSPECT_PER_MARKET || '10' }}
-          PROSPECT_MAX_RESULTS: ${{ vars.PROSPECT_MAX_RESULTS || '100' }}
+          PROSPECT_PER_MARKET: ${{ vars.PROSPECT_PER_MARKET || '1' }}
+          PROSPECT_MAX_RESULTS: ${{ vars.PROSPECT_MAX_RESULTS || '10' }}
           PROSPECT_MIN_FIT_SCORE: ${{ vars.PROSPECT_MIN_FIT_SCORE || '55' }}
+          APIFY_PROSPECT_TIMEOUT_MS: ${{ vars.APIFY_PROSPECT_TIMEOUT_MS || '180000' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gpt-4o' }}
           AI_CONCURRENCY: ${{ vars.AI_CONCURRENCY || '3' }}

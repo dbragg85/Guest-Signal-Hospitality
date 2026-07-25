@@ -35,8 +35,13 @@ const enrichOnly = ["1", "true", "yes"].includes(
 const requireNtfy = ["1", "true", "yes"].includes(
   (process.env.REQUIRE_NTFY ?? (dryRun ? "0" : "1")).toLowerCase(),
 );
-const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 100, 200));
-const perMarketLimit = Math.max(1, Math.min(Number(process.env.PROSPECT_PER_MARKET) || 10, 25));
+// Daily target: 10 total prospects across markets (not 10 per market).
+const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 10, 50));
+const perMarketLimit = Math.max(1, Math.min(Number(process.env.PROSPECT_PER_MARKET) || 1, 10));
+const apifyTimeoutMs = Math.max(
+  60_000,
+  Math.min(Number(process.env.APIFY_PROSPECT_TIMEOUT_MS) || 180_000, 600_000),
+);
 const minimumFit = Math.max(0, Math.min(Number(process.env.PROSPECT_MIN_FIT_SCORE) || 55, 100));
 const selectedMarketSlugs = process.env.PROSPECT_MARKETS?.trim()
   ? process.env.PROSPECT_MARKETS.split(",").map((s) => s.trim().toLowerCase())
@@ -78,22 +83,27 @@ function marketsForRun() {
   if (process.env.PROSPECT_MARKET_SLUG?.trim() || process.env.PROSPECT_SEARCH_QUERY?.trim()) {
     return [forcedMarket];
   }
-  
-  // Filter to specific markets if PROSPECT_MARKETS is set (e.g., "cincinnati-oh,columbus-oh,nashville-tn")
+
+  // Filter to specific markets if PROSPECT_MARKETS is set (e.g., "cincinnati-oh,columbus-oh")
+  let pool = prospectMarkets;
   if (selectedMarketSlugs?.length) {
     const filtered = prospectMarkets.filter((m) => selectedMarketSlugs.includes(m.slug));
-    if (filtered.length) return filtered;
+    if (filtered.length) pool = filtered;
+  } else if (!allMarkets) {
+    return [forcedMarket];
   }
-  
-  // Default: run ALL markets (no rotation, all 16 markets get 10 prospects each)
-  if (allMarkets) {
-    return prospectMarkets;
-  }
-  
-  // Fallback: rotate starting market daily
+
+  // Rotate starting market daily so every service market gets coverage over time.
   const dayNum = Math.floor(Date.now() / 86_400_000);
-  const start = dayNum % prospectMarkets.length;
-  return [...prospectMarkets.slice(start), ...prospectMarkets.slice(0, start)];
+  const start = dayNum % pool.length;
+  const rotated = [...pool.slice(start), ...pool.slice(0, start)];
+
+  // Only crawl as many markets as needed to fill the daily quota.
+  const marketsNeeded = Math.min(
+    rotated.length,
+    Math.max(1, Math.ceil(maxProspects / perMarketLimit)),
+  );
+  return rotated.slice(0, marketsNeeded);
 }
 
 function text(value, max = 500) {
@@ -287,41 +297,68 @@ async function researchAcrossMarkets({ token, actorId }) {
   const collected = [];
   const seen = new Set();
   const marketsTouched = [];
+  const startedAt = Date.now();
+
+  console.log(
+    `Daily prospect plan: target ${maxProspects} total · ${perMarketLimit}/market · ` +
+      `${markets.length} market(s) this run · Apify timeout ${Math.round(apifyTimeoutMs / 1000)}s`,
+  );
 
   for (const market of markets) {
     if (collected.length >= maxProspects) break;
     const remaining = maxProspects - collected.length;
     const take = Math.min(perMarketLimit, remaining);
+    const marketStarted = Date.now();
     console.log(
-      `Prospect market: ${market.slug} · ${market.searchPhrase} · fetching ${take} prospects`,
+      `Prospect market: ${market.slug} · ${market.searchPhrase} · fetching ${take} ` +
+        `(have ${collected.length}/${maxProspects})`,
     );
-    const run = await startApifyRun({
-      token,
-      actorId,
-      input: actorInput(market, take),
-      runQuery: { maxItems: take },
-    });
-    const completed = await waitForApifyRun({ token, runId: run.id });
-    if (completed.status !== "SUCCEEDED") {
-      console.warn(`Actor ${run.id} for ${market.slug} ended ${completed.status}; continuing.`);
-      continue;
-    }
-    const items = await fetchApifyDatasetItems({
-      token,
-      datasetId: completed.defaultDatasetId,
-    });
-    marketsTouched.push(market.slug);
-    for (const item of items) {
-      if (collected.length >= maxProspects) break;
-      const prospect = normalizePlace(item, market);
-      if (!prospect) continue;
-      const key = `${prospect.business_name}|${prospect.city}|${prospect.state}`.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      collected.push(prospect);
+    try {
+      const run = await startApifyRun({
+        token,
+        actorId,
+        input: actorInput(market, take),
+        runQuery: { maxItems: take },
+      });
+      const completed = await waitForApifyRun({
+        token,
+        runId: run.id,
+        timeoutMs: apifyTimeoutMs,
+      });
+      if (completed.status !== "SUCCEEDED") {
+        console.warn(`Actor ${run.id} for ${market.slug} ended ${completed.status}; continuing.`);
+        continue;
+      }
+      const items = await fetchApifyDatasetItems({
+        token,
+        datasetId: completed.defaultDatasetId,
+      });
+      marketsTouched.push(market.slug);
+      let added = 0;
+      for (const item of items) {
+        if (collected.length >= maxProspects) break;
+        const prospect = normalizePlace(item, market);
+        if (!prospect) continue;
+        const key = `${prospect.business_name}|${prospect.city}|${prospect.state}`.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        collected.push(prospect);
+        added += 1;
+      }
+      console.log(
+        `  → ${market.slug}: +${added} in ${Math.round((Date.now() - marketStarted) / 1000)}s ` +
+          `(total ${collected.length}/${maxProspects})`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`  → ${market.slug} failed: ${message.slice(0, 240)}; continuing.`);
     }
   }
 
+  console.log(
+    `Apify research finished in ${Math.round((Date.now() - startedAt) / 1000)}s · ` +
+      `${collected.length} prospects · markets: ${marketsTouched.join(", ") || "none"}`,
+  );
   return { prospects: collected, marketsTouched };
 }
 

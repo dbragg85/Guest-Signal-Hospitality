@@ -107,8 +107,10 @@ export async function startApifyRun({ token, actorId, input, runQuery = {} }) {
   return body.data;
 }
 
-export async function waitForApifyRun({ token, runId }) {
-  const parsedTimeout = Number(getEnv("APIFY_YELP_TIMEOUT_MS", { fallback: "600000" }));
+export async function waitForApifyRun({ token, runId, timeoutMs: timeoutOverride } = {}) {
+  const parsedTimeout = Number(
+    timeoutOverride ?? getEnv("APIFY_YELP_TIMEOUT_MS", { fallback: "600000" }),
+  );
   const timeoutMs = Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 600000;
   const startedAt = Date.now();
   for (;;) {
