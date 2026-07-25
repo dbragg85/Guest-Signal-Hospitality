@@ -17,6 +17,7 @@ import {
   organizationSchema,
 } from "@/lib/seo/schema";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString("en-US", {
@@ -130,19 +131,26 @@ export function InsightArticle({ item }: { item: ParsedNewsletter }) {
         <RelatedArticles items={related} currentSlug={item.frontmatter.slug} />
         <ArticleInternalLinks article={item} />
         <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-6">
-          <h2 className="text-xl font-semibold text-slate-900">Get your free Guest Signal Snapshot</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Turn this brief into your scorecard</h2>
           <p className="mt-2 text-slate-700">
-            See what your guests are already signaling in reviews — delivered with a clear operational
-            readout within 48 hours.
+            Start free with a Guest Signal Snapshot, or begin monthly monitoring if you already know
+            you want the recurring scorecard.
           </p>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <ServicesIntakeLink
               href="/snapshot/"
               className="btn-primary inline-block"
               data-track="cta_insight_snapshot"
             >
-              Request free Guest Signal Snapshot
+              Request free snapshot
             </ServicesIntakeLink>
+            <div className="min-w-[14rem]">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label="Start Signal Monitor — $149/mo"
+                className="btn-secondary w-full"
+              />
+            </div>
           </div>
         </div>
       </section>

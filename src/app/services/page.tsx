@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
+import { CheckoutReturnBanner } from "@/components/CheckoutReturnBanner";
 import {
   freeSnapshot,
   pricingPlans,
@@ -36,6 +38,9 @@ export default function ServicesPage() {
   return (
     <div>
       <JsonLd data={[servicesPricingSchema(), faqPageSchema(servicesFaq)]} />
+      <Suspense fallback={null}>
+        <CheckoutReturnBanner />
+      </Suspense>
 
       <section className="border-b border-stone-200/80 bg-gradient-to-b from-stone-50 to-white">
         <ServicesHero seo={seo} />
