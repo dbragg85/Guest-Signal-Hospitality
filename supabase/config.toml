@@ -5,3 +5,7 @@ project_id = "guest-signal-hospitality"
 [functions.github-dispatch-lead-intake]
 # Database Webhook uses a shared header secret instead of a JWT.
 verify_jwt = false
+
+[functions.send-approved-prospect]
+# Called by an authenticated super-admin from the portal.
+verify_jwt = true

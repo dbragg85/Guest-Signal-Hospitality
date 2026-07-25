@@ -14,10 +14,16 @@ type Prospect = {
   rationale: string | null;
   draft_subject: string | null;
   draft_body: string | null;
+  status: "approval_required" | "approved";
+  contact_email: string | null;
+  send_status: "not_ready" | "pending" | "sending" | "failed";
+  send_error: string | null;
 };
 
 export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }) {
   const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [contactEmails, setContactEmails] = useState<Record<string, string>>({});
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,13 +33,25 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     const { data, error: queryError } = await supabase
       .from("prospect_queue")
       .select(
-        "id,business_name,website_url,source_url,city,state,fit_score,rationale,draft_subject,draft_body",
+        "id,business_name,website_url,source_url,city,state,fit_score,rationale,draft_subject,draft_body,status,contact_email,send_status,send_error",
       )
-      .eq("status", "approval_required")
+      .in("status", ["approval_required", "approved"])
+      .neq("send_status", "sent")
       .order("fit_score", { ascending: false })
       .limit(20);
     if (queryError) setError(queryError.message);
-    else setProspects((data ?? []) as Prospect[]);
+    else {
+      const nextProspects = (data ?? []) as Prospect[];
+      setProspects(nextProspects);
+      setContactEmails(
+        Object.fromEntries(
+          nextProspects.map((prospect) => [
+            prospect.id,
+            prospect.contact_email ?? "",
+          ]),
+        ),
+      );
+    }
     setLoading(false);
   }, [supabase]);
 
@@ -41,16 +59,53 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
     void load();
   }, [load]);
 
-  async function decide(id: string, status: "approved" | "dismissed") {
+  async function approveAndSend(prospect: Prospect) {
     setError(null);
-    const update =
-      status === "approved"
-        ? { status, approved_at: new Date().toISOString() }
-        : { status };
+    const contactEmail = (contactEmails[prospect.id] ?? "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+      setError(`Enter a valid public business email for ${prospect.business_name}.`);
+      return;
+    }
+    setSendingId(prospect.id);
     const { error: updateError } = await supabase
       .from("prospect_queue")
-      .update(update)
-      .eq("id", id);
+      .update({
+        contact_email: contactEmail,
+        status: "approved",
+        approved_at: new Date().toISOString(),
+        send_status: "pending",
+        send_error: null,
+      })
+      .eq("id", prospect.id);
+    if (updateError) {
+      setError(updateError.message);
+      setSendingId(null);
+      return;
+    }
+
+    const { error: sendError } = await supabase.functions.invoke(
+      "send-approved-prospect",
+      { body: { prospectId: prospect.id } },
+    );
+    if (sendError) {
+      setError(
+        `Draft approved, but delivery failed: ${sendError.message}. Verify sender configuration and retry.`,
+      );
+      setSendingId(null);
+      await load();
+      return;
+    }
+    setProspects((current) => current.filter((item) => item.id !== prospect.id));
+    setSendingId(null);
+  }
+
+  async function dismiss(id: string) {
+    setError(null);
+    const { error: updateError } = await supabase
+      .from("prospect_queue")
+      .update({ status: "dismissed", send_status: "not_ready", send_error: null })
+      .eq("id", id)
+      .in("status", ["approval_required", "approved"]);
     if (updateError) {
       setError(updateError.message);
       return;
@@ -69,8 +124,8 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
             Prospect outreach drafts
           </h2>
           <p className="mt-2 max-w-3xl text-sm text-slate-600">
-            Public-business research only. Approving a draft does not send it;
-            outreach remains manual until a separate sending policy is approved.
+            Enter a verified public business email. Approval is the explicit
+            authorization to send this exact draft once.
           </p>
         </div>
         <button
@@ -122,18 +177,50 @@ export function ProspectApprovalPanel({ supabase }: { supabase: SupabaseClient }
               <p className="font-semibold">{prospect.draft_subject}</p>
               <p className="mt-2 whitespace-pre-line">{prospect.draft_body}</p>
             </div>
+            <label className="mt-4 block text-sm font-medium text-slate-800">
+              Verified public business email
+              <input
+                type="email"
+                value={contactEmails[prospect.id] ?? ""}
+                onChange={(event) =>
+                  setContactEmails((current) => ({
+                    ...current,
+                    [prospect.id]: event.target.value,
+                  }))
+                }
+                placeholder="hello@restaurant.com"
+                className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+                autoComplete="off"
+              />
+            </label>
+            {prospect.status === "approved" ? (
+              <p className="mt-3 text-xs font-semibold text-amber-800">
+                Already approved; add the recipient and send when ready.
+              </p>
+            ) : null}
+            {prospect.send_error ? (
+              <p className="mt-3 text-xs text-red-700">
+                Previous delivery error: {prospect.send_error}
+              </p>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => void decide(prospect.id, "approved")}
-                className="btn-primary text-sm"
+                onClick={() => void approveAndSend(prospect)}
+                className="btn-primary text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={sendingId === prospect.id}
               >
-                Approve draft
+                {sendingId === prospect.id
+                  ? "Sending…"
+                  : prospect.status === "approved"
+                    ? "Send approved draft"
+                    : "Approve & send"}
               </button>
               <button
                 type="button"
-                onClick={() => void decide(prospect.id, "dismissed")}
+                onClick={() => void dismiss(prospect.id)}
                 className="btn-secondary text-sm"
+                disabled={sendingId === prospect.id}
               >
                 Dismiss
               </button>
