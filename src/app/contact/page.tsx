@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { LeadIntakeForm } from "@/components/LeadIntakeForm";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -16,14 +17,21 @@ export default function ContactPage() {
         <div className="mx-auto max-w-3xl px-4 py-14">
           <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">How can we help?</h1>
           <p className="mt-3 text-slate-600">
-            Use this form for plan questions, partnerships, or account help. If you want your
-            restaurant scored, start with the free snapshot instead.
+            Use this form for plan questions, partnerships, or account help. Ready to start? Grab a
+            free snapshot or begin Signal Monitor below.
           </p>
-          <p className="mt-6">
-            <Link href="/snapshot/" className="btn-primary inline-block">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-start">
+            <Link href="/snapshot/" className="btn-primary inline-block px-6 py-3 text-center">
               Get your free snapshot
             </Link>
-          </p>
+            <div className="min-w-[14rem]">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label="Start Signal Monitor — $149/mo"
+                className="btn-secondary w-full px-6 py-3"
+              />
+            </div>
+          </div>
         </div>
       </section>
       <Suspense

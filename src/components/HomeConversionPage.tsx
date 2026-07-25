@@ -50,7 +50,7 @@ export function HomeConversionPage() {
               We turn your Google and Yelp reviews into one score, the themes behind it,
               and three practical priorities your team can use this week.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-start">
               <ServicesIntakeLink
                 href="/snapshot/"
                 className="btn-primary px-6 py-3 text-center"
@@ -58,12 +58,21 @@ export function HomeConversionPage() {
               >
                 Get your free snapshot
               </ServicesIntakeLink>
-              <Link href="#what-you-get" className="btn-secondary px-6 py-3 text-center">
-                See what you get
-              </Link>
+              <div className="min-w-[14rem]">
+                <StripeCheckoutButton
+                  planKey="signal_monitor"
+                  label="Start Signal Monitor — $149/mo"
+                  className="btn-secondary w-full px-6 py-3"
+                />
+              </div>
             </div>
             <p className="mt-4 text-sm text-slate-500">
-              No card. No sales call required. Delivered to your private portal.
+              Free snapshot: no card. Or start monthly monitoring anytime — cancel anytime.
+            </p>
+            <p className="mt-2">
+              <Link href="#what-you-get" className="text-sm font-semibold text-slate-700 underline underline-offset-4">
+                See what the snapshot includes
+              </Link>
             </p>
           </div>
 
