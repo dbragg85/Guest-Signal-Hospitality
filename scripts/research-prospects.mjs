@@ -15,7 +15,10 @@ import {
   requiredEnv,
   serviceClient,
 } from "./lib/growth-operator.mjs";
-import { resolveProspectMarket } from "./lib/prospect-markets.mjs";
+import {
+  prospectMarkets,
+  resolveProspectMarket,
+} from "./lib/prospect-markets.mjs";
 
 const dryRun = ["1", "true", "yes"].includes((process.env.DRY_RUN ?? "").toLowerCase());
 const notifyOnly = ["1", "true", "yes"].includes(
@@ -27,36 +30,48 @@ const enrichOnly = ["1", "true", "yes"].includes(
 const requireNtfy = ["1", "true", "yes"].includes(
   (process.env.REQUIRE_NTFY ?? (dryRun ? "0" : "1")).toLowerCase(),
 );
-const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 20, 50));
+const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 10, 50));
 const minimumFit = Math.max(0, Math.min(Number(process.env.PROSPECT_MIN_FIT_SCORE) || 55, 100));
-const activeMarket = resolveProspectMarket({
+const allMarkets = !["0", "false", "no"].includes(
+  (process.env.PROSPECT_ALL_MARKETS ?? "1").toLowerCase(),
+);
+const forcedMarket = resolveProspectMarket({
   slug: process.env.PROSPECT_MARKET_SLUG,
   searchQuery: process.env.PROSPECT_SEARCH_QUERY,
 });
-const searchQuery = activeMarket.searchPhrase;
 const siteOrigin =
   process.env.SITE_ORIGIN?.trim().replace(/\/+$/, "") ||
   "https://guestsignalhospitality.com";
 
-function actorInput() {
+function actorInput(market, maxResults) {
   const template = process.env.APIFY_PROSPECT_INPUT_TEMPLATE_JSON?.trim();
   if (template) {
     return JSON.parse(
       template
-        .replaceAll("{{SEARCH_QUERY}}", searchQuery)
-        .replaceAll("{{LOCATION_QUERY}}", activeMarket.locationQuery)
-        .replaceAll("{{MAX_RESULTS}}", String(maxProspects)),
+        .replaceAll("{{SEARCH_QUERY}}", market.searchPhrase)
+        .replaceAll("{{LOCATION_QUERY}}", market.locationQuery)
+        .replaceAll("{{MAX_RESULTS}}", String(maxResults)),
     );
   }
   return {
-    searchStringsArray: [searchQuery],
-    locationQuery: activeMarket.locationQuery,
-    maxCrawledPlacesPerSearch: maxProspects,
+    searchStringsArray: [market.searchPhrase],
+    locationQuery: market.locationQuery,
+    maxCrawledPlacesPerSearch: maxResults,
     language: "en",
     skipClosedPlaces: true,
     scrapeContacts: true,
     maxImages: 0,
   };
+}
+
+function marketsForRun() {
+  if (!allMarkets || process.env.PROSPECT_MARKET_SLUG?.trim() || process.env.PROSPECT_SEARCH_QUERY?.trim()) {
+    return [forcedMarket];
+  }
+  // Rotate starting market daily so all service markets get coverage over time.
+  const dayNum = Math.floor(Date.now() / 86_400_000);
+  const start = dayNum % prospectMarkets.length;
+  return [...prospectMarkets.slice(start), ...prospectMarkets.slice(0, start)];
 }
 
 function text(value, max = 500) {
@@ -68,22 +83,22 @@ function number(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function normalizePlace(item) {
+function normalizePlace(item, market) {
   const businessName = text(item.title ?? item.name, 200);
   if (!businessName) return null;
-  const city = text(item.city, 100) || activeMarket.city;
-  const state = text(item.state, 30) || activeMarket.stateCode || "OH";
+  const city = text(item.city, 100) || market.city;
+  const state = text(item.state, 30) || market.stateCode || "OH";
   const rating = number(item.totalScore ?? item.rating);
   const reviewsCount = number(item.reviewsCount ?? item.reviewCount);
   const website = text(item.website, 500) || null;
   const sourceUrl = text(item.url ?? item.googleMapsUrl, 500) || null;
   const category = text(item.categoryName ?? item.category, 100) || null;
-  const marketCity = activeMarket.city.toLowerCase().replace(/\./g, "");
+  const marketCity = market.city.toLowerCase().replace(/\./g, "");
   const cityNorm = city.toLowerCase().replace(/\./g, "");
 
   let fitScore = 35;
   if (cityNorm.includes(marketCity) || marketCity.includes(cityNorm)) fitScore += 15;
-  if (activeMarket.slug === "cincinnati-oh" && cityNorm.includes("cincinnati")) fitScore += 5;
+  if (market.slug === "cincinnati-oh" && cityNorm.includes("cincinnati")) fitScore += 5;
   if (reviewsCount != null && reviewsCount >= 50) fitScore += 15;
   if (reviewsCount != null && reviewsCount >= 250) fitScore += 10;
   if (rating != null && rating >= 3.4 && rating <= 4.6) fitScore += 15;
@@ -95,11 +110,11 @@ function normalizePlace(item) {
     rating != null ? `${rating.toFixed(1)} public rating` : null,
     reviewsCount != null ? `${reviewsCount} public reviews` : null,
     category,
-    `market:${activeMarket.slug}`,
+    `market:${market.slug}`,
   ].filter(Boolean);
   const rationale = signalParts.length
     ? `Public profile signals: ${signalParts.join(", ")}.`
-    : `Public restaurant profile found in the ${activeMarket.city} market.`;
+    : `Public restaurant profile found in the ${market.city} market.`;
 
   const placeEmails = emailsFromPlaceItem(item);
   return {
@@ -116,18 +131,62 @@ function normalizePlace(item) {
       reviews_count: reviewsCount,
       category,
       place_emails: placeEmails,
-      market_slug: activeMarket.slug,
+      market_slug: market.slug,
     },
     _place_emails: placeEmails,
     draft_subject: `Complimentary Guest Signal snapshot for ${businessName}`,
     draft_body:
       `Hi ${businessName} team,\n\n` +
-      `I was reviewing public guest-feedback signals for independent restaurants in ${activeMarket.city}` +
-      `${activeMarket.stateCode ? `, ${activeMarket.stateCode}` : ""} and found your profile. ` +
+      `I was reviewing public guest-feedback signals for independent restaurants in ${market.city}` +
+      `${market.stateCode ? `, ${market.stateCode}` : ""} and found your profile. ` +
       `Guest Signal Hospitality can prepare a complimentary snapshot showing recurring guest themes, reputation risks, and practical next steps.\n\n` +
       `Would you like me to prepare one for your team? There is no obligation or credit card required.\n\n` +
       `— Guest Signal Hospitality`,
   };
+}
+
+async function researchAcrossMarkets({ token, actorId }) {
+  const markets = marketsForRun();
+  const perMarket = Math.max(1, Math.ceil(maxProspects / Math.min(markets.length, maxProspects)));
+  const collected = [];
+  const seen = new Set();
+  const marketsTouched = [];
+
+  for (const market of markets) {
+    if (collected.length >= maxProspects) break;
+    const remaining = maxProspects - collected.length;
+    const take = Math.min(perMarket, remaining);
+    console.log(
+      `Prospect market: ${market.slug} · ${market.searchPhrase} · need ${take}`,
+    );
+    const run = await startApifyRun({
+      token,
+      actorId,
+      input: actorInput(market, take),
+      runQuery: { maxItems: take },
+    });
+    const completed = await waitForApifyRun({ token, runId: run.id });
+    if (completed.status !== "SUCCEEDED") {
+      console.warn(`Actor ${run.id} for ${market.slug} ended ${completed.status}; continuing.`);
+      continue;
+    }
+    const items = await fetchApifyDatasetItems({
+      token,
+      datasetId: completed.defaultDatasetId,
+    });
+    marketsTouched.push(market.slug);
+    for (const item of items) {
+      if (collected.length >= maxProspects) break;
+      const prospect = normalizePlace(item, market);
+      if (!prospect) continue;
+      const key = `${prospect.business_name}|${prospect.city}|${prospect.state}`.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      collected.push(prospect);
+    }
+  }
+
+  return { prospects: collected, marketsTouched };
 }
 
 async function scheduleApprovedProspect(prospectId) {
@@ -450,29 +509,11 @@ try {
     process.exit(0);
   }
 
-  console.log(
-    `Prospect market: ${activeMarket.slug} · ${searchQuery} · ${activeMarket.locationQuery}`,
-  );
   const token = requiredEnv("APIFY_TOKEN");
   const actorId =
     process.env.APIFY_PROSPECT_ACTOR_ID?.trim() ||
     "compass~crawler-google-places";
-  const run = await startApifyRun({
-    token,
-    actorId,
-    input: actorInput(),
-    runQuery: { maxItems: maxProspects },
-  });
-  const completed = await waitForApifyRun({ token, runId: run.id });
-  if (completed.status !== "SUCCEEDED") {
-    throw new Error(`Prospect actor ${run.id} ended with status ${completed.status}`);
-  }
-
-  const items = await fetchApifyDatasetItems({
-    token,
-    datasetId: completed.defaultDatasetId,
-  });
-  const prospects = items.map(normalizePlace).filter(Boolean).slice(0, maxProspects);
+  const { prospects, marketsTouched } = await researchAcrossMarkets({ token, actorId });
   const rowsForUpsert = prospects.map(({ _place_emails, ...row }) => row);
 
   if (dryRun) {
@@ -489,7 +530,13 @@ try {
         contact_email_source: discovery.source,
       });
     }
-    console.log(JSON.stringify({ prospects: rowsForUpsert, email_preview: enrichedPreview }, null, 2));
+    console.log(
+      JSON.stringify(
+        { markets_touched: marketsTouched, prospects: rowsForUpsert, email_preview: enrichedPreview },
+        null,
+        2,
+      ),
+    );
   } else if (rowsForUpsert.length) {
     const { error } = await supabase
       .from("prospect_queue")
@@ -509,14 +556,13 @@ try {
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
     summary:
-      `${activeMarket.city}: ${prospects.length} public businesses researched; ` +
+      `${prospects.length} public businesses researched across ${marketsTouched.length} market(s); ` +
       `${emailEnrichment.discovered} public email(s) found; ` +
       `${emailEnrichment.scheduled} approved draft(s) scheduled; ` +
       `${approvalCount} draft(s) require approval via ntfy.`,
     metrics: {
-      market_slug: activeMarket.slug,
-      market_city: activeMarket.city,
-      search_query: searchQuery,
+      markets_touched: marketsTouched,
+      all_markets: allMarkets,
       researched: prospects.length,
       approval_required: approvalCount,
       emails_discovered: emailEnrichment.discovered,

@@ -179,14 +179,18 @@ Deno.serve(async (req) => {
 
   const prospectId = requestBody.prospectId;
   if (!validUuid(prospectId)) return json(req, { error: "invalid_prospect_id" }, 400);
+  const sendNow = requestBody.sendNow === true;
 
+  const claimStatuses = sendNow
+    ? ["pending", "failed", "scheduled"]
+    : ["pending", "failed"];
   const { data: prospect, error: claimError } = await admin
     .from("prospect_queue")
     .update({ send_status: "sending", send_error: null })
     .eq("id", prospectId)
     .eq("status", "approved")
-    .in("send_status", ["pending", "failed"])
-    .select("id,business_name,contact_email,draft_subject,draft_body")
+    .in("send_status", claimStatuses)
+    .select("id,business_name,contact_email,draft_subject,draft_body,sent_message_id")
     .maybeSingle();
   if (claimError) return json(req, { error: "claim_failed" }, 500);
 
@@ -200,6 +204,17 @@ Deno.serve(async (req) => {
       return json(req, { ok: true, already_sent: true });
     }
     return json(req, { error: "not_approved_or_not_ready" }, 409);
+  }
+
+  if (sendNow && prospect.sent_message_id) {
+    try {
+      await fetch(`https://api.resend.com/emails/${prospect.sent_message_id}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${resendKey}` },
+      });
+    } catch {
+      // Best-effort cancel of a previously scheduled Resend message.
+    }
   }
 
   const contactEmail = String(prospect.contact_email ?? "").trim().toLowerCase();
@@ -244,23 +259,27 @@ Deno.serve(async (req) => {
   )}<br>If you would rather not receive another message, reply “no thanks.”</p></div>`;
 
   try {
-    const scheduledFor = nextRestaurantOwnerSendTime();
+    const scheduledFor = sendNow ? null : nextRestaurantOwnerSendTime();
+    const payload: Record<string, unknown> = {
+      from: resendFrom,
+      to: [contactEmail],
+      reply_to: replyTo,
+      subject,
+      text,
+      html,
+    };
+    if (scheduledFor) payload.scheduled_at = scheduledFor.toISOString();
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,
         "Content-Type": "application/json",
-        "Idempotency-Key": `prospect-outreach-${prospectId}`,
+        "Idempotency-Key": sendNow
+          ? `prospect-outreach-${prospectId}-now-${Date.now()}`
+          : `prospect-outreach-${prospectId}`,
       },
-      body: JSON.stringify({
-        from: resendFrom,
-        to: [contactEmail],
-        reply_to: replyTo,
-        subject,
-        text,
-        html,
-        scheduled_at: scheduledFor.toISOString(),
-      }),
+      body: JSON.stringify(payload),
     });
     const responseBody = await response.text();
     if (!response.ok) throw new Error(`Resend ${response.status}: ${responseBody.slice(0, 500)}`);
@@ -273,20 +292,34 @@ Deno.serve(async (req) => {
       // A successful response without JSON is still a successful delivery request.
     }
 
+    const nowIso = new Date().toISOString();
     const { error: finishError } = await admin
       .from("prospect_queue")
-      .update({
-        send_status: "scheduled",
-        scheduled_for: scheduledFor.toISOString(),
-        send_error: null,
-        sent_message_id: messageId,
-      })
+      .update(
+        sendNow
+          ? {
+              status: "contacted",
+              send_status: "sent",
+              contacted_at: nowIso,
+              scheduled_for: null,
+              send_error: null,
+              sent_message_id: messageId,
+            }
+          : {
+              send_status: "scheduled",
+              scheduled_for: scheduledFor!.toISOString(),
+              send_error: null,
+              sent_message_id: messageId,
+            },
+      )
       .eq("id", prospectId);
     if (finishError) throw finishError;
     return json(req, {
       ok: true,
       message_id: messageId,
-      scheduled_for: scheduledFor.toISOString(),
+      send_now: sendNow,
+      scheduled_for: scheduledFor?.toISOString() ?? null,
+      sent_at: sendNow ? nowIso : null,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

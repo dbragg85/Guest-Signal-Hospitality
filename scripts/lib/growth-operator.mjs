@@ -259,6 +259,16 @@ export function buildOwnerReport(metrics) {
     queue.length > 0
       ? `- Approve or dismiss the ${queue.length} highest-fit outreach draft(s).`
       : `- No outreach drafts await approval.`,
+    ``,
+    `## AI automation plan — path to the conversion goal`,
+    `- Daily: research 10 new restaurant prospects across all service markets; enrich public emails; ping ntfy Approve/Deny.`,
+    `- On Approve: queue outreach (immediate when requested, else Tue–Thu 9:45 AM ET); track opens/clicks via Resend webhooks.`,
+    `- Every 12h: evaluate the 3-paid-conversions / 7-day goal; if off-track, propose concrete interventions on ntfy for Approve/Deny.`,
+    `- Continuous: convert free snapshots → Stripe Checkout CTAs; alert on checkout starts without completion.`,
+    `- Content/SEO: keep market + Google-ratings pages indexed; surface top CTAs in the daily report when sessions rise but conversions stay at zero.`,
+    `- Instagram assist: draft 3 owner-facing posts/week from the same review themes (ratings, reply scripts, scorecard proof) and DM local independents once the account has usable reach.`,
+    `- Human only when needed: Approve/Deny outreach, Approve/Deny growth interventions, and close warm intros that AI cannot.`,
+    `- Near-term success check: emails delivered → snapshot requests → checkout sessions → won subscriptions counted toward the active goal.`,
     ...(latestCodex
       ? [
           ``,

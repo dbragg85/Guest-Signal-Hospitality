@@ -42,6 +42,7 @@
     "growth:daily-report": "node scripts/generate-daily-owner-report.mjs",
     "growth:codex-operator": "node scripts/run-codex-operator.mjs",
     "growth:prospects": "node scripts/research-prospects.mjs",
+    "growth:flush-prospects": "node scripts/flush-scheduled-prospects.mjs",
     "growth:evaluate-goal": "node scripts/evaluate-growth-goal.mjs"
   },
   "dependencies": {
