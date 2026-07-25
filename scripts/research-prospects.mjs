@@ -194,7 +194,7 @@ async function enrichProspectWithEmail(prospect) {
   };
 }
 
-async function enrichProspectsWithEmails(prospects, maxConcurrent = 5) {
+async function enrichProspectsWithEmails(prospects, maxConcurrent = 10) {
   console.log(`Discovering emails for ${prospects.length} prospect(s)...`);
   const enriched = [];
   let emailsFound = 0;
