@@ -38,7 +38,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          OWNER_REPORT_EMAIL_TO: ${{ vars.OWNER_REPORT_EMAIL_TO || 'audit@guestsignalhospitality.com' }}
+          OWNER_REPORT_EMAIL_TO: ${{ vars.OWNER_REPORT_EMAIL_TO || secrets.OWNER_REPORT_EMAIL_TO || 'audit@guestsignalhospitality.com' }}
           OWNER_REPORT_EMAIL_FROM: ${{ vars.OWNER_REPORT_EMAIL_FROM || 'Guest Signal Operator <audit@guestsignalhospitality.com>' }}
-          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
-        run: npm run growth:daily-report
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${RESEND_API_KEY}" && "${DRY_RUN}" != "1" ]]; then
+            echo "RESEND_API_KEY secret is required to email the owner report."
+            exit 1
+          fi
+          npm run growth:daily-report

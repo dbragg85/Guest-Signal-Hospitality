@@ -23,11 +23,20 @@ export async function collectGrowthMetrics(supabase, days = 7) {
 
   const { data: prospects, error: prospectError } = await supabase
     .from("prospect_queue")
-    .select("id,business_name,city,state,fit_score,status,rationale,draft_subject")
-    .in("status", ["approval_required", "approved"])
+    .select(
+      "id,business_name,city,state,fit_score,status,rationale,draft_subject,send_status,scheduled_for,contacted_at,contact_email",
+    )
+    .in("status", ["approval_required", "approved", "contacted"])
     .order("fit_score", { ascending: false })
-    .limit(10);
+    .limit(15);
   if (prospectError) throw prospectError;
+
+  const { data: outreachRows, error: outreachError } = await supabase
+    .from("prospect_queue")
+    .select("business_name,status,send_status,scheduled_for,contacted_at,contact_email");
+  if (outreachError) throw outreachError;
+
+  const outreach = summarizeOutreach(outreachRows ?? []);
 
   const { data: runs, error: runError } = await supabase
     .from("automation_runs")
@@ -37,11 +46,73 @@ export async function collectGrowthMetrics(supabase, days = 7) {
     .limit(20);
   if (runError) throw runError;
 
+  const { data: goals, error: goalError } = await supabase
+    .from("growth_goals")
+    .select("name,target_conversions,window_days,starts_at,ends_at,status")
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (goalError) throw goalError;
+
+  const { count: wonPeriod, error: wonError } = await supabase
+    .from("sales_opportunities")
+    .select("id", { count: "exact", head: true })
+    .eq("stage", "won")
+    .eq("is_test", false)
+    .gte("won_at", new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
+  if (wonError) throw wonError;
+
   return {
     ...data,
     approval_queue: prospects ?? [],
     recent_automation_runs: runs ?? [],
+    outreach,
+    active_goal: goals?.[0] ?? null,
+    won_period: wonPeriod ?? 0,
   };
+}
+
+function summarizeOutreach(rows) {
+  const summary = {
+    total: rows.length,
+    approval_required: 0,
+    approved: 0,
+    contacted: 0,
+    with_email: 0,
+    send_scheduled: 0,
+    send_sent: 0,
+    send_failed: 0,
+    send_not_ready: 0,
+    next_scheduled_for: null,
+    scheduled_names: [],
+  };
+  for (const row of rows) {
+    if (row.status === "approval_required") summary.approval_required += 1;
+    if (row.status === "approved") summary.approved += 1;
+    if (row.status === "contacted") summary.contacted += 1;
+    if (row.contact_email) summary.with_email += 1;
+    if (row.send_status === "scheduled") {
+      summary.send_scheduled += 1;
+      if (
+        row.scheduled_for &&
+        (!summary.next_scheduled_for || row.scheduled_for < summary.next_scheduled_for)
+      ) {
+        summary.next_scheduled_for = row.scheduled_for;
+      }
+    } else if (row.send_status === "sent") {
+      summary.send_sent += 1;
+    } else if (row.send_status === "failed") {
+      summary.send_failed += 1;
+    } else if (row.send_status === "not_ready" || !row.send_status) {
+      summary.send_not_ready += 1;
+    }
+  }
+  summary.scheduled_names = rows
+    .filter((row) => row.send_status === "scheduled")
+    .slice(0, 8)
+    .map((row) => row.business_name)
+    .filter(Boolean);
+  return summary;
 }
 
 export async function recordAutomationRun(supabase, values) {
@@ -88,19 +159,44 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function formatEt(iso) {
+  if (!iso) return "n/a";
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+    }).format(new Date(iso));
+  } catch {
+    return String(iso);
+  }
+}
+
 export function buildOwnerReport(metrics) {
   const events = metrics.events ?? {};
   const sales = metrics.sales ?? {};
   const intake = metrics.intake ?? {};
   const prospects = metrics.prospects ?? {};
+  const outreach = metrics.outreach ?? {};
+  const goal = metrics.active_goal;
   const period = number(metrics.days) || 7;
   const ctaRate = percent(number(events.cta_clicks), number(events.page_views));
   const completionRate = percent(number(events.form_completions), number(events.form_starts));
   const failures = (metrics.recent_automation_runs ?? []).filter((run) => run.status === "failed");
-  const queue = metrics.approval_queue ?? [];
+  const queue = (metrics.approval_queue ?? []).filter(
+    (item) => item.status === "approval_required",
+  );
   const latestCodex = (metrics.recent_automation_runs ?? []).find(
     (run) => run.run_kind === "codex_operator" && run.summary,
   );
+  const nextSend = formatEt(outreach.next_scheduled_for);
+  const goalLine = goal
+    ? `- Active goal: ${number(metrics.won_period)} / ${number(goal.target_conversions)} paid conversions (window ends ${formatEt(goal.ends_at)})`
+    : `- Active goal: none`;
 
   const lines = [
     `# Guest Signal daily owner report`,
@@ -109,8 +205,21 @@ export function buildOwnerReport(metrics) {
     ``,
     `## Revenue and sales`,
     `- Paid MRR: ${dollars(sales.mrr_cents)}`,
+    goalLine,
     `- Pipeline: ${number(sales.new_count)} new, ${number(sales.qualified_count)} qualified, ${number(sales.meeting_count)} meeting, ${number(sales.proposal_count)} proposal, ${number(sales.won_count)} won`,
     `- Follow-ups due: ${number(sales.follow_ups_due)}`,
+    ``,
+    `## Outreach email status`,
+    `- Delivered (sent): ${number(outreach.send_sent)}`,
+    `- Queued with Resend (scheduled): ${number(outreach.send_scheduled)}${
+      outreach.next_scheduled_for ? ` — next batch ${nextSend}` : ""
+    }`,
+    `- Approved but missing public email: ${number(outreach.send_not_ready)}`,
+    `- Send failures: ${number(outreach.send_failed)}`,
+    `- With public email on file: ${number(outreach.with_email)} / ${number(outreach.total)}`,
+    ...(Array.isArray(outreach.scheduled_names) && outreach.scheduled_names.length
+      ? outreach.scheduled_names.map((name) => `- Scheduled: ${name}`)
+      : [`- No prospect emails are currently scheduled.`]),
     ``,
     `## Funnel — last ${period} days`,
     `- Sessions: ${number(events.sessions_period)} (${number(events.sessions_24h)} in 24h)`,
@@ -123,7 +232,7 @@ export function buildOwnerReport(metrics) {
     `## Operations`,
     `- New submissions: ${number(intake.submissions_period)}`,
     `- Snapshot queue: ${number(intake.pending)} pending, ${number(intake.processing)} processing, ${number(intake.failed)} failed`,
-    `- Automation failures in 24h: ${failures.length}`,
+    `- Automation failures in 48h: ${failures.length}`,
     ``,
     `## Prospect approval queue`,
     `- Awaiting approval: ${number(prospects.approval_required)}`,
@@ -133,6 +242,14 @@ export function buildOwnerReport(metrics) {
     ),
     ``,
     `## Owner attention`,
+    number(outreach.send_scheduled) > 0 && number(outreach.send_sent) === 0
+      ? `- Prospect emails are scheduled, not delivered yet. Next send window: ${nextSend}.`
+      : number(outreach.send_sent) > 0
+        ? `- ${number(outreach.send_sent)} prospect email(s) have been delivered.`
+        : `- No prospect emails delivered or scheduled yet.`,
+    number(outreach.send_not_ready) > 0
+      ? `- ${number(outreach.send_not_ready)} approved prospect(s) still need a public email before send.`
+      : `- All approved prospects with send intent have emails or are already queued.`,
     number(intake.failed) > 0
       ? `- Investigate failed snapshot jobs before acquiring additional leads.`
       : `- No snapshot pipeline failures require attention.`,
