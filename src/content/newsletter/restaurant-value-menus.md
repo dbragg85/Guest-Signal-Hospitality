@@ -18,11 +18,11 @@ relatedSlugs: ["service-consistency", "review-response-speed"]
 
 # This Week in Hospitality Signals: Restaurant value menus
 
-Search trends, guest behavior signals, and operator takeaways for restaurants.
+Recent industry coverage, operator watchlist topics, and practical restaurant takeaways.
 
 ## Opening Signal
-This week, the primary hospitality search theme is **Restaurant value menus**. Guest behavior this week points to tighter expectations around response quality and accountability.
-Also watch search traction around **Restaurant delivery wait times**—note whether your public listings and menu language already answer that intent.
+This week's operator focus is **Restaurant value menus**. Guest behavior this week points to tighter expectations around response quality and accountability.
+Also monitor **Restaurant delivery wait times** as an operator watchlist topic—not a verified search spike.
 If one theme dominates local search, your menu, hours, and GBP copy should answer that intent in plain language—not buried in marketing fluff.
 
 ## Operator lens
@@ -44,12 +44,12 @@ We are framing **Restaurant value menus** through **review response speed**. Com
 - Letting responses age past 72 hours on high-impact negatives
 - Arguing with reviewers in public threads
 
-## What People Are Searching
-- **Restaurant value menus** — Value framing changes are shaping guest expectations around pricing and menu clarity. Source: [Google Trends item 1](https://trends.google.com/trending?geo=US&category=5&hours=168)
-- **Restaurant delivery wait times** — Off-premise behavior is active; confirm packaging quality, order accuracy, and pickup flow clarity. Source: [Google Trends item 2](https://trends.google.com/trending?geo=US&category=5&hours=168)
-- **Google restaurant reviews sorting** — Guests compare you in-list; align photos, recent responses, and top themes with what searchers expect. Source: [Google Trends item 3](https://trends.google.com/trending?geo=US&category=5&hours=168)
-- **Brunch reservations near me** — Daypart demand is shifting; adjust staffing and prep timing to protect speed and consistency. Source: [Google Trends item 4](https://trends.google.com/trending?geo=US&category=5&hours=168)
-- **Restaurant happy hour deals** — Guests are signaling price sensitivity; review menu framing, value communication, and margin-safe offers. Source: [Google Trends item 5](https://trends.google.com/trending?geo=US&category=5&hours=168)
+## Operator Watchlist
+- **Restaurant value menus** — Value framing changes are shaping guest expectations around pricing and menu clarity. Source: [operator watchlist](https://trends.google.com/trending?geo=US&category=5&hours=168)
+- **Restaurant delivery wait times** — Off-premise behavior is active; confirm packaging quality, order accuracy, and pickup flow clarity. Source: [operator watchlist](https://trends.google.com/trending?geo=US&category=5&hours=168)
+- **Google restaurant reviews sorting** — Guests compare you in-list; align photos, recent responses, and top themes with what searchers expect. Source: [operator watchlist](https://trends.google.com/trending?geo=US&category=5&hours=168)
+- **Brunch reservations near me** — Daypart demand is shifting; adjust staffing and prep timing to protect speed and consistency. Source: [operator watchlist](https://trends.google.com/trending?geo=US&category=5&hours=168)
+- **Restaurant happy hour deals** — Guests are signaling price sensitivity; review menu framing, value communication, and margin-safe offers. Source: [operator watchlist](https://trends.google.com/trending?geo=US&category=5&hours=168)
 
 ## Restaurant Industry Watch
 - **Restaurant operators face ongoing value pressure in 2026** (National Restaurant Association) — Industry outlook highlights steady demand with continued value sensitivity across guests.
