@@ -86,6 +86,15 @@ export function Shell({ children }: { children: ReactNode }) {
               </div>
               <div className="flex flex-wrap items-center gap-4 text-sm">
               <Link
+                href="/markets/"
+                className="font-medium text-slate-400 transition-colors hover:text-amber-400"
+              >
+                Markets
+              </Link>
+              <span className="text-slate-700" aria-hidden>
+                |
+              </span>
+              <Link
                 href="/portal/"
                 className="font-medium text-slate-400 transition-colors hover:text-amber-400"
               >

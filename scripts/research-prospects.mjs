@@ -15,6 +15,7 @@ import {
   requiredEnv,
   serviceClient,
 } from "./lib/growth-operator.mjs";
+import { resolveProspectMarket } from "./lib/prospect-markets.mjs";
 
 const dryRun = ["1", "true", "yes"].includes((process.env.DRY_RUN ?? "").toLowerCase());
 const notifyOnly = ["1", "true", "yes"].includes(
@@ -28,9 +29,11 @@ const requireNtfy = ["1", "true", "yes"].includes(
 );
 const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 20, 50));
 const minimumFit = Math.max(0, Math.min(Number(process.env.PROSPECT_MIN_FIT_SCORE) || 55, 100));
-const searchQuery =
-  process.env.PROSPECT_SEARCH_QUERY?.trim() ||
-  "independent restaurants in Cincinnati Ohio";
+const activeMarket = resolveProspectMarket({
+  slug: process.env.PROSPECT_MARKET_SLUG,
+  searchQuery: process.env.PROSPECT_SEARCH_QUERY,
+});
+const searchQuery = activeMarket.searchPhrase;
 const siteOrigin =
   process.env.SITE_ORIGIN?.trim().replace(/\/+$/, "") ||
   "https://guestsignalhospitality.com";
@@ -41,12 +44,13 @@ function actorInput() {
     return JSON.parse(
       template
         .replaceAll("{{SEARCH_QUERY}}", searchQuery)
+        .replaceAll("{{LOCATION_QUERY}}", activeMarket.locationQuery)
         .replaceAll("{{MAX_RESULTS}}", String(maxProspects)),
     );
   }
   return {
     searchStringsArray: [searchQuery],
-    locationQuery: "Cincinnati, Ohio, USA",
+    locationQuery: activeMarket.locationQuery,
     maxCrawledPlacesPerSearch: maxProspects,
     language: "en",
     skipClosedPlaces: true,
@@ -67,16 +71,19 @@ function number(value) {
 function normalizePlace(item) {
   const businessName = text(item.title ?? item.name, 200);
   if (!businessName) return null;
-  const city = text(item.city, 100) || "Cincinnati";
-  const state = text(item.state, 30) || "OH";
+  const city = text(item.city, 100) || activeMarket.city;
+  const state = text(item.state, 30) || activeMarket.stateCode || "OH";
   const rating = number(item.totalScore ?? item.rating);
   const reviewsCount = number(item.reviewsCount ?? item.reviewCount);
   const website = text(item.website, 500) || null;
   const sourceUrl = text(item.url ?? item.googleMapsUrl, 500) || null;
   const category = text(item.categoryName ?? item.category, 100) || null;
+  const marketCity = activeMarket.city.toLowerCase().replace(/\./g, "");
+  const cityNorm = city.toLowerCase().replace(/\./g, "");
 
   let fitScore = 35;
-  if (city.toLowerCase().includes("cincinnati")) fitScore += 15;
+  if (cityNorm.includes(marketCity) || marketCity.includes(cityNorm)) fitScore += 15;
+  if (activeMarket.slug === "cincinnati-oh" && cityNorm.includes("cincinnati")) fitScore += 5;
   if (reviewsCount != null && reviewsCount >= 50) fitScore += 15;
   if (reviewsCount != null && reviewsCount >= 250) fitScore += 10;
   if (rating != null && rating >= 3.4 && rating <= 4.6) fitScore += 15;
@@ -88,10 +95,11 @@ function normalizePlace(item) {
     rating != null ? `${rating.toFixed(1)} public rating` : null,
     reviewsCount != null ? `${reviewsCount} public reviews` : null,
     category,
+    `market:${activeMarket.slug}`,
   ].filter(Boolean);
   const rationale = signalParts.length
     ? `Public profile signals: ${signalParts.join(", ")}.`
-    : "Public restaurant profile found in the Cincinnati market.";
+    : `Public restaurant profile found in the ${activeMarket.city} market.`;
 
   const placeEmails = emailsFromPlaceItem(item);
   return {
@@ -108,12 +116,14 @@ function normalizePlace(item) {
       reviews_count: reviewsCount,
       category,
       place_emails: placeEmails,
+      market_slug: activeMarket.slug,
     },
     _place_emails: placeEmails,
     draft_subject: `Complimentary Guest Signal snapshot for ${businessName}`,
     draft_body:
       `Hi ${businessName} team,\n\n` +
-      `I was reviewing public guest-feedback signals for independent Cincinnati restaurants and found your profile. ` +
+      `I was reviewing public guest-feedback signals for independent restaurants in ${activeMarket.city}` +
+      `${activeMarket.stateCode ? `, ${activeMarket.stateCode}` : ""} and found your profile. ` +
       `Guest Signal Hospitality can prepare a complimentary snapshot showing recurring guest themes, reputation risks, and practical next steps.\n\n` +
       `Would you like me to prepare one for your team? There is no obligation or credit card required.\n\n` +
       `— Guest Signal Hospitality`,
@@ -440,6 +450,9 @@ try {
     process.exit(0);
   }
 
+  console.log(
+    `Prospect market: ${activeMarket.slug} · ${searchQuery} · ${activeMarket.locationQuery}`,
+  );
   const token = requiredEnv("APIFY_TOKEN");
   const actorId =
     process.env.APIFY_PROSPECT_ACTOR_ID?.trim() ||
@@ -496,11 +509,14 @@ try {
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
     summary:
-      `${prospects.length} public businesses researched; ` +
+      `${activeMarket.city}: ${prospects.length} public businesses researched; ` +
       `${emailEnrichment.discovered} public email(s) found; ` +
       `${emailEnrichment.scheduled} approved draft(s) scheduled; ` +
       `${approvalCount} draft(s) require approval via ntfy.`,
     metrics: {
+      market_slug: activeMarket.slug,
+      market_city: activeMarket.city,
+      search_query: searchQuery,
       researched: prospects.length,
       approval_required: approvalCount,
       emails_discovered: emailEnrichment.discovered,

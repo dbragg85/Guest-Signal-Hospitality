@@ -277,6 +277,24 @@ export function HomeConversionPage() {
         </section>
       ) : null}
 
+      <section className="border-t border-stone-200 bg-stone-50 py-14">
+        <div className="mx-auto max-w-4xl px-4 text-center sm:px-5">
+          <p className="text-sm font-semibold text-amber-800">Beyond Cincinnati</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+            Expanding restaurant reputation coverage across major U.S. markets.
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-slate-600">
+            City pages target Google ratings and review searches where independent operators
+            compete for local pack attention.
+          </p>
+          <div className="mt-8">
+            <Link href="/markets/" className="btn-secondary inline-block px-6 py-3">
+              Browse markets
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-white py-14 md:py-20">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-5">
           <h2 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">

@@ -18,6 +18,7 @@ export const brand = {
 
 export const nav = [
   { label: "Plans", href: "/services/" },
+  { label: "Markets", href: "/markets/" },
   { label: "Insights", href: "/insights/" },
   { label: "About", href: "/team/" },
   { label: "Contact", href: "/contact/" },

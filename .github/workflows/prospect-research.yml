@@ -1,9 +1,9 @@
-name: Research Cincinnati prospects
+name: Research restaurant prospects
 
 on:
   schedule:
-    # Wednesday 9:15 AM Eastern; drafts go to ntfy for Approve/Deny only.
-    - cron: "15 13 * * 3"
+    # Wed + Sun 9:15 AM Eastern; market rotates weekly across expansion cities.
+    - cron: "15 13 * * 0,3"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -26,6 +26,11 @@ on:
         required: false
         type: boolean
         default: false
+      market_slug:
+        description: Optional market slug (e.g. columbus-oh). Empty = weekly rotation.
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -98,7 +103,8 @@ jobs:
           APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
           APIFY_PROSPECT_ACTOR_ID: ${{ vars.APIFY_PROSPECT_ACTOR_ID || 'compass~crawler-google-places' }}
           APIFY_PROSPECT_INPUT_TEMPLATE_JSON: ${{ secrets.APIFY_PROSPECT_INPUT_TEMPLATE_JSON }}
-          PROSPECT_SEARCH_QUERY: ${{ vars.PROSPECT_SEARCH_QUERY || 'independent restaurants in Cincinnati Ohio' }}
+          PROSPECT_MARKET_SLUG: ${{ github.event_name == 'workflow_dispatch' && inputs.market_slug || vars.PROSPECT_MARKET_SLUG || '' }}
+          PROSPECT_SEARCH_QUERY: ${{ vars.PROSPECT_SEARCH_QUERY || '' }}
           PROSPECT_MAX_RESULTS: ${{ vars.PROSPECT_MAX_RESULTS || '20' }}
           PROSPECT_MIN_FIT_SCORE: ${{ vars.PROSPECT_MIN_FIT_SCORE || '55' }}
           NTFY_SERVER_URL: ${{ vars.NTFY_SERVER_URL || 'https://ntfy.sh' }}

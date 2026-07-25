@@ -21,6 +21,20 @@ export const resourceArticles = [
       "How Cincinnati-area restaurants can protect and improve guest perception with structured review intelligence and scorecards.",
     headline: "Cincinnati restaurant reputation and guest experience",
   },
+  {
+    slug: "google-restaurant-ratings",
+    title: "Google restaurant ratings",
+    description:
+      "How Google restaurant ratings shape Maps and search demand, what moves them, and how to turn rating risk into weekly priorities.",
+    headline: "Google restaurant ratings: how they shape local demand",
+  },
+  {
+    slug: "restaurant-seo-google-ratings",
+    title: "Restaurant SEO and Google ratings",
+    description:
+      "How restaurant SEO and Google ratings work together for local pack visibility—with a practical weekly operator checklist.",
+    headline: "Restaurant SEO and Google ratings: win local search",
+  },
 ] as const;
 
 export type ResourceSlug = (typeof resourceArticles)[number]["slug"];

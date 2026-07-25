@@ -1,5 +1,6 @@
 import { getPublishedNewsletters } from "@/lib/newsletter/content";
 import { topicCategories } from "@/lib/seo/categories";
+import { markets } from "@/content/markets";
 import { resourceArticles } from "@/content/resources";
 
 export type SitemapEntry = {
@@ -23,10 +24,16 @@ const MEDIUM_PRIORITY: SitemapEntry[] = [
   { path: "insights", priority: 0.9, changeFrequency: "weekly" },
   { path: "newsletter", priority: 0.75, changeFrequency: "weekly" },
   { path: "resources", priority: 0.85, changeFrequency: "weekly" },
+  { path: "markets", priority: 0.9, changeFrequency: "weekly" },
   { path: "who-we-serve", priority: 0.8, changeFrequency: "monthly" },
   ...resourceArticles.map((a) => ({
     path: `resources/${a.slug}`,
     priority: 0.85,
+    changeFrequency: "monthly" as const,
+  })),
+  ...markets.map((m) => ({
+    path: `markets/${m.slug}`,
+    priority: 0.88,
     changeFrequency: "monthly" as const,
   })),
   ...topicCategories.map((c) => ({
