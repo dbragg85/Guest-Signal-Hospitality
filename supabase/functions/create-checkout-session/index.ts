@@ -73,6 +73,8 @@ Deno.serve(async (req) => {
   params.set("success_url", `${SITE_ORIGIN}/services/?checkout=success&plan=${planKey}`);
   params.set("cancel_url", `${SITE_ORIGIN}/services/?checkout=cancelled&plan=${planKey}`);
   params.set("allow_promotion_codes", "true");
+  params.set("automatic_tax[enabled]", "false");
+  params.set("managed_payments[enabled]", "false");
   params.set("client_reference_id", planKey);
   params.set("metadata[plan_key]", planKey);
   if (restaurantName) params.set("metadata[restaurant_name]", restaurantName);
@@ -92,6 +94,10 @@ Deno.serve(async (req) => {
     params.set(
       "line_items[0][price_data][product_data][description]",
       "Guest Signal Hospitality monthly plan",
+    );
+    params.set(
+      "line_items[0][price_data][product_data][tax_code]",
+      "txcd_10103001",
     );
     params.set("line_items[0][quantity]", "1");
   }
