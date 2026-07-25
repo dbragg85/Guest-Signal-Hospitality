@@ -112,6 +112,13 @@ export const prospectMarkets = [
     locationQuery: "St. Louis, Missouri, USA",
     searchPhrase: "independent restaurants in St Louis Missouri",
   },
+  {
+    slug: "florence-sc",
+    city: "Florence",
+    stateCode: "SC",
+    locationQuery: "Florence, South Carolina, USA",
+    searchPhrase: "family restaurants steakhouses in Florence South Carolina",
+  },
 ];
 
 export function resolveProspectMarket({ slug, searchQuery } = {}) {

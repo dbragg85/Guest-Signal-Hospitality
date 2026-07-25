@@ -170,6 +170,16 @@ export const markets: Market[] = [
     blurb:
       "Neighborhood restaurants win on consistency. Guest Signal turns review language into a short action list.",
   },
+  {
+    slug: "florence-sc",
+    city: "Florence",
+    state: "South Carolina",
+    stateCode: "SC",
+    regionLabel: "South",
+    searchPhrase: "family restaurants steakhouses in Florence South Carolina",
+    blurb:
+      "Southern hospitality meets family dining. Steakhouses and local favorites where consistent guest experience drives repeat visits.",
+  },
 ];
 
 export function getMarket(slug: string): Market | undefined {
