@@ -9,3 +9,7 @@ verify_jwt = false
 [functions.send-approved-prospect]
 # Called by an authenticated super-admin from the portal.
 verify_jwt = true
+
+[functions.prospect-approval-action]
+# ntfy calls this without a user JWT; a short-lived one-time token is required.
+verify_jwt = false

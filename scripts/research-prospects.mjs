@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash, randomBytes } from "node:crypto";
 import {
   fetchApifyDatasetItems,
   startApifyRun,
@@ -17,6 +18,9 @@ const minimumFit = Math.max(0, Math.min(Number(process.env.PROSPECT_MIN_FIT_SCOR
 const searchQuery =
   process.env.PROSPECT_SEARCH_QUERY?.trim() ||
   "independent restaurants in Cincinnati Ohio";
+const siteOrigin =
+  process.env.SITE_ORIGIN?.trim().replace(/\/+$/, "") ||
+  "https://guestsignalhospitality.com";
 
 function actorInput() {
   const template = process.env.APIFY_PROSPECT_INPUT_TEMPLATE_JSON?.trim();
@@ -98,6 +102,115 @@ function normalizePlace(item) {
   };
 }
 
+function actionToken() {
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  return { token, tokenHash };
+}
+
+async function notifyPendingApprovals(supabase) {
+  const topic = process.env.NTFY_TOPIC?.trim();
+  const server = process.env.NTFY_SERVER_URL?.trim().replace(/\/+$/, "") || "https://ntfy.sh";
+  if (!topic) {
+    console.log("NTFY_TOPIC is not configured; approval notifications skipped.");
+    return 0;
+  }
+
+  const { data: pending, error: pendingError } = await supabase
+    .from("prospect_queue")
+    .select("id,business_name,fit_score,rationale,draft_subject,draft_body")
+    .eq("status", "approval_required")
+    .is("approval_notified_at", null)
+    .order("fit_score", { ascending: false })
+    .limit(20);
+  if (pendingError) throw pendingError;
+
+  let sent = 0;
+  for (const prospect of pending ?? []) {
+    const approve = actionToken();
+    const deny = actionToken();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { error: tokenError } = await supabase.from("prospect_approval_actions").insert([
+      {
+        prospect_id: prospect.id,
+        action: "approve",
+        token_hash: approve.tokenHash,
+        expires_at: expiresAt,
+      },
+      {
+        prospect_id: prospect.id,
+        action: "deny",
+        token_hash: deny.tokenHash,
+        expires_at: expiresAt,
+      },
+    ]);
+    if (tokenError) throw tokenError;
+
+    const actionBase = `${requiredEnv("SUPABASE_URL").replace(/\/+$/, "")}/functions/v1/prospect-approval-action`;
+    const message = [
+      `Fit score: ${prospect.fit_score}/100`,
+      text(prospect.rationale, 240),
+      "",
+      text(prospect.draft_subject, 180),
+      text(prospect.draft_body, 420),
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const headers = { "Content-Type": "application/json" };
+    const ntfyToken = process.env.NTFY_ACCESS_TOKEN?.trim();
+    if (ntfyToken) headers.Authorization = `Bearer ${ntfyToken}`;
+    const response = await fetch(server, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        topic,
+        title: `Approve outreach: ${prospect.business_name}`,
+        message,
+        priority: 4,
+        tags: ["email", "memo"],
+        actions: [
+          {
+            action: "http",
+            label: "Approve",
+            url: `${actionBase}?token=${encodeURIComponent(approve.token)}`,
+            method: "POST",
+            clear: true,
+          },
+          {
+            action: "http",
+            label: "Deny",
+            url: `${actionBase}?token=${encodeURIComponent(deny.token)}`,
+            method: "POST",
+            clear: true,
+          },
+          {
+            action: "view",
+            label: "Review in portal",
+            url: `${siteOrigin}/portal/dashboard/`,
+            clear: false,
+          },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      await supabase
+        .from("prospect_approval_actions")
+        .delete()
+        .eq("prospect_id", prospect.id)
+        .is("used_at", null);
+      throw new Error(`ntfy publish failed (${response.status}): ${await response.text()}`);
+    }
+
+    const { error: notifiedError } = await supabase
+      .from("prospect_queue")
+      .update({ approval_notified_at: new Date().toISOString() })
+      .eq("id", prospect.id);
+    if (notifiedError) throw notifiedError;
+    sent += 1;
+  }
+  return sent;
+}
+
 const supabase = serviceClient();
 let runId;
 
@@ -141,6 +254,7 @@ try {
     if (error) throw error;
   }
 
+  const ntfyNotifications = dryRun ? 0 : await notifyPendingApprovals(supabase);
   const approvalCount = prospects.filter((item) => item.status === "approval_required").length;
   await finishAutomationRun(supabase, runId, {
     status: approvalCount > 0 ? "approval_required" : "succeeded",
@@ -148,6 +262,7 @@ try {
     metrics: {
       researched: prospects.length,
       approval_required: approvalCount,
+      ntfy_notifications: ntfyNotifications,
       dry_run: dryRun,
     },
   });
