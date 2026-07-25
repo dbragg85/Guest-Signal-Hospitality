@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { pricingPlans } from "@/content/site";
 import { getFeaturedNewsletters, getInsightPath } from "@/lib/newsletter/content";
 
@@ -224,6 +225,17 @@ export function HomeConversionPage() {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-6">
+                  <StripeCheckoutButton
+                    planKey={plan.inquiryKey}
+                    label={plan.buttonText}
+                    className={`w-full rounded-xl px-4 py-3 text-sm font-semibold ${
+                      plan.popular
+                        ? "btn-primary"
+                        : "border border-stone-300 text-slate-900 hover:bg-stone-50"
+                    }`}
+                  />
+                </div>
               </article>
             ))}
           </div>

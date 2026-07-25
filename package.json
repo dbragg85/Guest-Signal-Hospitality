@@ -41,7 +41,8 @@
     "newsletter:weekly": "npm run newsletter:collect-trends && npm run newsletter:collect-articles && npm run newsletter:generate",
     "growth:daily-report": "node scripts/generate-daily-owner-report.mjs",
     "growth:codex-operator": "node scripts/run-codex-operator.mjs",
-    "growth:prospects": "node scripts/research-prospects.mjs"
+    "growth:prospects": "node scripts/research-prospects.mjs",
+    "growth:evaluate-goal": "node scripts/evaluate-growth-goal.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

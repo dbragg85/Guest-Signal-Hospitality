@@ -31,6 +31,22 @@ Never store API keys in repository variables.
 - `.github/workflows/daily-owner-report.yml`: daily funnel, revenue, operations, and approval report.
 - `.github/workflows/prospect-research.yml`: weekly Cincinnati restaurant research. It creates drafts with `approval_required`; it never sends outreach.
 - `.github/workflows/lead-intake-snapshot.yml`: immediate webhook/repository dispatch plus an hourly fallback.
+- `.github/workflows/growth-goal-eval.yml`: every 12 hours, evaluate the active 3 paid conversions / 7 days goal. If unattainable, propose interventions and ask for Approve/Deny on ntfy.
+
+## Stripe checkout
+
+Paid plan buttons call Supabase Edge Function `create-checkout-session`. Stripe webhook `stripe-webhook` marks `sales_opportunities.stage = won` on `checkout.session.completed`.
+
+Required Supabase secrets:
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- optional `STRIPE_PRICE_SIGNAL_MONITOR`, `STRIPE_PRICE_SIGNAL_GROWTH`, `STRIPE_PRICE_SIGNAL_ELEVATE`
+- optional `STRIPE_INTRO_COUPON_ID`
+
+Webhook endpoint:
+
+`https://sqsleiwtacqiweyfacmj.supabase.co/functions/v1/stripe-webhook`
 
 ## Private Codex runner
 

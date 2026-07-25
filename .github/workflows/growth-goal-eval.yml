@@ -1,0 +1,45 @@
+name: Evaluate growth goal
+
+on:
+  schedule:
+    # Every 12 hours
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Evaluate without writing interventions or sending ntfy
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: growth-goal-eval
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Evaluate 3 conversions / 7 days goal
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NTFY_SERVER_URL: ${{ vars.NTFY_SERVER_URL || 'https://ntfy.sh' }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_ACCESS_TOKEN: ${{ secrets.NTFY_ACCESS_TOKEN }}
+          SITE_ORIGIN: https://guestsignalhospitality.com
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true && '1' || '0' }}
+        run: npm run growth:evaluate-goal

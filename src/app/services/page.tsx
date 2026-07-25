@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import {
   freeSnapshot,
   pricingPlans,
@@ -171,17 +172,24 @@ function ServicesPlanGrid() {
               </li>
             ))}
           </ul>
-          <ServicesIntakeLink
-            href={`/services/inquiry/?plan=${plan.inquiryKey}`}
-            className={`block w-full rounded-xl px-5 py-3 text-center text-sm font-semibold ${
-              plan.popular
-                ? "btn-primary shadow-md"
-                : "border border-stone-300 text-slate-900 hover:bg-stone-50"
-            }`}
-            data-track={`services_cta_${plan.inquiryKey}`}
-          >
-            {plan.buttonText}
-          </ServicesIntakeLink>
+          <div className="grid gap-2">
+            <StripeCheckoutButton
+              planKey={plan.inquiryKey}
+              label={plan.buttonText}
+              className={`w-full rounded-xl px-5 py-3 text-center text-sm font-semibold ${
+                plan.popular
+                  ? "btn-primary shadow-md"
+                  : "border border-stone-300 text-slate-900 hover:bg-stone-50"
+              }`}
+            />
+            <ServicesIntakeLink
+              href={`/services/inquiry/?plan=${plan.inquiryKey}`}
+              className="block w-full rounded-xl px-5 py-2 text-center text-xs font-semibold text-slate-600 underline-offset-2 hover:underline"
+              data-track={`services_cta_${plan.inquiryKey}`}
+            >
+              Prefer a call first? Ask a question
+            </ServicesIntakeLink>
+          </div>
         </div>
       ))}
     </div>

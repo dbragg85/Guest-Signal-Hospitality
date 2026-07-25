@@ -17,3 +17,15 @@ verify_jwt = false
 [functions.resend-engagement-webhook]
 # Resend signs requests with Svix; the function verifies the raw payload.
 verify_jwt = false
+
+[functions.create-checkout-session]
+# Public checkout starter; Stripe secret stays server-side.
+verify_jwt = false
+
+[functions.stripe-webhook]
+# Stripe signs the payload; JWT verification must be off.
+verify_jwt = false
+
+[functions.growth-intervention-action]
+# ntfy one-time tokens authorize approve/deny for growth interventions.
+verify_jwt = false
