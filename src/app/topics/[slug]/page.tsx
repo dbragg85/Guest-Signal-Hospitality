@@ -12,6 +12,26 @@ import { topicCategories, getTopicCategory } from "@/lib/seo/categories";
 import type { TopicCategorySlug } from "@/lib/newsletter/types";
 import { breadcrumbSchema, collectionPageSchema } from "@/lib/seo/schema";
 
+const TOPIC_GUIDE_LINKS: Record<string, Array<{ href: string; label: string }>> = {
+  "reputation-management": [
+    { href: "/resources/restaurant-reputation/", label: "Restaurant reputation" },
+    { href: "/resources/restaurant-review-monitoring/", label: "Review monitoring" },
+    { href: "/resources/restaurant-review-scorecard/", label: "Review scorecard" },
+  ],
+  "service-recovery": [
+    { href: "/resources/guest-recovery-solutions/", label: "Guest recovery solutions" },
+    { href: "/resources/respond-to-restaurant-reviews/", label: "Respond to reviews" },
+  ],
+  "hospitality-technology": [
+    { href: "/resources/guest-signal-vs-review-tools/", label: "vs review inbox tools" },
+    { href: "/resources/restaurant-review-management/", label: "Review management" },
+  ],
+  "guest-experience": [
+    { href: "/resources/restaurant-review-scorecard/", label: "Review scorecard" },
+    { href: "/resources/improve-google-restaurant-rating/", label: "Improve Google rating" },
+  ],
+};
+
 type Params = { slug: string };
 
 export function generateStaticParams() {
@@ -46,6 +66,10 @@ export default function TopicPage({ params }: { params: Params }) {
   if (!topic) notFound();
 
   const articles = getNewslettersByTopic(params.slug as TopicCategorySlug);
+  const guideLinks = TOPIC_GUIDE_LINKS[topic.slug] ?? [
+    { href: "/resources/restaurant-review-management/", label: "Review management" },
+    { href: "/resources/", label: "All operator guides" },
+  ];
 
   return (
     <div className="bg-gradient-to-b from-stone-100 via-white to-stone-50">
@@ -78,6 +102,17 @@ export default function TopicPage({ params }: { params: Params }) {
           <p className="mt-4 text-sm text-slate-500">
             Keywords: {topic.keywords.join(" · ")}
           </p>
+          <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold">
+            {guideLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-amber-900 underline underline-offset-2"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 

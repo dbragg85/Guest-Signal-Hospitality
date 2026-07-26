@@ -148,6 +148,18 @@ export default function MarketPage({ params }: { params: Params }) {
                 .
               </p>
             ) : null}
+            {market.slug === "nashville-tn" ? (
+              <p className="mt-3 text-slate-700 leading-7">
+                For a Nashville-specific reputation playbook, see{" "}
+                <Link
+                  href="/resources/nashville-tn-restaurant-reputation/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  Nashville TN restaurant reputation
+                </Link>
+                .
+              </p>
+            ) : null}
           </div>
 
           <div>

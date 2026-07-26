@@ -51,6 +51,44 @@ export default function ServicesPage() {
         <ServicesPlanGrid />
       </Section>
 
+      <section className="border-y border-stone-200 bg-white py-10">
+        <div className="mx-auto max-w-5xl px-4 sm:px-5">
+          <p className="text-sm font-semibold text-amber-800">Operator guides</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+            See how scorecards and review systems work before you pick a plan.
+          </h2>
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+            <Link
+              href="/resources/restaurant-review-scorecard/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Review scorecard
+            </Link>
+            <Link
+              href="/resources/restaurant-review-management/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Review management
+            </Link>
+            <Link
+              href="/resources/guest-signal-vs-review-tools/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              vs Birdeye / Podium
+            </Link>
+            <Link
+              href="/resources/improve-google-restaurant-rating/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Improve Google rating
+            </Link>
+            <Link href="/resources/" className="text-amber-900 underline underline-offset-2">
+              All guides
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <Section title="Questions before you choose?" kicker="Plain answers" className="bg-stone-50">
         <ServicesFaq />
       </Section>
