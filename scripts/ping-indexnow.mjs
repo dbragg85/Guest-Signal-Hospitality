@@ -30,6 +30,8 @@ const urls = [
   `https://${host}/resources/google-restaurant-ratings/`,
   `https://${host}/resources/restaurant-seo-google-ratings/`,
   `https://${host}/resources/restaurant-review-monitoring/`,
+  `https://${host}/resources/restaurant-review-scorecard/`,
+  `https://${host}/resources/guest-recovery-solutions/`,
   `https://${host}/resources/restaurant-reputation/`,
   `https://${host}/resources/guest-signal-vs-review-tools/`,
   `https://${host}/resources/cincinnati-restaurant-reputation/`,

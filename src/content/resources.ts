@@ -8,6 +8,13 @@ export const resourceArticles = [
     headline: "Restaurant review scorecard: pillars, themes, and weekly moves",
   },
   {
+    slug: "guest-recovery-solutions",
+    title: "Guest recovery solutions",
+    description:
+      "Guest recovery solutions for restaurants: 48-hour reply discipline, floor recovery language, and theme fixes that protect Google ratings.",
+    headline: "Guest recovery solutions for restaurants: floor playbooks that stick",
+  },
+  {
     slug: "restaurant-review-monitoring",
     title: "Restaurant review monitoring",
     description:

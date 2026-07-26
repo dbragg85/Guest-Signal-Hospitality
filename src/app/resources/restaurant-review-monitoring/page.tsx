@@ -102,6 +102,13 @@ export default function RestaurantReviewMonitoringPage() {
             >
               restaurant reputation
             </Link>
+            . When negatives need a floor response system, use{" "}
+            <Link
+              href="/resources/guest-recovery-solutions/"
+              className="font-semibold text-amber-900 underline underline-offset-2"
+            >
+              guest recovery solutions
+            </Link>
             . Operators searching “restaurant review monitoring” or “restaurant monitoring” usually want
             one thing: a trustworthy read of Google and Yelp without living in five apps. The useful
             output is a score, the themes behind it, and three fixes—not a dump of every new comment.
