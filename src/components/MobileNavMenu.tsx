@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
 type NavItem = {
   label: string;
@@ -77,6 +78,14 @@ export function MobileNavMenu({ items }: { items: NavItem[] }) {
               );
             })}
             <div className="mt-2 border-t border-stone-200 pt-2">
+              <div className="px-1 pb-2">
+                <StripeCheckoutButton
+                  planKey="signal_monitor"
+                  label="Start Signal Monitor — $149/mo"
+                  className="btn-primary w-full text-sm"
+                  showTrust={false}
+                />
+              </div>
               <Link
                 href="/resources/"
                 role="menuitem"

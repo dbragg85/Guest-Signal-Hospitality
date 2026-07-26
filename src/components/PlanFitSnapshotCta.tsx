@@ -1,4 +1,5 @@
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
 export function PlanFitSnapshotCta({ className = "" }: { className?: string }) {
   return (
@@ -9,20 +10,27 @@ export function PlanFitSnapshotCta({ className = "" }: { className?: string }) {
         Not Sure Which Plan Fits?
       </h2>
       <p className="mt-4 text-sm leading-relaxed text-slate-600 md:text-base">
-        Start with a free Guest Signal Snapshot. We&apos;ll review your restaurant&apos;s reviews,
-        Google visibility, website health, and local SEO signals, then recommend whether Monitor,
-        Growth, or Elevate makes the most sense.
+        Start with a free Guest Signal Snapshot—or begin Signal Monitor if you already want a monthly
+        scorecard. We&apos;ll review reviews, Google visibility, and local SEO signals either way.
       </p>
-      <ServicesIntakeLink
-        href="/snapshot/"
-        className="btn-primary mt-6 inline-block px-8 py-3"
-        data-track="plan_fit_cta_snapshot"
-      >
-        Get Your Free Snapshot
-      </ServicesIntakeLink>
+      <div className="mx-auto mt-6 flex max-w-md flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
+        <ServicesIntakeLink
+          href="/snapshot/"
+          className="btn-primary inline-block px-6 py-3"
+          data-track="plan_fit_cta_snapshot"
+        >
+          Get Your Free Snapshot
+        </ServicesIntakeLink>
+        <div className="min-w-[14rem]">
+          <StripeCheckoutButton
+            planKey="signal_monitor"
+            label="Start Signal Monitor — $149/mo"
+            className="btn-secondary w-full"
+          />
+        </div>
+      </div>
       <p className="mt-4 text-xs leading-relaxed text-slate-500 md:text-sm">
-        No obligation. No credit card required. Built for independent restaurants that want clearer
-        visibility before committing to monthly support.
+        Snapshot needs no card. Monitor is monthly billing, cancel anytime.
       </p>
     </div>
   );
