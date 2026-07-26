@@ -160,6 +160,18 @@ export default function MarketPage({ params }: { params: Params }) {
                 .
               </p>
             ) : null}
+            {market.slug === "columbus-oh" ? (
+              <p className="mt-3 text-slate-700 leading-7">
+                For a Columbus-specific reputation playbook, see{" "}
+                <Link
+                  href="/resources/columbus-oh-restaurant-reputation/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  Columbus OH restaurant reputation
+                </Link>
+                .
+              </p>
+            ) : null}
           </div>
 
           <div>

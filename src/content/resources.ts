@@ -92,6 +92,13 @@ export const resourceArticles = [
       "Restaurant reputation for Nashville, Tennessee: high review velocity, tourist noise, themes, and weekly scorecards for local demand.",
     headline: "Nashville TN restaurant reputation: reviews, themes, and scorecards",
   },
+  {
+    slug: "columbus-oh-restaurant-reputation",
+    title: "Columbus OH restaurant reputation",
+    description:
+      "Restaurant reputation for Columbus, Ohio: campus and suburb dining, Google and Yelp themes, response speed, and weekly scorecards.",
+    headline: "Columbus OH restaurant reputation: reviews, themes, and scorecards",
+  },
 
   {
     slug: "google-restaurant-ratings",

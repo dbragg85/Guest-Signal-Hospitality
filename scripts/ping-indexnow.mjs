@@ -4,8 +4,8 @@
  * Usage: node scripts/ping-indexnow.mjs
  * Requires INDEXNOW_KEY or .operator/indexnow-key.txt
  */
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { resolve, join } from "node:path";
 
 const host = "guestsignalhospitality.com";
 const key =
@@ -20,38 +20,35 @@ if (!key) {
 }
 
 const keyLocation = `https://${host}/${key}.txt`;
+
+const resourceDir = resolve("src/app/resources");
+const resourceSlugs = existsSync(resourceDir)
+  ? readdirSync(resourceDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+  : [];
+
+const core = [
+  "",
+  "services",
+  "snapshot",
+  "markets",
+  "resources",
+  "insights",
+  "insights/guest-recovery-playbooks",
+  "insights/review-response-speed",
+  "markets/cincinnati-oh",
+  "markets/columbus-oh",
+  "markets/nashville-tn",
+  "markets/charlotte-nc",
+  "markets/florence-sc",
+];
+
 const urls = [
-  `https://${host}/`,
-  `https://${host}/services/`,
-  `https://${host}/snapshot/`,
-  `https://${host}/markets/`,
-  `https://${host}/resources/`,
-  `https://${host}/resources/restaurant-review-management/`,
-  `https://${host}/resources/get-more-restaurant-reviews/`,
-  `https://${host}/resources/improve-google-restaurant-rating/`,
-  `https://${host}/resources/google-restaurant-ratings/`,
-  `https://${host}/resources/restaurant-seo-google-ratings/`,
-  `https://${host}/resources/restaurant-review-monitoring/`,
-  `https://${host}/resources/restaurant-review-scorecard/`,
-  `https://${host}/resources/guest-recovery-solutions/`,
-  `https://${host}/resources/respond-to-restaurant-reviews/`,
-  `https://${host}/resources/yelp-reviews-for-restaurants/`,
-  `https://${host}/resources/google-reviews-for-restaurants/`,
-  `https://${host}/resources/restaurant-reputation/`,
-  `https://${host}/resources/guest-signal-vs-review-tools/`,
-  `https://${host}/resources/cincinnati-restaurant-reputation/`,
-  `https://${host}/resources/florence-sc-restaurant-reputation/`,
-  `https://${host}/resources/charlotte-nc-restaurant-reputation/`,
-  `https://${host}/resources/nashville-tn-restaurant-reputation/`,
-  `https://${host}/insights/guest-recovery-playbooks/`,
-  `https://${host}/services/`,
-  `https://${host}/insights/`,
-  `https://${host}/insights/review-response-speed/`,
-  `https://${host}/markets/cincinnati-oh/`,
-  `https://${host}/markets/columbus-oh/`,
-  `https://${host}/markets/nashville-tn/`,
-  `https://${host}/markets/charlotte-nc/`,
-  `https://${host}/markets/florence-sc/`,
+  ...new Set([
+    ...core.map((p) => (p ? `https://${host}/${p}/` : `https://${host}/`)),
+    ...resourceSlugs.map((slug) => `https://${host}/resources/${slug}/`),
+  ]),
 ];
 
 const body = JSON.stringify({ host, key, keyLocation, urlList: urls });
@@ -61,5 +58,12 @@ const res = await fetch("https://api.indexnow.org/indexnow", {
   body,
 });
 const text = await res.text();
-console.log(JSON.stringify({ status: res.status, ok: res.ok, body: text.slice(0, 300), urls: urls.length }));
+console.log(
+  JSON.stringify({
+    status: res.status,
+    ok: res.ok,
+    body: text.slice(0, 300),
+    urls: urls.length,
+  }),
+);
 if (!res.ok && res.status !== 202) process.exit(1);

@@ -94,6 +94,12 @@ export default function MarketsHubPage() {
               Nashville TN reputation
             </Link>
             <Link
+              href="/resources/columbus-oh-restaurant-reputation/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Columbus OH reputation
+            </Link>
+            <Link
               href="/resources/improve-google-restaurant-rating/"
               className="text-amber-900 underline underline-offset-2"
             >
