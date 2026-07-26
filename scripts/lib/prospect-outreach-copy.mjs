@@ -159,9 +159,10 @@ function buildTemplateCopy({
     `Guest Signal and a short action list (not another dashboard).\n\n` +
     `${askLine(rBand)} No card, no obligation` +
     `${state ? ` — happy to do this for your ${marketCity}, ${state} team` : ""}.\n\n` +
+    `Start here (free, no card): https://guestsignalhospitality.com/snapshot/?utm_source=outreach&utm_medium=email&utm_campaign=guest1\n\n` +
     `If you'd rather skip the free snapshot and start monthly monitoring, founding clients get ` +
     `Signal Monitor at $99/mo for 3 months with code GUEST1 (GUEST#1 offer — first 100), then $149/mo. ` +
-    `Cancel anytime: https://guestsignalhospitality.com/services/\n\n` +
+    `Cancel anytime: https://guestsignalhospitality.com/services/?utm_source=outreach&utm_medium=email&utm_campaign=guest1\n\n` +
     `— Guest Signal Hospitality`;
 
   return {
