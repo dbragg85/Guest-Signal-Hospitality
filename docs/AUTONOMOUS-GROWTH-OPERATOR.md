@@ -71,6 +71,7 @@ Never store API keys in repository variables.
 - `.github/workflows/prospect-research.yml`: weekly Cincinnati restaurant research. It creates drafts with `approval_required`; it never sends outreach.
 - `.github/workflows/lead-intake-snapshot.yml`: immediate webhook/repository dispatch plus an hourly fallback.
 - `.github/workflows/growth-goal-eval.yml`: every 12 hours, evaluate the active 3 paid conversions / 7 days goal. If unattainable, propose interventions and ask for Approve/Deny on ntfy.
+- `.github/workflows/reddit-restaurant-signals.yml`: Mon/Thu Apify pull of restaurant community + local-market Reddit signals (`npm run growth:reddit-signals`). Uses public scraper; `REDDIT_USERNAME`/`REDDIT_PASSWORD` stay in secrets and are never sent to Apify.
 
 ## Stripe checkout
 

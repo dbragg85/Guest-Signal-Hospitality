@@ -100,6 +100,46 @@ function collectManual(): TrendRecord[] {
   return manual.map((item) => normalizeTrend(item));
 }
 
+/** Merge previously collected Apify Reddit signals (npm run growth:reddit-signals). */
+function collectFromRedditSignalsFile(): TrendRecord[] {
+  const latest = loadJsonFile<{
+    trends?: Array<{ term?: string; weight?: number }>;
+    signals?: Array<{ title?: string | null; url?: string | null; community?: string | null }>;
+  }>(path.join(process.cwd(), ".operator", "reddit-signals", "latest.json"));
+  if (!latest) return [];
+
+  const fromTrends = (latest.trends ?? [])
+    .filter((t) => t.term && !String(t.term).startsWith("r/"))
+    .slice(0, 8)
+    .map((t) =>
+      normalizeTrend({
+        term: String(t.term),
+        source: "Reddit",
+        searchVolumeLabel: "community",
+        trendUrl: "https://www.reddit.com/",
+        collectedAt: new Date().toISOString(),
+        operatorAngle: deriveOperatorAngle(String(t.term)),
+      }),
+    );
+
+  const fromTitles = (latest.signals ?? [])
+    .map((s) => String(s.title ?? "").trim())
+    .filter((t) => t.length > 18 && t.length < 110)
+    .slice(0, 6)
+    .map((term) =>
+      normalizeTrend({
+        term,
+        source: "Reddit",
+        searchVolumeLabel: "discussion",
+        trendUrl: "https://www.reddit.com/",
+        collectedAt: new Date().toISOString(),
+        operatorAngle: deriveOperatorAngle(term),
+      }),
+    );
+
+  return [...fromTrends, ...fromTitles];
+}
+
 async function main() {
   ensureDir(TRENDS_DIR);
   const date = isoDay();
@@ -124,6 +164,18 @@ async function main() {
   if (!trends || !trends.length) {
     trends = collectManual();
     console.warn("Using manual trend fallback from newsletter_trends_manual.json");
+  }
+
+  const reddit = collectFromRedditSignalsFile();
+  if (reddit.length) {
+    const seen = new Set(trends.map((t) => t.term.toLowerCase()));
+    for (const item of reddit) {
+      const key = item.term.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      trends.push(item);
+    }
+    console.log(`Merged ${reddit.length} Reddit community signals into weekly trends`);
   }
 
   writeJsonFile(outputPath, trends);

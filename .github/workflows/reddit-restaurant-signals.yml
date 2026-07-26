@@ -1,0 +1,58 @@
+name: Reddit restaurant signals
+
+on:
+  schedule:
+    # Twice weekly — public community + local search chatter
+    - cron: "20 14 * * 1,4"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: subreddits | searches | both
+        required: false
+        default: both
+        type: string
+      max_items:
+        description: Max items across the run
+        required: false
+        default: "40"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reddit-restaurant-signals
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Collect Reddit signals via Apify
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          APIFY_REDDIT_ACTOR_ID: ${{ vars.APIFY_REDDIT_ACTOR_ID || 'trudax~reddit-scraper-lite' }}
+          APIFY_REDDIT_MODE: ${{ github.event.inputs.mode || 'both' }}
+          APIFY_REDDIT_MAX_ITEMS: ${{ github.event.inputs.max_items || '40' }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          # Password kept in secrets for ownership / future first-party use — never passed to Apify.
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+        run: npm run growth:reddit-signals
+
+      - name: Upload signal artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: reddit-restaurant-signals
+          path: .operator/reddit-signals/
+          if-no-files-found: warn
+          retention-days: 30
