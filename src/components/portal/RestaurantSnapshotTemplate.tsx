@@ -201,7 +201,7 @@ const PILLAR_DEF = [
     key: "experience_quality",
     label: "Experience Quality",
     blurb:
-      "Service pacing and hospitality tone—how guests describe the feel of the visit.",
+      "Food + service blend (headline weight 45%)—how guests experience the visit end-to-end.",
   },
   {
     key: "service_hospitality",
@@ -218,14 +218,28 @@ const PILLAR_DEF = [
   {
     key: "operational_reliability",
     label: "Operational Reliability",
-    blurb: "Wait times, order accuracy, and consistency under pressure.",
+    blurb:
+      "Speed + cleanliness (headline weight 30%)—wait times and standards under rush.",
   },
   {
     key: "emotional_connection",
     label: "Emotional Connection",
-    blurb: "Memorability, warmth, and whether guests say they’d return.",
+    blurb:
+      "Atmosphere + return intent (headline weight 25%)—whether guests say they’d come back.",
   },
 ] as const;
+
+const CATEGORY_WEEK_ACTIONS: Record<string, string> = {
+  food: "Line-check the top-mentioned dishes; align portion/value language on the menu.",
+  service: "Huddle on greet, check-back, and issue escalation during peak.",
+  speed: "Map ticket times for the delay hour guests mention; adjust expo or cover.",
+  cleanliness: "Audit FOH and restroom reset cadence between turns.",
+  atmosphere: "Fix the noise/comfort issue called out most often this period.",
+  consistency: "Standardize plating for items with split reviews.",
+  momentum: "Reply to every review in 48h; publish one ops win guests can feel.",
+  hospitality: "Coach one recovery phrase every manager can use on-shift.",
+  return_intent: "Close every table with a specific invite-back.",
+};
 
 type MonthlyRow = {
   month: string;
@@ -622,6 +636,50 @@ export function RestaurantSnapshotTemplate({
   const websiteHref = normalizeWebsiteUrl(restaurant.website);
   const profileLogoUrl = restaurant.logo_url ?? logoUrlFromWebsite(restaurant.website);
 
+  const weekMoves = categoryBreakdown
+    .slice()
+    .map((row) => {
+      const mentions = row.mentions != null && row.mentions > 0 ? row.mentions : 1;
+      const impact = Math.round((100 - row.score) * mentions);
+      return { ...row, impact };
+    })
+    .sort((a, b) => b.impact - a.impact || a.score - b.score)
+    .slice(0, 3)
+    .map((row, idx) => {
+      const key = row.category.trim().toLowerCase();
+      const action =
+        CATEGORY_WEEK_ACTIONS[key] ||
+        "Assign an owner and review this theme in the next pre-shift.";
+      const label = row.category.replace(/_/g, " ");
+      return {
+        key: `${key}-${idx}`,
+        title: `${idx + 1}. ${label.charAt(0).toUpperCase()}${label.slice(1)}`,
+        detail: `Score ${row.score}${
+          row.mentions != null && row.mentions > 0 ? ` · ${Math.round(row.mentions)} mentions` : ""
+        } · impact ${row.impact} — ${action}`,
+      };
+    });
+
+  const peerRatings = competitors
+    .map((c) => c.google_rating)
+    .filter((n): n is number => n != null && Number.isFinite(n));
+  const peerAvgRating =
+    peerRatings.length > 0
+      ? peerRatings.reduce((a, b) => a + b, 0) / peerRatings.length
+      : null;
+  const ourGoogleRating =
+    restaurant.google_rating != null && Number.isFinite(restaurant.google_rating)
+      ? restaurant.google_rating
+      : null;
+  const peersRatedHigher =
+    ourGoogleRating != null
+      ? peerRatings.filter((r) => r > ourGoogleRating + 0.05).length
+      : null;
+  const ratingDelta =
+    ourGoogleRating != null && peerAvgRating != null
+      ? Number((ourGoogleRating - peerAvgRating).toFixed(2))
+      : null;
+
   const headlineFromPillars = guestSignalHeadlineFromDisplayPillars(pillars);
   const storedHeadlineScore =
     selected?.score != null && Number.isFinite(selected.score) ? selected.score : null;
@@ -824,6 +882,24 @@ export function RestaurantSnapshotTemplate({
               ) : null}
             </div>
           ) : null}
+          {weekMoves.length > 0 ? (
+            <div className="mt-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                This week&apos;s 3 moves
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                Ranked by friction impact (how soft the score is × how often guests mention it).
+              </p>
+              <ol className="mt-4 space-y-3">
+                {weekMoves.map((move) => (
+                  <li key={move.key} className="text-sm leading-relaxed text-slate-700">
+                    <span className="font-semibold text-slate-900">{move.title}</span>
+                    <span className="mt-0.5 block text-slate-600">{move.detail}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
           <div className="mt-10 grid gap-4 border-t border-stone-200 pt-8 sm:grid-cols-2 lg:grid-cols-5">
             {pillars.map((row) => (
               <div
@@ -947,9 +1023,10 @@ export function RestaurantSnapshotTemplate({
             Category score breakdown
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Sorted by friction impact (softness × mention frequency).{" "}
             {isRubricV1
-              ? "Scores use the same rubric as the Guest Signal headline and pillar tiles: mention-based star bands (5★ → 95, 4★ → 85, …), then an 80% / 20% blend with textless reviews in the period when any exist."
-              : "Mention-based rubric categories for the selected period. Each score maps star level to a band (5★ → 95, 4★ → 85, …) for reviews that mention that category."}
+              ? "Scores use the same rubric as the Guest Signal headline: mention-based star bands (5★ → 95, 4★ → 85, …), then an 80% / 20% blend with textless reviews when any exist."
+              : "Each score maps star level to a band (5★ → 95, 4★ → 85, …) for reviews that mention that category."}
           </p>
           {isRubricV1 && rubricStarOnlyCount > 0 ? (
             <p className="mt-2 max-w-2xl text-xs text-slate-600">
@@ -990,12 +1067,23 @@ export function RestaurantSnapshotTemplate({
                   {showCategoryMentionsColumn ? (
                     <th className="px-4 py-3 font-semibold text-slate-900">Mentions</th>
                   ) : null}
+                  <th className="px-4 py-3 font-semibold text-slate-900">
+                    Impact
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {categoryBreakdown
                   .slice()
-                  .sort((a, b) => b.score - a.score)
+                  .map((row) => {
+                    const mentions =
+                      row.mentions != null && row.mentions > 0 ? row.mentions : 1;
+                    return {
+                      ...row,
+                      impact: Math.round((100 - row.score) * mentions),
+                    };
+                  })
+                  .sort((a, b) => b.impact - a.impact || a.score - b.score)
                   .map((row, idx) => (
                     <tr
                       key={`${row.category}:${idx}`}
@@ -1010,6 +1098,9 @@ export function RestaurantSnapshotTemplate({
                           {row.mentions != null && row.mentions > 0 ? Math.round(row.mentions) : "—"}
                         </td>
                       ) : null}
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {row.impact}
+                      </td>
                     </tr>
                   ))}
               </tbody>
@@ -1255,6 +1346,43 @@ export function RestaurantSnapshotTemplate({
           Google-first peer venues for each location, including price tier,
           cuisine style, distance, and Google review evidence.
         </p>
+        {competitors.length > 0 && (ourGoogleRating != null || peerAvgRating != null) ? (
+          <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-3 text-sm text-slate-700">
+            <p className="font-semibold text-slate-900">Peer positioning</p>
+            <p className="mt-1">
+              {ourGoogleRating != null ? (
+                <>
+                  Your Google rating: <strong>{ourGoogleRating.toFixed(1)}★</strong>
+                </>
+              ) : (
+                "Your Google rating is not on file yet."
+              )}
+              {peerAvgRating != null ? (
+                <>
+                  {" "}
+                  · Peer average: <strong>{peerAvgRating.toFixed(2)}★</strong>
+                  {ratingDelta != null ? (
+                    <>
+                      {" "}
+                      · Delta:{" "}
+                      <strong className={ratingDelta >= 0 ? "text-emerald-700" : "text-rose-700"}>
+                        {ratingDelta >= 0 ? "+" : ""}
+                        {ratingDelta}
+                      </strong>
+                    </>
+                  ) : null}
+                </>
+              ) : null}
+              {peersRatedHigher != null ? (
+                <>
+                  {" "}
+                  · Peers rated higher: <strong>{peersRatedHigher}</strong> of{" "}
+                  {peerRatings.length}
+                </>
+              ) : null}
+            </p>
+          </div>
+        ) : null}
         {competitorsFromScorecard ? (
           <p className="mt-2 text-xs font-medium text-amber-900/80">
             Showing peers from this period&apos;s scorecard JSON (
