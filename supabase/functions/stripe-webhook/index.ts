@@ -48,9 +48,16 @@ async function verifyStripeSignature(rawBody: string, header: string, secret: st
   return timingSafeEqual(expected, signature);
 }
 
+const MAX_REQUEST_SIZE = 65536; // 64KB
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405 });
+  }
+
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > MAX_REQUEST_SIZE) {
+    return new Response(JSON.stringify({ error: "payload_too_large" }), { status: 413 });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");

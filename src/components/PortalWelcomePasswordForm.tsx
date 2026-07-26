@@ -15,6 +15,24 @@ const EMAIL_OTP_TYPES = new Set<string>([
   "email",
 ]);
 
+const MIN_PASSWORD_LENGTH = 10;
+
+function validatePassword(password: string): string | null {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Password must contain at least one uppercase letter.";
+  }
+  if (!/[a-z]/.test(password)) {
+    return "Password must contain at least one lowercase letter.";
+  }
+  if (!/[0-9]/.test(password)) {
+    return "Password must contain at least one number.";
+  }
+  return null;
+}
+
 function cleanAuthParamsFromUrl() {
   const url = new URL(window.location.href);
   for (const key of [
@@ -182,8 +200,9 @@ export function PortalWelcomePasswordForm() {
       setError("Supabase is not configured.");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
     if (password !== confirm) {
@@ -211,7 +230,8 @@ export function PortalWelcomePasswordForm() {
     });
     if (pwErr) {
       setPending(false);
-      setError(pwErr.message);
+      console.error("[PortalWelcomePasswordForm] Password update error:", pwErr.message);
+      setError("Could not update password. Please try again or contact support.");
       return;
     }
 
@@ -319,12 +339,12 @@ export function PortalWelcomePasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={MIN_PASSWORD_LENGTH}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm shadow-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/25"
         />
-        <p className="mt-1 text-xs text-slate-500">At least 8 characters.</p>
+        <p className="mt-1 text-xs text-slate-500">At least {MIN_PASSWORD_LENGTH} characters with uppercase, lowercase, and a number.</p>
       </div>
 
       <div>
@@ -337,7 +357,7 @@ export function PortalWelcomePasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={MIN_PASSWORD_LENGTH}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           className="mt-2 w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm shadow-sm outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/25"

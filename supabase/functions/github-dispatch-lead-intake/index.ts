@@ -54,12 +54,28 @@ function json(res: Record<string, unknown>, status = 200) {
   });
 }
 
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+function sanitizeForNotification(s: string, maxLen = 100): string {
+  return s.replace(/[\n\r\t\x00-\x1F\x7F]/g, " ").trim().slice(0, maxLen);
+}
+
 async function alertOwnerNewLead(record: Record<string, unknown>, leadId: string) {
-  const business = String(record.business ?? "Unknown business");
-  const email = String(record.email ?? "—");
-  const name = String(record.name ?? "—");
-  const plan = String(record.inquiry_plan ?? "—");
-  const city = [record.city, record.state].filter(Boolean).join(", ") || "—";
+  const business = sanitizeForNotification(String(record.business ?? "Unknown business"), 120);
+  const email = sanitizeForNotification(String(record.email ?? "—"), 254);
+  const name = sanitizeForNotification(String(record.name ?? "—"), 100);
+  const plan = sanitizeForNotification(String(record.inquiry_plan ?? "—"), 50);
+  const city = sanitizeForNotification(
+    [record.city, record.state].filter(Boolean).join(", ") || "—",
+    100
+  );
   const message = [
     `New scorecard request received`,
     `Plan: ${plan}`,
@@ -131,9 +147,21 @@ async function alertOwnerNewLead(record: Record<string, unknown>, leadId: string
   }
 }
 
+const MAX_REQUEST_SIZE = 65536; // 64KB
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > MAX_REQUEST_SIZE) {
+    return json({ error: "payload_too_large" }, 413);
+  }
+
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return json({ error: "invalid_content_type" }, 415);
   }
 
   console.info("[github-dispatch-lead-intake] POST received");
@@ -148,8 +176,8 @@ Deno.serve(async (req) => {
     return json({ error: "function_not_configured" }, 500);
   }
 
-  const headerSecret = req.headers.get("x-lead-intake-dispatch-secret");
-  if (headerSecret !== secret) {
+  const headerSecret = req.headers.get("x-lead-intake-dispatch-secret") ?? "";
+  if (!headerSecret || !timingSafeEqual(headerSecret, secret)) {
     console.warn("[github-dispatch-lead-intake] unauthorized: header secret mismatch");
     return json({ error: "unauthorized" }, 401);
   }
@@ -233,10 +261,7 @@ Deno.serve(async (req) => {
   if (!ghRes.ok) {
     const text = await ghRes.text();
     console.error("[github-dispatch-lead-intake] GitHub dispatches failed:", ghRes.status, text);
-    return json(
-      { error: "github_dispatch_failed", status: ghRes.status, detail: text },
-      502,
-    );
+    return json({ error: "github_dispatch_failed" }, 502);
   }
 
   console.info("[github-dispatch-lead-intake] repository_dispatch ok", {

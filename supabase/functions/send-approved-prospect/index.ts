@@ -5,10 +5,13 @@ const SITE_ORIGIN =
   Deno.env.get("SITE_ORIGIN")?.replace(/\/+$/, "") ||
   "https://guestsignalhospitality.com";
 
+const IS_PRODUCTION = SITE_ORIGIN.includes("guestsignalhospitality.com");
+
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   const allowedOrigin =
-    origin === SITE_ORIGIN || /^http:\/\/localhost:\d+$/.test(origin)
+    origin === SITE_ORIGIN ||
+    (!IS_PRODUCTION && /^http:\/\/localhost:\d+$/.test(origin))
       ? origin
       : SITE_ORIGIN;
   return {
@@ -17,6 +20,15 @@ function corsHeaders(req: Request) {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
   };
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
 }
 
 function json(req: Request, body: Record<string, unknown>, status = 200) {
@@ -42,18 +54,6 @@ function validUuid(value: unknown): value is string {
       value,
     )
   );
-}
-
-function isServiceRoleJwt(token: string) {
-  try {
-    const payloadPart = token.split(".")[1];
-    if (!payloadPart) return false;
-    const json = atob(payloadPart.replace(/-/g, "+").replace(/_/g, "/"));
-    const payload = JSON.parse(json) as { role?: string };
-    return payload.role === "service_role";
-  } catch {
-    return false;
-  }
 }
 
 function zonedParts(date: Date, timeZone: string) {
@@ -113,11 +113,18 @@ function nextRestaurantOwnerSendTime(now = new Date()) {
   throw new Error("Unable to calculate the next outreach window.");
 }
 
+const MAX_REQUEST_SIZE = 65536; // 64KB
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(req) });
   }
   if (req.method !== "POST") return json(req, { error: "method_not_allowed" }, 405);
+
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > MAX_REQUEST_SIZE) {
+    return json(req, { error: "payload_too_large" }, 413);
+  }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -150,7 +157,7 @@ Deno.serve(async (req) => {
   const bearer = authorization.replace(/^Bearer\s+/i, "").trim();
   const serviceInvoke =
     requestBody.serviceInvoke === true &&
-    (bearer === serviceRoleKey || isServiceRoleJwt(bearer));
+    timingSafeEqual(bearer, serviceRoleKey);
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -276,7 +283,7 @@ Deno.serve(async (req) => {
         Authorization: `Bearer ${resendKey}`,
         "Content-Type": "application/json",
         "Idempotency-Key": sendNow
-          ? `prospect-outreach-${prospectId}-now-${Date.now()}`
+          ? `prospect-outreach-${prospectId}-immediate`
           : `prospect-outreach-${prospectId}`,
       },
       body: JSON.stringify(payload),
@@ -323,10 +330,11 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    console.error("[send-approved-prospect] Send failed:", message);
     await admin
       .from("prospect_queue")
       .update({ send_status: "failed", send_error: message.slice(0, 1000) })
       .eq("id", prospectId);
-    return json(req, { error: "send_failed", detail: message.slice(0, 300) }, 502);
+    return json(req, { error: "send_failed" }, 502);
   }
 });
