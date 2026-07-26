@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Guest Signal Hospitality",
   },
   description:
-    "Hospitality operational intelligence for restaurants, bars, hotels, and service businesses. Review intelligence, guest experience systems, service consistency, and revenue optimization—not generic marketing.",
+    "Restaurant review scorecards and guest experience intelligence for independent operators. We turn Google and Yelp reviews into a clear score, themes, and weekly priorities—not signal-processing jargon.",
   alternates: {
     canonical: "/",
   },

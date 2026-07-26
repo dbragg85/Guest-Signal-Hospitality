@@ -1,12 +1,12 @@
 ---
 title: "This Week in Hospitality Signals: Guest recovery playbooks for frontline teams"
-seoTitle: "Guest Recovery Playbooks for Front-of-House Teams"
-metaDescription: "Frontline service recovery frameworks that protect trust after a miss—escalation paths, language, and review response alignment for restaurant operators."
+seoTitle: "Guest Recovery Solutions for Restaurant Frontline Teams"
+metaDescription: "Guest recovery solutions restaurants can run tonight: three-tier playbooks, escalation paths, and language that protects Google reviews after a service miss."
 slug: "guest-recovery-playbooks"
 legacySlug: "2026-04-29-this-week-in-hospitality-signals-guest-recovery-playbooks-for-frontli"
-excerpt: "Weekly hospitality intelligence for operators focused on guest recovery playbooks for frontline teams."
+excerpt: "Guest recovery solutions for frontline teams—playbooks, escalation paths, and review-safe language after a miss."
 publishedDate: "2026-04-29T12:00:00.000Z"
-updatedDate: "2026-05-15T12:00:00.000Z"
+updatedDate: "2026-07-26T01:05:00.000Z"
 category: Newsletter
 topicCategory: service-recovery
 tags: ["service recovery", "guest recovery", "front of house", "hospitality intelligence"]
@@ -25,6 +25,7 @@ Search trends, guest behavior signals, and operator takeaways for restaurants.
 Recovery is where reputation is won or lost. A single unresolved miss during a busy service often becomes a **permanent search result**—not because the kitchen failed, but because no one owned the fix in the moment.
 
 ## What People Are Searching
+- **Guest recovery solutions** — Operators want a ladder, not a binder: who owns the fix in 2 minutes, same visit, or next day.
 - **Restaurant complaint handling** — Guests research how operators respond before they book.
 - **Service recovery** — Operators search for scripts that do not sound corporate or defensive.
 

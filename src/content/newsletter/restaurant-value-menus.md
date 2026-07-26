@@ -1,7 +1,7 @@
 ---
 title: "This Week in Hospitality Signals: Restaurant value menus"
-seoTitle: "Restaurant trends: restaurant review monitoring"
-metaDescription: "Weekly hospitality signals for restaurant owners—Restaurant value menus. Also rising: Restaurant delivery wait times. restaurant review monitoring takeaways and"
+seoTitle: "Restaurant Value Menus: Guest Signals Operators Should Watch"
+metaDescription: "Weekly hospitality signals on restaurant value menus—how pricing and value perception show up in reviews, and what operators should fix first."
 slug: "restaurant-value-menus"
 legacySlug: "2026-07-20-this-week-in-hospitality-signals-restaurant-value-menus"
 excerpt: "This week: Restaurant value menus. Operator lens: review response speed. Related search theme: Restaurant delivery wait times."

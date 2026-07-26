@@ -6,10 +6,16 @@ import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
 export const metadata: Metadata = {
-  title: "Restaurant Reputation & Review Resources",
+  title: "Restaurant Reputation Guides: Reviews, Ratings & Monitoring",
   description:
-    "Practical guides for restaurant owners on review monitoring, Google Reviews, and local reputation—plus how Guest Signal Hospitality helps.",
+    "Restaurant reputation resources for owners: review monitoring, Google ratings, recovery playbooks, and local reputation guides—plus free snapshot and Signal Monitor.",
   alternates: { canonical: "/resources/" },
+  openGraph: {
+    title: "Restaurant Reputation Guides: Reviews, Ratings & Monitoring",
+    description:
+      "Practical restaurant reputation guides—monitoring, Google ratings, and guest recovery.",
+    url: "/resources/",
+  },
 };
 
 export default function ResourcesIndexPage() {
@@ -21,11 +27,11 @@ export default function ResourcesIndexPage() {
             Resources
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
-            Restaurant reputation and guest experience guides
+            Restaurant reputation guides: reviews, ratings, and monitoring
           </h1>
           <p className="mt-4 text-slate-600 md:text-lg">
-            Short, operator-focused articles on review monitoring, Google Reviews, and building a
-            better guest signal—whether you are in Cincinnati or nationwide.
+            Short, operator-focused restaurant reputation articles—review monitoring, Google ratings,
+            and guest recovery—whether you are in Cincinnati or nationwide.
           </p>
           <div className="mx-auto mt-8 flex max-w-xl flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-start">
             <ServicesIntakeLink href="/snapshot/" className="btn-primary">

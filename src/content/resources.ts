@@ -4,8 +4,8 @@ export const resourceArticles = [
     slug: "restaurant-review-monitoring",
     title: "Restaurant review monitoring",
     description:
-      "What to track monthly when you watch Google (and Yelp) reviews—volume, themes, risks, and owner-ready next steps.",
-    headline: "Restaurant review monitoring that operators actually use",
+      "Restaurant review monitoring for operators: Google and Yelp themes, risk alerts, and monthly scorecards—not just star averages.",
+    headline: "Restaurant review monitoring: themes, alerts, and scorecards",
   },
   {
     slug: "google-reviews-for-restaurants",

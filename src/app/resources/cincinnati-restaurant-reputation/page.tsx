@@ -6,10 +6,16 @@ import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { brand } from "@/content/site";
 
 export const metadata: Metadata = {
-  title: "Cincinnati Restaurant Reputation & Guest Experience",
+  title: "Restaurant Reputation in Cincinnati: Reviews & Scorecards",
   description:
-    "Guest experience and reputation support for Cincinnati restaurants: review intelligence, scorecards, and practical improvement priorities.",
+    "Restaurant reputation guidance for Cincinnati operators—Google review themes, Guest Signal scorecards, and weekly priorities that protect local demand.",
   alternates: { canonical: "/resources/cincinnati-restaurant-reputation/" },
+  openGraph: {
+    title: "Restaurant Reputation in Cincinnati: Reviews & Scorecards",
+    description:
+      "How Cincinnati restaurants protect restaurant reputation with review intelligence and scorecards.",
+    url: "/resources/cincinnati-restaurant-reputation/",
+  },
 };
 
 export default function CincinnatiRestaurantReputationPage() {
