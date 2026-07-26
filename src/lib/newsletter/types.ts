@@ -1,6 +1,6 @@
 export type TrendRecord = {
   term: string;
-  source: "Google Trends" | "Manual";
+  source: "Google Trends" | "Manual" | "Reddit";
   geo: "US";
   category: "Food & Drink";
   timeWindow: "past 7 days";

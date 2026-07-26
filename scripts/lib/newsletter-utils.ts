@@ -104,7 +104,12 @@ export function scoreArticle(article: ArticleRecord): number {
 export function normalizeTrend(input: Partial<TrendRecord>): TrendRecord {
   return {
     term: sanitizeHeadline(input.term ?? "Unknown trend"),
-    source: input.source === "Manual" ? "Manual" : "Google Trends",
+    source:
+      input.source === "Manual"
+        ? "Manual"
+        : input.source === "Reddit"
+          ? "Reddit"
+          : "Google Trends",
     geo: "US",
     category: "Food & Drink",
     timeWindow: "past 7 days",
