@@ -136,6 +136,20 @@ export default function MarketPage({ params }: { params: Params }) {
                 >
                   improve Google restaurant rating playbook
                 </Link>
+                ,{" "}
+                <Link
+                  href="/resources/restaurant-review-scorecard/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  restaurant review scorecard
+                </Link>
+                , and{" "}
+                <Link
+                  href="/resources/respond-to-restaurant-reviews/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  how to respond to restaurant reviews
+                </Link>
                 .
               </li>
             </ol>

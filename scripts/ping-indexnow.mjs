@@ -32,14 +32,17 @@ const urls = [
   `https://${host}/resources/restaurant-review-monitoring/`,
   `https://${host}/resources/restaurant-review-scorecard/`,
   `https://${host}/resources/guest-recovery-solutions/`,
+  `https://${host}/resources/respond-to-restaurant-reviews/`,
   `https://${host}/resources/restaurant-reputation/`,
   `https://${host}/resources/guest-signal-vs-review-tools/`,
   `https://${host}/resources/cincinnati-restaurant-reputation/`,
   `https://${host}/insights/guest-recovery-playbooks/`,
+  `https://${host}/insights/review-response-speed/`,
   `https://${host}/markets/cincinnati-oh/`,
   `https://${host}/markets/columbus-oh/`,
   `https://${host}/markets/nashville-tn/`,
   `https://${host}/markets/charlotte-nc/`,
+  `https://${host}/markets/florence-sc/`,
   `https://${host}/insights/`,
 ];
 

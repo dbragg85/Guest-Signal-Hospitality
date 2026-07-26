@@ -15,6 +15,13 @@ export const resourceArticles = [
     headline: "Guest recovery solutions for restaurants: floor playbooks that stick",
   },
   {
+    slug: "respond-to-restaurant-reviews",
+    title: "Respond to restaurant reviews",
+    description:
+      "How to respond to restaurant reviews on Google and Yelp: 48-hour SLAs, reply shapes for 1★–5★, and when to escalate to floor fixes.",
+    headline: "How to respond to restaurant reviews on Google and Yelp",
+  },
+  {
     slug: "restaurant-review-monitoring",
     title: "Restaurant review monitoring",
     description:
