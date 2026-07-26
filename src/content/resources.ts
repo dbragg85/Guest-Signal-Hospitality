@@ -15,12 +15,20 @@ export const resourceArticles = [
     headline: "Google Reviews for restaurants: from noise to a clear plan",
   },
   {
+    slug: "restaurant-reputation",
+    title: "Restaurant reputation",
+    description:
+      "Restaurant reputation for operators: Google and Yelp themes, response discipline, and a weekly scorecard cadence that protects guest perception.",
+    headline: "Restaurant reputation: reviews, themes, and weekly scorecards",
+  },
+  {
     slug: "cincinnati-restaurant-reputation",
     title: "Cincinnati restaurant reputation",
     description:
       "How Cincinnati-area restaurants can protect and improve guest perception with structured review intelligence and scorecards.",
     headline: "Cincinnati restaurant reputation and guest experience",
   },
+
   {
     slug: "google-restaurant-ratings",
     title: "Google restaurant ratings",

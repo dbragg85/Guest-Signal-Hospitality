@@ -95,7 +95,14 @@ export default function RestaurantReviewMonitoringPage() {
             Restaurant monitoring that earns the click
           </h2>
           <p className="text-slate-700 leading-7">
-            Operators searching “restaurant review monitoring” or “restaurant monitoring” usually want
+            For the broader outcome guests see on Maps, see{" "}
+            <Link
+              href="/resources/restaurant-reputation/"
+              className="font-semibold text-amber-900 underline underline-offset-2"
+            >
+              restaurant reputation
+            </Link>
+            . Operators searching “restaurant review monitoring” or “restaurant monitoring” usually want
             one thing: a trustworthy read of Google and Yelp without living in five apps. The useful
             output is a score, the themes behind it, and three fixes—not a dump of every new comment.
           </p>
