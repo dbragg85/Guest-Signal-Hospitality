@@ -91,6 +91,12 @@ export default function GoogleRestaurantRatingsPage() {
               />
             </div>
             <Link
+              href="/resources/improve-google-restaurant-rating/"
+              className="px-2 py-3 text-sm font-semibold text-amber-900 underline underline-offset-2"
+            >
+              Improve your rating playbook
+            </Link>
+            <Link
               href="/resources/restaurant-seo-google-ratings/"
               className="px-2 py-3 text-sm font-semibold text-amber-900 underline underline-offset-2"
             >

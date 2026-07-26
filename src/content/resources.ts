@@ -35,6 +35,13 @@ export const resourceArticles = [
       "How restaurant SEO and Google ratings work together for local pack visibility—with a practical weekly operator checklist.",
     headline: "Restaurant SEO and Google ratings: win local search",
   },
+  {
+    slug: "improve-google-restaurant-rating",
+    title: "Improve Google restaurant rating",
+    description:
+      "A practical operator playbook to improve your Google restaurant rating: response speed, recurring themes, review velocity, and a weekly cadence that sticks.",
+    headline: "How to improve your Google restaurant rating (operator playbook)",
+  },
 ] as const;
 
 export type ResourceSlug = (typeof resourceArticles)[number]["slug"];

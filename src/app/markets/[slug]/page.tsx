@@ -110,6 +110,34 @@ export default function MarketPage({ params }: { params: Params }) {
               same complaints repeat—wait time, value, consistency—your Google pack position and
               conversion both suffer.
             </p>
+            <p className="mt-3 text-slate-700 leading-7">{market.blurb}</p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-950">
+              How to improve Google restaurant ratings in {market.city}
+            </h2>
+            <p className="mt-3 text-slate-700 leading-7">
+              In {market.city}, {market.state}, first-time guests often decide from Maps before they
+              open your site. Improving a Google restaurant rating here means fixing the themes guests
+              repeat, answering negatives with a real recovery step, and keeping review velocity
+              steady—not chasing one-off five-star asks.
+            </p>
+            <ol className="mt-4 list-decimal space-y-2 pl-5 text-slate-700">
+              <li>Tag the last 30–60 days of Google and Yelp reviews by theme.</li>
+              <li>Pick the two issues that show up most for {market.city} guests.</li>
+              <li>Give the floor one fix per theme and clear unanswered reviews within 48 hours.</li>
+              <li>
+                Run a weekly scorecard—see our{" "}
+                <Link
+                  href="/resources/improve-google-restaurant-rating/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  improve Google restaurant rating playbook
+                </Link>
+                .
+              </li>
+            </ol>
           </div>
 
           <div>
@@ -119,6 +147,10 @@ export default function MarketPage({ params }: { params: Params }) {
               <li>Recurring themes tied to service, speed, food, and value</li>
               <li>Reputation risk alerts when negative patterns spike</li>
               <li>A short action list owners and GMs can run the same week</li>
+              <li>
+                Local search context for {market.regionLabel} operators competing on{" "}
+                {market.searchPhrase}
+              </li>
             </ul>
           </div>
 

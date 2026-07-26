@@ -76,6 +76,23 @@ export function trackEvent(name: string, payload: Record<string, unknown> = {}) 
     });
   };
 
+  // Attribution for acquisition (host only — never full URLs or free text).
+  if (normalizedName === "page_view") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content"] as const) {
+        const value = params.get(key)?.trim();
+        if (value) properties[key] = value.slice(0, 80);
+      }
+      const ref = document.referrer ? new URL(document.referrer).hostname : "";
+      if (ref && ref !== window.location.hostname) {
+        properties.ref_host = ref.slice(0, 120);
+      }
+    } catch {
+      /* ignore malformed referrer */
+    }
+  }
+
   if (normalizedName === "page_view") {
     window.setTimeout(persist, 1200);
   } else {
