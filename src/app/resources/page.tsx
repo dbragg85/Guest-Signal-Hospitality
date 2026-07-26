@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { resourceArticles } from "@/content/resources";
 import { Section } from "@/components/Section";
+import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
 export const metadata: Metadata = {
   title: "Restaurant Reputation & Review Resources",
@@ -25,6 +27,18 @@ export default function ResourcesIndexPage() {
             Short, operator-focused articles on review monitoring, Google Reviews, and building a
             better guest signal—whether you are in Cincinnati or nationwide.
           </p>
+          <div className="mx-auto mt-8 flex max-w-xl flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-start">
+            <ServicesIntakeLink href="/snapshot/" className="btn-primary">
+              Get your free snapshot
+            </ServicesIntakeLink>
+            <div className="min-w-[14rem]">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label="Start Signal Monitor — $149/mo"
+                className="btn-secondary w-full"
+              />
+            </div>
+          </div>
         </div>
       </section>
 

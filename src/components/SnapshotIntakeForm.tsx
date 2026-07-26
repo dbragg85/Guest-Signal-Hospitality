@@ -269,6 +269,22 @@ export function SnapshotIntakeForm() {
           </ul>
         </div>
 
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-4 py-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-900">Already know you need monthly monitoring?</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Skip the free snapshot queue and start Signal Monitor now—scorecard every month, cancel anytime.
+            </p>
+          </div>
+          <div className="mt-3 min-w-[14rem] shrink-0 sm:mt-0">
+            <StripeCheckoutButton
+              planKey="signal_monitor"
+              label="Start Signal Monitor — $149/mo"
+              className="btn-secondary w-full"
+            />
+          </div>
+        </div>
+
         <form
           className="mt-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
           onSubmit={handleSubmit}

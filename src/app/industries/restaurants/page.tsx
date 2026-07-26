@@ -192,8 +192,8 @@ export default function RestaurantsIndustryPage() {
           desc="Get a free snapshot of your review signals. We'll send a quick summary: top strengths, biggest risks, and 3 quick wins you can implement this week."
           primaryHref="/snapshot/"
           primaryLabel="Get Free Snapshot"
-          secondaryLabel="Learn More"
-          secondaryHref="/services/"
+          secondaryLabel="Start Signal Monitor — $149/mo"
+          secondaryCheckout="signal_monitor"
         />
       </Section>
     </div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { brand, nav } from "@/content/site";
 import { resourceArticles } from "@/content/resources";
 import { ReactNode } from "react";
@@ -31,6 +32,14 @@ export function Shell({ children }: { children: ReactNode }) {
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
             <MobileNavMenu items={nav} />
+            <div className="hidden min-w-[9.5rem] lg:block">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label="Monitor — $149"
+                className="btn-secondary w-full whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm"
+                showTrust={false}
+              />
+            </div>
             <ServicesIntakeLink
               href="/snapshot/"
               className="btn-primary whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm"

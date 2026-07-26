@@ -201,10 +201,11 @@ export default function WhoWeServePage() {
       <Section>
         <CTA
           title="Not sure where you fit?"
-          desc="Send us your restaurant name and concept type, and we'll recommend the best starting path for your situation."
-          primaryLabel="Talk to Us"
-          secondaryLabel="View Services"
-          secondaryHref="/services/"
+          desc="Start with a free snapshot for plan fit, or begin Signal Monitor if you already want a monthly scorecard."
+          primaryLabel="Get free snapshot"
+          primaryHref="/snapshot/"
+          secondaryLabel="Start Signal Monitor — $149/mo"
+          secondaryCheckout="signal_monitor"
         />
       </Section>
 

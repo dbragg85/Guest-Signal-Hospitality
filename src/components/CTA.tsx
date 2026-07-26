@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
+import type { PlanInquiryKey } from "@/content/site";
+
+type CheckoutPlan = Exclude<PlanInquiryKey, "free_snapshot">;
 
 export function CTA({
   title,
@@ -8,6 +12,7 @@ export function CTA({
   primaryLabel = "Get your free snapshot",
   secondaryHref = "/services/",
   secondaryLabel = "Compare plans",
+  secondaryCheckout,
   align = "start",
   className,
 }: {
@@ -17,6 +22,8 @@ export function CTA({
   primaryLabel?: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  /** When set, secondary CTA starts Stripe checkout instead of linking. */
+  secondaryCheckout?: CheckoutPlan;
   /** `center` stacks copy and buttons for pages like /team */
   align?: "start" | "center";
   className?: string;
@@ -53,9 +60,19 @@ export function CTA({
           <PrimaryLink href={primaryHref} className="btn-primary text-center">
             {primaryLabel}
           </PrimaryLink>
-          <Link href={secondaryHref} className="btn-secondary text-center">
-            {secondaryLabel}
-          </Link>
+          {secondaryCheckout ? (
+            <div className={centered ? "w-full sm:min-w-[14rem]" : "min-w-[14rem]"}>
+              <StripeCheckoutButton
+                planKey={secondaryCheckout}
+                label={secondaryLabel}
+                className="btn-secondary w-full text-center"
+              />
+            </div>
+          ) : (
+            <Link href={secondaryHref} className="btn-secondary text-center">
+              {secondaryLabel}
+            </Link>
+          )}
         </div>
       </div>
     </div>

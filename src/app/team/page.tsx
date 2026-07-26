@@ -160,8 +160,8 @@ export default function TeamPage() {
             desc="Get a free snapshot of your review signals and see how we help you turn guest feedback into growth."
             primaryHref="/snapshot/"
             primaryLabel="Get Free Snapshot"
-            secondaryHref="/services/"
-            secondaryLabel="View Plans"
+            secondaryLabel="Start Signal Monitor — $149/mo"
+            secondaryCheckout="signal_monitor"
           />
         </div>
       </Section>
