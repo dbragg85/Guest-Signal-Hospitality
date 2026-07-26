@@ -136,6 +136,18 @@ export default function MarketPage({ params }: { params: Params }) {
                 .
               </p>
             ) : null}
+            {market.slug === "charlotte-nc" ? (
+              <p className="mt-3 text-slate-700 leading-7">
+                For a Charlotte-specific reputation playbook, see{" "}
+                <Link
+                  href="/resources/charlotte-nc-restaurant-reputation/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  Charlotte NC restaurant reputation
+                </Link>
+                .
+              </p>
+            ) : null}
           </div>
 
           <div>

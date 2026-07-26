@@ -41,14 +41,15 @@ const urls = [
   `https://${host}/resources/guest-signal-vs-review-tools/`,
   `https://${host}/resources/cincinnati-restaurant-reputation/`,
   `https://${host}/resources/florence-sc-restaurant-reputation/`,
+  `https://${host}/resources/charlotte-nc-restaurant-reputation/`,
   `https://${host}/insights/guest-recovery-playbooks/`,
+  `https://${host}/insights/`,
   `https://${host}/insights/review-response-speed/`,
   `https://${host}/markets/cincinnati-oh/`,
   `https://${host}/markets/columbus-oh/`,
   `https://${host}/markets/nashville-tn/`,
   `https://${host}/markets/charlotte-nc/`,
   `https://${host}/markets/florence-sc/`,
-  `https://${host}/insights/`,
 ];
 
 const body = JSON.stringify({ host, key, keyLocation, urlList: urls });

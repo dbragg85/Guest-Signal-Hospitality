@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Section } from "@/components/Section";
+import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
+import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import {
@@ -9,6 +11,7 @@ import {
 } from "@/lib/newsletter/content";
 import { collectionPageSchema, breadcrumbSchema } from "@/lib/seo/schema";
 import { topicCategories } from "@/lib/seo/categories";
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 
 export const metadata: Metadata = {
   title: "Hospitality Operational Intelligence & Weekly Signals",
@@ -73,6 +76,59 @@ export default function InsightsHubPage() {
             Short, practical reads for independent restaurant owners and GMs.
             One issue, why it matters, and what to do next.
           </p>
+          <div className="mx-auto mt-8 flex max-w-xl flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-start">
+            <ServicesIntakeLink href="/snapshot/" className="btn-primary">
+              Get your free snapshot
+            </ServicesIntakeLink>
+            <div className="min-w-[14rem]">
+              <StripeCheckoutButton
+                planKey="signal_monitor"
+                label={monitorCheckoutLabel()}
+                className="btn-secondary w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-stone-200 bg-white py-10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-5">
+          <p className="text-sm font-semibold text-amber-800">Operator guides</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+            Turn weekly signals into a review system.
+          </h2>
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+            <Link
+              href="/resources/restaurant-review-management/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Review management
+            </Link>
+            <Link
+              href="/resources/restaurant-review-scorecard/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Review scorecard
+            </Link>
+            <Link
+              href="/resources/respond-to-restaurant-reviews/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Respond to reviews
+            </Link>
+            <Link
+              href="/resources/get-more-restaurant-reviews/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Get more reviews
+            </Link>
+            <Link
+              href="/resources/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              All guides
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -78,6 +78,13 @@ export const resourceArticles = [
       "Restaurant reputation for Florence, South Carolina: Google and Yelp themes, response discipline, and weekly scorecards for local demand.",
     headline: "Florence SC restaurant reputation: reviews, themes, and scorecards",
   },
+  {
+    slug: "charlotte-nc-restaurant-reputation",
+    title: "Charlotte NC restaurant reputation",
+    description:
+      "Restaurant reputation for Charlotte, North Carolina: Google and Yelp themes, response discipline, and weekly scorecards for local demand.",
+    headline: "Charlotte NC restaurant reputation: reviews, themes, and scorecards",
+  },
 
   {
     slug: "google-restaurant-ratings",

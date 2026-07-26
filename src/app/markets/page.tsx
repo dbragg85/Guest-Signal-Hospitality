@@ -82,6 +82,12 @@ export default function MarketsHubPage() {
               Florence SC reputation
             </Link>
             <Link
+              href="/resources/charlotte-nc-restaurant-reputation/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Charlotte NC reputation
+            </Link>
+            <Link
               href="/resources/improve-google-restaurant-rating/"
               className="text-amber-900 underline underline-offset-2"
             >
