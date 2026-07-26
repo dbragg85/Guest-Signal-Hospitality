@@ -250,9 +250,9 @@ export function SnapshotIntakeForm() {
             Client portal sign-in
           </Link>
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
+        <h2 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
           Free snapshot: your score, themes, and next three fixes
-        </h1>
+        </h2>
         <p className="mt-3 text-lg text-slate-600">
           Takes about two minutes. No card. We read Google and Yelp, then send a private scorecard
           you can use in the next manager meeting.
