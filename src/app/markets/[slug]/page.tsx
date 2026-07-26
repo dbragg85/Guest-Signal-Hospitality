@@ -8,6 +8,7 @@ import { getMarket, markets } from "@/content/markets";
 import { brand } from "@/content/site";
 import { breadcrumbSchema, faqPageSchema, localBusinessSchema } from "@/lib/seo/schema";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 type Params = { slug: string };
 
 export function generateStaticParams() {
@@ -87,7 +88,7 @@ export default function MarketPage({ params }: { params: Params }) {
             <div className="min-w-[14rem]">
               <StripeCheckoutButton
                 planKey="signal_monitor"
-                label="Start Signal Monitor — $149/mo"
+                label={monitorCheckoutLabel()}
                 className="btn-secondary w-full"
               />
             </div>
@@ -163,7 +164,7 @@ export default function MarketPage({ params }: { params: Params }) {
             <div className="mt-4 max-w-sm">
               <StripeCheckoutButton
                 planKey="signal_monitor"
-                label="Start Signal Monitor — $149/mo"
+                label={monitorCheckoutLabel()}
                 className="btn-primary w-full"
               />
             </div>

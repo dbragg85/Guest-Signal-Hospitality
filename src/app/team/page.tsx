@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Section } from "@/components/Section";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 export const metadata: Metadata = {
   title: "About Guest Signal Hospitality — Operational Intelligence Team",
   description:
@@ -135,7 +136,10 @@ export default function TeamPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-slate-400">•</span>
-                  <span>Cadence that scales from free snapshot → Monitor ($149) → Growth ($499) → Elevate ($999)</span>
+                  <span>
+                    Cadence that scales from free snapshot → Monitor ($99 intro / $149) → Growth
+                    ($499) → Elevate ($999)
+                  </span>
                 </li>
               </ul>
             </div>
@@ -160,7 +164,7 @@ export default function TeamPage() {
             desc="Get a free snapshot of your review signals and see how we help you turn guest feedback into growth."
             primaryHref="/snapshot/"
             primaryLabel="Get Free Snapshot"
-            secondaryLabel="Start Signal Monitor — $149/mo"
+            secondaryLabel={monitorCheckoutLabel()}
             secondaryCheckout="signal_monitor"
           />
         </div>

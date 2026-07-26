@@ -5,6 +5,7 @@ import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { markets } from "@/content/markets";
 import { brand } from "@/content/site";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 export const metadata: Metadata = {
   title: "Restaurant Reputation Markets | Google Ratings & Review Scorecards",
   description:
@@ -44,7 +45,7 @@ export default function MarketsHubPage() {
             <div className="min-w-[14rem]">
               <StripeCheckoutButton
                 planKey="signal_monitor"
-                label="Start Signal Monitor — $149/mo"
+                label={monitorCheckoutLabel()}
                 className="btn-secondary w-full"
               />
             </div>

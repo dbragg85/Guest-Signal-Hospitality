@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 export const metadata: Metadata = {
   title: "Restaurant Reputation & Guest Experience Intelligence",
   description:
@@ -192,7 +193,7 @@ export default function RestaurantsIndustryPage() {
           desc="Get a free snapshot of your review signals. We'll send a quick summary: top strengths, biggest risks, and 3 quick wins you can implement this week."
           primaryHref="/snapshot/"
           primaryLabel="Get Free Snapshot"
-          secondaryLabel="Start Signal Monitor — $149/mo"
+          secondaryLabel={monitorCheckoutLabel()}
           secondaryCheckout="signal_monitor"
         />
       </Section>

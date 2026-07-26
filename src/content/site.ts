@@ -47,7 +47,7 @@ export const servicesPricingContext = {
   title: "How the plans progress",
   lead: "Each tier builds on the last—from AI-powered visibility and performance insights to menu intelligence and executive reporting with hands-on execution.",
   bullets: [
-    "Signal Monitor ($149/mo) — foundational guest reputation and visibility monitoring.",
+    "Signal Monitor ($149/mo; GUEST#1 founding $99/mo for 3 months) — foundational guest reputation and visibility monitoring.",
     "Signal Growth ($499/mo) — restaurant performance insights, value perception trends, sentiment patterns, and monthly opportunity analysis.",
     "Signal Elevate ($999/mo) — menu intelligence, pricing perception, operational tradeoffs, throughput opportunities, and executive performance reporting.",
   ],
@@ -57,10 +57,12 @@ export const pricingPlans = [
   {
     inquiryKey: "signal_monitor" as const,
     name: "Signal Monitor",
-    price: "$149",
-    period: "month",
-    badge: null,
-    description: "A dependable monthly read on reviews, risks, and next steps.",
+    price: "$99",
+    period: "month for 3 months",
+    priceNote: "then $149/mo · code GUEST1",
+    badge: "GUEST#1 founding",
+    description:
+      "Founding rate for the first 100 clients: $99/mo for 3 months, then $149/mo. Cancel anytime.",
     features: [
       "Monthly Guest Signal Score with category breakdown",
       "Google review sentiment monitoring",
@@ -71,7 +73,7 @@ export const pricingPlans = [
       "AI-assisted review response suggestions, up to 10/month",
       "Quarterly owner checklist with next-step priorities",
     ],
-    buttonText: "Start Signal Monitor",
+    buttonText: "Start Monitor — $99/mo intro",
     popular: false,
   },
   {

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 type NavItem = {
   label: string;
   href: string;
@@ -81,7 +82,7 @@ export function MobileNavMenu({ items }: { items: NavItem[] }) {
               <div className="px-1 pb-2">
                 <StripeCheckoutButton
                   planKey="signal_monitor"
-                  label="Start Signal Monitor — $149/mo"
+                  label={monitorCheckoutLabel()}
                   className="btn-primary w-full text-sm"
                   showTrust={false}
                 />

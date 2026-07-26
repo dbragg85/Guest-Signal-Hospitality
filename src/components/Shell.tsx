@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
+import { FoundingPromoBanner } from "@/components/FoundingPromoBanner";
 import { brand, nav } from "@/content/site";
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 import { resourceArticles } from "@/content/resources";
 import { ReactNode } from "react";
 import { BrandLockup, BrandLockupFooter } from "@/components/BrandLockup";
@@ -10,6 +12,7 @@ import { MobileNavMenu } from "@/components/MobileNavMenu";
 export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-stone-50 text-slate-900">
+      <FoundingPromoBanner />
       <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2.5 sm:px-5">
           <div className="flex min-w-0 flex-1 items-center gap-4 md:gap-8 lg:gap-10">
@@ -35,7 +38,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <div className="hidden min-w-[9.5rem] lg:block">
               <StripeCheckoutButton
                 planKey="signal_monitor"
-                label="Monitor — $149"
+                label={monitorCheckoutLabel(true)}
                 className="btn-secondary w-full whitespace-nowrap py-2.5 text-xs sm:py-3 sm:text-sm"
                 showTrust={false}
               />

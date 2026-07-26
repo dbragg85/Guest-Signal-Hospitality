@@ -16,10 +16,11 @@ import { Section } from "@/components/Section";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { faqPageSchema, servicesPricingSchema } from "@/lib/seo/schema";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 const SERVICES_PAGE_TITLE =
   "Restaurant Reputation, SEO & Google Visibility Plans | Guest Signal Hospitality";
 const SERVICES_PAGE_DESCRIPTION =
-  "Compare Guest Signal Hospitality plans for restaurant review monitoring, Google Business Profile optimization, local SEO, website visibility, and guest experience intelligence.";
+  "Compare Guest Signal Hospitality plans for restaurant review monitoring. Founding offer GUEST#1: Signal Monitor $99/mo for 3 months (code GUEST1, first 100), then $149/mo—plus Growth and Elevate.";
 
 export const metadata: Metadata = {
   title: { absolute: SERVICES_PAGE_TITLE },
@@ -81,7 +82,7 @@ function ServicesHero({ seo }: { seo: typeof servicesPageSeo }) {
           </ServicesIntakeLink>
           <StripeCheckoutButton
             planKey="signal_monitor"
-            label="Start Signal Monitor — $149/mo"
+            label={monitorCheckoutLabel()}
             className="btn-secondary px-6 py-3"
           />
           <Link href="#plans" className="px-6 py-3 text-sm font-semibold text-slate-700 underline underline-offset-4">
@@ -211,6 +212,11 @@ function ServicesPlanPrice({ plan }: { plan: (typeof pricingPlans)[number] }) {
     <div className="mt-4">
       <span className="text-4xl font-bold text-slate-900">{plan.price}</span>
       <span className="text-slate-600">/{plan.period}</span>
+      {(plan as { priceNote?: string }).priceNote ? (
+        <p className="mt-1 text-xs font-medium text-amber-900">
+          {(plan as { priceNote?: string }).priceNote}
+        </p>
+      ) : null}
     </div>
   );
 }

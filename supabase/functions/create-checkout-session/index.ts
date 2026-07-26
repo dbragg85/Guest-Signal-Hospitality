@@ -4,6 +4,10 @@ const SITE_ORIGIN =
   Deno.env.get("SITE_ORIGIN")?.replace(/\/+$/, "") ||
   "https://guestsignalhospitality.com";
 
+/** Stripe promotion codes cannot include "#". Market as GUEST#1; code is GUEST1. */
+const FOUNDING_PROMO_CODE = "GUEST1";
+const FOUNDING_MAX_REDEMPTIONS = 100;
+
 const PLAN_PRICES: Record<string, { envKey: string; name: string; amount: number }> = {
   signal_monitor: {
     envKey: "STRIPE_PRICE_SIGNAL_MONITOR",
@@ -44,6 +48,87 @@ function json(req: Request, body: Record<string, unknown>, status = 200) {
   });
 }
 
+async function stripeForm(
+  stripeKey: string,
+  method: string,
+  path: string,
+  body?: URLSearchParams | Record<string, string>,
+) {
+  const encoded =
+    body instanceof URLSearchParams
+      ? body
+      : body
+        ? new URLSearchParams(body)
+        : undefined;
+  const response = await fetch(`https://api.stripe.com/v1${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${stripeKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: encoded,
+  });
+  const payload = await response.json();
+  return { ok: response.ok, status: response.status, payload };
+}
+
+/** Ensure GUEST1 exists: $50 off Monitor for 3 months, max 100 redemptions. */
+async function ensureFoundingPromoId(stripeKey: string): Promise<string | null> {
+  const listed = await stripeForm(
+    stripeKey,
+    "GET",
+    `/promotion_codes?code=${FOUNDING_PROMO_CODE}&active=true&limit=1`,
+  );
+  const existing = listed.payload?.data?.[0];
+  if (existing?.id) {
+    if (
+      typeof existing.times_redeemed === "number" &&
+      typeof existing.max_redemptions === "number" &&
+      existing.times_redeemed >= existing.max_redemptions
+    ) {
+      return null;
+    }
+    return String(existing.id);
+  }
+
+  // Also check inactive / exhausted — don't recreate past max
+  const anyCode = await stripeForm(
+    stripeKey,
+    "GET",
+    `/promotion_codes?code=${FOUNDING_PROMO_CODE}&limit=1`,
+  );
+  if (anyCode.payload?.data?.[0]?.id) {
+    return null; // exists but not usable
+  }
+
+  const coupon = await stripeForm(stripeKey, "POST", "/coupons", {
+    name: "GUEST#1 founding — Monitor $99 x 3 months",
+    amount_off: "5000",
+    currency: "usd",
+    duration: "repeating",
+    duration_in_months: "3",
+    "metadata[campaign]": "GUEST1_founding",
+    "metadata[brand_code]": "GUEST#1",
+  });
+  if (!coupon.ok || !coupon.payload?.id) {
+    console.error("coupon_create_failed", coupon.payload?.error?.message);
+    return null;
+  }
+
+  const promo = await stripeForm(stripeKey, "POST", "/promotion_codes", {
+    coupon: String(coupon.payload.id),
+    code: FOUNDING_PROMO_CODE,
+    max_redemptions: String(FOUNDING_MAX_REDEMPTIONS),
+    "metadata[campaign]": "GUEST1_founding",
+    "metadata[brand_code]": "GUEST#1",
+  });
+  if (!promo.ok || !promo.payload?.id) {
+    console.error("promo_create_failed", promo.payload?.error?.message);
+    return null;
+  }
+  return String(promo.payload.id);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(req) });
@@ -67,12 +152,15 @@ Deno.serve(async (req) => {
   const email = String(body.email ?? "").trim().toLowerCase();
   const restaurantName = String(body.restaurantName ?? "").trim().slice(0, 200);
   const priceId = Deno.env.get(plan.envKey)?.trim();
+  const wantFounding =
+    planKey === "signal_monitor" &&
+    body.applyFoundingPromo !== false &&
+    Deno.env.get("FOUNDING_PROMO_DISABLED") !== "1";
 
   const params = new URLSearchParams();
   params.set("mode", "subscription");
   params.set("success_url", `${SITE_ORIGIN}/services/?checkout=success&plan=${planKey}`);
   params.set("cancel_url", `${SITE_ORIGIN}/services/?checkout=cancelled&plan=${planKey}`);
-  params.set("allow_promotion_codes", "true");
   params.set("automatic_tax[enabled]", "false");
   params.set("managed_payments[enabled]", "false");
   params.set("client_reference_id", planKey);
@@ -102,8 +190,24 @@ Deno.serve(async (req) => {
     params.set("line_items[0][quantity]", "1");
   }
 
-  const introCoupon = Deno.env.get("STRIPE_INTRO_COUPON_ID")?.trim();
-  if (introCoupon) params.set("discounts[0][coupon]", introCoupon);
+  let appliedPromo: string | null = null;
+  if (wantFounding) {
+    appliedPromo = await ensureFoundingPromoId(stripeKey);
+    if (appliedPromo) {
+      params.set("discounts[0][promotion_code]", appliedPromo);
+      params.set("metadata[founding_promo]", FOUNDING_PROMO_CODE);
+    }
+  }
+
+  // Stripe forbids allow_promotion_codes together with discounts[]
+  if (!appliedPromo) {
+    const introCoupon = Deno.env.get("STRIPE_INTRO_COUPON_ID")?.trim();
+    if (introCoupon && planKey === "signal_monitor") {
+      params.set("discounts[0][coupon]", introCoupon);
+    } else {
+      params.set("allow_promotion_codes", "true");
+    }
+  }
 
   const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
@@ -125,5 +229,9 @@ Deno.serve(async (req) => {
     );
   }
 
-  return json(req, { url: payload.url, id: payload.id });
+  return json(req, {
+    url: payload.url,
+    id: payload.id,
+    foundingPromoApplied: Boolean(appliedPromo),
+  });
 });

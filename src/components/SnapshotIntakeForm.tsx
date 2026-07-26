@@ -16,6 +16,7 @@ import { recommendSnapshotPlan } from "@/lib/snapshot/recommend-plan";
 import type { SnapshotPlanRecommendation, SnapshotPriority } from "@/lib/snapshot/types";
 import { trackEvent } from "@/lib/tracking";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 const DEFAULT_CONTACT_ENDPOINT =
   "https://formsubmit.co/ajax/audit@guestsignalhospitality.com";
 
@@ -279,7 +280,7 @@ export function SnapshotIntakeForm() {
           <div className="mt-3 min-w-[14rem] shrink-0 sm:mt-0">
             <StripeCheckoutButton
               planKey="signal_monitor"
-              label="Start Signal Monitor — $149/mo"
+              label={monitorCheckoutLabel()}
               className="btn-secondary w-full"
             />
           </div>

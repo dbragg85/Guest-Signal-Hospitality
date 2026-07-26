@@ -1,6 +1,7 @@
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 export function PlanFitSnapshotCta({ className = "" }: { className?: string }) {
   return (
     <div
@@ -24,7 +25,7 @@ export function PlanFitSnapshotCta({ className = "" }: { className?: string }) {
         <div className="min-w-[14rem]">
           <StripeCheckoutButton
             planKey="signal_monitor"
-            label="Start Signal Monitor — $149/mo"
+            label={monitorCheckoutLabel()}
             className="btn-secondary w-full"
           />
         </div>

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { LeadIntakeForm } from "@/components/LeadIntakeForm";
 import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 export const metadata: Metadata = {
   title: "Contact",
   description:
@@ -27,7 +28,7 @@ export default function ContactPage() {
             <div className="min-w-[14rem]">
               <StripeCheckoutButton
                 planKey="signal_monitor"
-                label="Start Signal Monitor — $149/mo"
+                label={monitorCheckoutLabel()}
                 className="btn-secondary w-full px-6 py-3"
               />
             </div>

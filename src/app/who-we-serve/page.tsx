@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { audiences } from "@/content/site";
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 import { Section } from "@/components/Section";
 import { Card } from "@/components/Card";
 import { Tabs } from "@/components/Tabs";
@@ -204,7 +205,7 @@ export default function WhoWeServePage() {
           desc="Start with a free snapshot for plan fit, or begin Signal Monitor if you already want a monthly scorecard."
           primaryLabel="Get free snapshot"
           primaryHref="/snapshot/"
-          secondaryLabel="Start Signal Monitor — $149/mo"
+          secondaryLabel={monitorCheckoutLabel()}
           secondaryCheckout="signal_monitor"
         />
       </Section>

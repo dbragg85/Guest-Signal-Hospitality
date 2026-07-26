@@ -5,6 +5,7 @@ import { Section } from "@/components/Section";
 import { ServicesIntakeLink } from "@/components/ServicesIntakeLink";
 import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 export const metadata: Metadata = {
   title: "Restaurant Reputation Guides: Reviews, Ratings & Monitoring",
   description:
@@ -40,7 +41,7 @@ export default function ResourcesIndexPage() {
             <div className="min-w-[14rem]">
               <StripeCheckoutButton
                 planKey="signal_monitor"
-                label="Start Signal Monitor — $149/mo"
+                label={monitorCheckoutLabel()}
                 className="btn-secondary w-full"
               />
             </div>

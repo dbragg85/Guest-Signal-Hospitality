@@ -4,6 +4,7 @@ import { StripeCheckoutButton } from "@/components/StripeCheckoutButton";
 import { pricingPlans } from "@/content/site";
 import { getFeaturedNewsletters, getInsightPath } from "@/lib/newsletter/content";
 
+import { monitorCheckoutLabel } from "@/content/founding-promo";
 const deliverables = [
   {
     title: "A score you can explain",
@@ -61,7 +62,7 @@ export function HomeConversionPage() {
               <div className="min-w-[14rem]">
                 <StripeCheckoutButton
                   planKey="signal_monitor"
-                  label="Start Signal Monitor — $149/mo"
+                  label={monitorCheckoutLabel()}
                   className="btn-secondary w-full px-6 py-3"
                 />
               </div>
@@ -322,7 +323,7 @@ export function HomeConversionPage() {
             </ServicesIntakeLink>
             <StripeCheckoutButton
               planKey="signal_monitor"
-              label="Start Signal Monitor — $149/mo"
+              label={monitorCheckoutLabel()}
               className="btn-secondary px-7 py-3"
             />
           </div>

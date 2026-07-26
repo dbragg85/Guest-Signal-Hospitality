@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PlanInquiryKey } from "@/content/site";
+import { foundingPromo } from "@/content/founding-promo";
 import { trackEvent } from "@/lib/tracking";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "") || "";
@@ -18,11 +19,17 @@ type Props = {
 export function StripeCheckoutButton({ planKey, label, className, showTrust = true }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const showFounding =
+    foundingPromo.active && planKey === foundingPromo.planKey;
 
   async function startCheckout() {
     setError(null);
     setLoading(true);
-    trackEvent("cta_click", { action: `checkout_${planKey}`, plan_key: planKey });
+    trackEvent("cta_click", {
+      action: `checkout_${planKey}`,
+      plan_key: planKey,
+      founding_promo: showFounding ? foundingPromo.stripeCode : "",
+    });
     try {
       if (!SUPABASE_URL || !SUPABASE_ANON) {
         throw new Error("Checkout is not configured yet.");
@@ -36,7 +43,10 @@ export function StripeCheckoutButton({ planKey, label, className, showTrust = tr
             Authorization: `Bearer ${SUPABASE_ANON}`,
             apikey: SUPABASE_ANON,
           },
-          body: JSON.stringify({ planKey }),
+          body: JSON.stringify({
+            planKey,
+            applyFoundingPromo: showFounding,
+          }),
         },
       );
       const payload = (await response.json()) as { url?: string; error?: string; detail?: string };
@@ -66,7 +76,9 @@ export function StripeCheckoutButton({ planKey, label, className, showTrust = tr
       </button>
       {showTrust && !error ? (
         <p className="text-center text-[11px] leading-snug text-slate-500">
-          Monthly billing. Cancel anytime. No long-term contract.
+          {showFounding
+            ? `${foundingPromo.brandCode}: ${foundingPromo.introPrice}/mo for ${foundingPromo.months} months (code ${foundingPromo.stripeCode}), then ${foundingPromo.regularPrice}/mo. Cancel anytime.`
+            : "Monthly billing. Cancel anytime. No long-term contract."}
         </p>
       ) : null}
       {error ? (
