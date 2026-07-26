@@ -73,60 +73,77 @@ async function stripeForm(
 }
 
 /** Ensure GUEST1 exists: $50 off Monitor for 3 months, max 100 redemptions. */
-async function ensureFoundingPromoId(stripeKey: string): Promise<string | null> {
+async function ensureFoundingPromoId(
+  stripeKey: string,
+): Promise<{ promoId: string | null; error?: string; couponId?: string }> {
   const listed = await stripeForm(
     stripeKey,
     "GET",
-    `/promotion_codes?code=${FOUNDING_PROMO_CODE}&active=true&limit=1`,
+    `/promotion_codes?code=${encodeURIComponent(FOUNDING_PROMO_CODE)}&limit=5`,
   );
-  const existing = listed.payload?.data?.[0];
-  if (existing?.id) {
-    if (
-      typeof existing.times_redeemed === "number" &&
-      typeof existing.max_redemptions === "number" &&
-      existing.times_redeemed >= existing.max_redemptions
-    ) {
-      return null;
-    }
-    return String(existing.id);
+  if (!listed.ok) {
+    return {
+      promoId: null,
+      error: `list_promo: ${listed.payload?.error?.message || listed.status}`,
+    };
   }
 
-  // Also check inactive / exhausted — don't recreate past max
-  const anyCode = await stripeForm(
-    stripeKey,
-    "GET",
-    `/promotion_codes?code=${FOUNDING_PROMO_CODE}&limit=1`,
+  const codes = Array.isArray(listed.payload?.data) ? listed.payload.data : [];
+  const usable = codes.find(
+    (row: { id?: string; active?: boolean; times_redeemed?: number; max_redemptions?: number | null }) =>
+      row?.active !== false &&
+      !(
+        typeof row.times_redeemed === "number" &&
+        typeof row.max_redemptions === "number" &&
+        row.times_redeemed >= row.max_redemptions
+      ),
   );
-  if (anyCode.payload?.data?.[0]?.id) {
-    return null; // exists but not usable
+  if (usable?.id) {
+    const couponRef = (usable as { coupon?: string | { id?: string } }).coupon;
+    const existingCouponId =
+      typeof couponRef === "string" ? couponRef : couponRef?.id;
+    return { promoId: String(usable.id), couponId: existingCouponId };
+  }
+
+  if (codes.length > 0) {
+    return { promoId: null, error: "GUEST1 exists but is exhausted or inactive" };
   }
 
   const coupon = await stripeForm(stripeKey, "POST", "/coupons", {
-    name: "GUEST#1 founding — Monitor $99 x 3 months",
+    id: "guest1_founding_monitor_99",
+    name: "GUEST1 founding Monitor 99 for 3 months",
     amount_off: "5000",
     currency: "usd",
     duration: "repeating",
     duration_in_months: "3",
     "metadata[campaign]": "GUEST1_founding",
-    "metadata[brand_code]": "GUEST#1",
+    "metadata[brand_code]": "GUEST1",
   });
-  if (!coupon.ok || !coupon.payload?.id) {
-    console.error("coupon_create_failed", coupon.payload?.error?.message);
-    return null;
+
+  let couponId = coupon.payload?.id ? String(coupon.payload.id) : "";
+  if (!coupon.ok) {
+    // Idempotent: coupon id may already exist
+    const msg = String(coupon.payload?.error?.message || "");
+    if (msg.toLowerCase().includes("already") || coupon.payload?.error?.code === "resource_already_exists") {
+      couponId = "guest1_founding_monitor_99";
+    } else {
+      return { promoId: null, error: `coupon_create: ${msg || coupon.status}` };
+    }
   }
 
   const promo = await stripeForm(stripeKey, "POST", "/promotion_codes", {
-    coupon: String(coupon.payload.id),
+    coupon: couponId,
     code: FOUNDING_PROMO_CODE,
     max_redemptions: String(FOUNDING_MAX_REDEMPTIONS),
     "metadata[campaign]": "GUEST1_founding",
-    "metadata[brand_code]": "GUEST#1",
+    "metadata[brand_code]": "GUEST1",
   });
   if (!promo.ok || !promo.payload?.id) {
-    console.error("promo_create_failed", promo.payload?.error?.message);
-    return null;
+    // If promo create fails, still apply coupon directly
+    const err = String(promo.payload?.error?.message || promo.status);
+    return { promoId: null, couponId, error: `promo_create: ${err}` };
   }
-  return String(promo.payload.id);
+  return { promoId: String(promo.payload.id), couponId };
 }
 
 Deno.serve(async (req) => {
@@ -191,11 +208,19 @@ Deno.serve(async (req) => {
   }
 
   let appliedPromo: string | null = null;
+  let foundingPromoError: string | undefined;
   if (wantFounding) {
-    appliedPromo = await ensureFoundingPromoId(stripeKey);
-    if (appliedPromo) {
-      params.set("discounts[0][promotion_code]", appliedPromo);
+    const ensured = await ensureFoundingPromoId(stripeKey);
+    foundingPromoError = ensured.error;
+    if (ensured.promoId) {
+      params.set("discounts[0][promotion_code]", ensured.promoId);
       params.set("metadata[founding_promo]", FOUNDING_PROMO_CODE);
+      appliedPromo = ensured.promoId;
+    } else if (ensured.couponId) {
+      // Fallback: apply coupon even if promotion code creation failed
+      params.set("discounts[0][coupon]", ensured.couponId);
+      params.set("metadata[founding_promo]", FOUNDING_PROMO_CODE);
+      appliedPromo = ensured.couponId;
     }
   }
 
@@ -233,5 +258,6 @@ Deno.serve(async (req) => {
     url: payload.url,
     id: payload.id,
     foundingPromoApplied: Boolean(appliedPromo),
+    ...(foundingPromoError ? { foundingPromoError } : {}),
   });
 });
