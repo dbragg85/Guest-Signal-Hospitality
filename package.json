@@ -52,7 +52,8 @@
     "growth:reddit-draft": "node scripts/draft-reddit-engagement.mjs",
     "growth:reddit-approve": "node scripts/approve-reddit-engagement.mjs",
     "growth:reddit-deny": "node scripts/deny-reddit-engagement.mjs",
-    "growth:reddit-publish": "node scripts/publish-reddit-engagement.mjs"
+    "growth:reddit-publish": "node scripts/publish-reddit-engagement.mjs",
+    "growth:overnight-digest": "node scripts/send-overnight-scorecard-digest.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

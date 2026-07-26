@@ -2,6 +2,12 @@
  * Builds free-snapshot deliverable blocks for portal scorecards (marketing parity with /snapshot form).
  */
 
+import {
+  buildEvidenceSwot,
+  buildExecutiveBrief,
+  buildPillarIntelligence,
+} from "./scorecard-intelligence.mjs";
+
 const PLAN_LABELS = {
   signal_monitor: { name: "Signal Monitor", price: "$149/mo" },
   signal_growth: { name: "Signal Growth", price: "$499/mo" },
@@ -156,42 +162,6 @@ function buildSeoNotes(websiteAudit, lead, cityState) {
   return bullets;
 }
 
-function deriveSwot(categoryScores, pillars) {
-  const sorted = [...categoryScores].sort((a, b) => b.score - a.score);
-  const strengths = sorted
-    .filter((r) => r.score >= 85)
-    .slice(0, 3)
-    .map((r) => `${humanCategory(r.category)} (${r.score}) — ${CATEGORY_FOCUS[r.category] || "Guest-praised area."}`);
-  const weaknesses = [...categoryScores]
-    .sort((a, b) => a.score - b.score)
-    .filter((r) => r.score < 80)
-    .slice(0, 3)
-    .map((r) => `${humanCategory(r.category)} (${r.score}) — recurring friction in guest language.`);
-
-  const pillarLow = (pillars || []).filter((p) => p.score != null && p.score < 80);
-  const opportunities = [
-    ...weaknesses.slice(0, 2).map((w) => `Address ${w.split(" (")[0]} with a 30-day floor playbook.`),
-    "Refresh Google posts and website CTAs so discovery traffic converts to reservations or orders.",
-  ];
-  if (pillarLow.length) {
-    opportunities.push(
-      `Elevate ${pillarLow[0].label} pillar (${pillarLow[0].score}) — operational tradeoff between speed and experience may be showing in reviews.`,
-    );
-  }
-
-  const threats = [
-    "Competitors with faster review response and clearer value menus capture high-intent local searches.",
-    "Unresolved negative themes compound when guests see the same issue mentioned repeatedly.",
-  ];
-
-  return {
-    strengths: strengths.length ? strengths : ["Guest sentiment supports your core experience when themes cluster positively."],
-    weaknesses: weaknesses.length ? weaknesses : ["No single category scored below 80 — maintain consistency as volume grows."],
-    opportunities: opportunities.slice(0, 4),
-    threats: threats.slice(0, 2),
-  };
-}
-
 function topPriorities(categoryScores) {
   return [...categoryScores]
     .sort((a, b) => a.score - b.score)
@@ -257,7 +227,14 @@ export async function buildSnapshotDeliverablesForScorecard({
   competitors,
 }) {
   const websiteAudit = await auditWebsite(lead?.website_url);
-  const swot = deriveSwot(categoryScores, pillars);
+  const swot = buildEvidenceSwot(categoryScores, pillars, competitors);
+  const pillarIntel = buildPillarIntelligence(pillars);
+  const executiveBrief = buildExecutiveBrief({
+    overallScore,
+    periodLabel,
+    swot,
+    pillars: pillarIntel,
+  });
   const priorities = topPriorities(categoryScores);
   const planFit = planFitBlock(lead);
 
@@ -274,12 +251,36 @@ export async function buildSnapshotDeliverablesForScorecard({
 
   const items = [
     {
+      key: "executive_brief",
+      title: "Owner executive brief",
+      summary:
+        executiveBrief.summary ||
+        (overallScore != null
+          ? `Headline Guest Signal Score ${overallScore} for ${periodLabel}.`
+          : "Score pending sufficient review volume."),
+      bullets: [
+        ...(executiveBrief.protect || []).map((s) => `Protect: ${s}`),
+        ...(executiveBrief.fix_now || []).map((s) => `Fix now: ${s}`),
+        executiveBrief.differentiator,
+      ].filter(Boolean),
+    },
+    {
       key: "guest_signal_score",
       title: "Guest Signal Score",
       summary:
         overallScore != null
-          ? `Headline score ${overallScore} for ${periodLabel}, blending review themes and service dimensions guests talk about.`
+          ? `Headline score ${overallScore} for ${periodLabel} — weighted pillars (45% Experience / 30% Ops / 25% Emotional), not a vanity star average.`
           : "Score pending sufficient review volume in the scoring window.",
+    },
+    {
+      key: "pillar_playbooks",
+      title: "Pillar scores + 30-day playbooks",
+      summary: "Each pillar includes why it matters and the next floor move — the gap vs inbox-only reputation tools.",
+      bullets: pillarIntel.map((p) =>
+        p.score != null
+          ? `${p.label} (${p.score}, ${p.band}): ${p.thirty_day_playbook}`
+          : `${p.label}: insufficient mention volume this period.`,
+      ),
     },
     {
       key: "review_sentiment",
@@ -331,13 +332,17 @@ export async function buildSnapshotDeliverablesForScorecard({
 
   return {
     snapshot_deliverables: {
-      version: 1,
+      version: 2,
       generated_at: new Date().toISOString(),
       period_label: periodLabel,
       items,
       recommended_plan: planFit,
       guest_signal_score: overallScore,
+      executive_brief: executiveBrief,
+      pillar_intelligence: pillarIntel,
     },
     swot,
+    executive_brief: executiveBrief,
+    pillar_intelligence: pillarIntel,
   };
 }

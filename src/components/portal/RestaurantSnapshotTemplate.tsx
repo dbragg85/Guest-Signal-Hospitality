@@ -19,6 +19,11 @@ import {
   portalGuestSignalHeadline,
   type PortalPillarComputed,
 } from "@/lib/portal-pillar-scores";
+import {
+  buildEvidenceSwotFromCategories,
+  playbookForPillar,
+  type EvidenceSwot,
+} from "@/lib/scorecard-intelligence";
 
 export type ScorecardRow = {
   id: string;
@@ -229,12 +234,7 @@ type MonthlyRow = {
   /** Set when the row is built from a scorecard list (stable React key). */
   scorecardId?: string;
 };
-type SwotBlock = {
-  strengths?: string[];
-  weaknesses?: string[];
-  opportunities?: string[];
-  threats?: string[];
-};
+type SwotBlock = EvidenceSwot;
 
 type CategoryScoreRow = { category: string; score: number; mentions: number | null };
 
@@ -549,13 +549,14 @@ export function RestaurantSnapshotTemplate({
     const score = pc.score;
     const blurbKey = `${p.key}_blurb`;
     const customBlurb = data?.[blurbKey];
+    const playbook = playbookForPillar(p.key, score);
     const blurb =
       score == null
         ? "Insufficient mention volume in this period to score this pillar yet."
         : typeof customBlurb === "string" && customBlurb.trim()
         ? customBlurb
         : p.blurb;
-    return { ...p, score, blurb };
+    return { ...p, score, blurb, playbook };
   });
 
   const monthlyFromPayload = parseMonthlyRows(data?.monthly ?? data?.monthly_trends);
@@ -586,15 +587,34 @@ export function RestaurantSnapshotTemplate({
           return t === "low" || t === "medium" || t === "high" ? t : null;
         })()
       : null;
-  const swot =
-    data?.swot && typeof data.swot === "object"
-      ? (data.swot as SwotBlock)
-      : null;
-
   const scorecardCompetitors = parseCompetitors(data?.competitors);
   const restaurantCompetitors = parseCompetitors(restaurant.competitors);
   const competitors =
     scorecardCompetitors.length > 0 ? scorecardCompetitors : restaurantCompetitors;
+
+  const storedSwot =
+    data?.swot && typeof data.swot === "object" ? (data.swot as SwotBlock) : null;
+  const derivedSwot = buildEvidenceSwotFromCategories(
+    categoryBreakdown,
+    pillars.map((p) => ({ key: p.key, label: p.label, score: p.score })),
+    competitors,
+  );
+  const swot: SwotBlock | null =
+    storedSwot &&
+    (storedSwot.strengths?.length ||
+      storedSwot.weaknesses?.length ||
+      storedSwot.opportunities?.length ||
+      storedSwot.threats?.length)
+      ? {
+          ...derivedSwot,
+          ...storedSwot,
+          executive_summary:
+            storedSwot.executive_summary || derivedSwot.executive_summary,
+          differentiator: storedSwot.differentiator || derivedSwot.differentiator,
+        }
+      : categoryBreakdown.length
+        ? derivedSwot
+        : storedSwot;
   const competitorsFromScorecard = scorecardCompetitors.length > 0;
   /** Full peer table is a Growth+ feature; free snapshot promises positioning notes in deliverables only. */
   const showComparablePeersSection =
@@ -783,12 +803,27 @@ export function RestaurantSnapshotTemplate({
               <p className="mt-2 max-w-sm text-sm text-slate-600">
                 {headlineScore != null
                   ? storedHeadlineScore != null
-                    ? "Published total from the authoritative scorecard calculation."
-                    : "Estimated from the available pillar tiles because no published total was stored."
+                    ? "Published total — weighted pillars (45% Experience / 30% Ops / 25% Emotional), not a vanity star average."
+                    : "Estimated from pillar tiles (45/30/25) because no published total was stored."
                   : "Add a scorecard row in Supabase to populate this view"}
               </p>
             </div>
           </div>
+          {swot?.executive_summary ? (
+            <div className="mt-8 rounded-2xl border border-amber-200/80 bg-amber-50/60 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
+                Owner executive brief
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-800">
+                {swot.executive_summary}
+              </p>
+              {swot.differentiator ? (
+                <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                  {swot.differentiator}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <div className="mt-10 grid gap-4 border-t border-stone-200 pt-8 sm:grid-cols-2 lg:grid-cols-5">
             {pillars.map((row) => (
               <div
@@ -798,11 +833,22 @@ export function RestaurantSnapshotTemplate({
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {row.label}
                 </p>
+                <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-amber-800/70">
+                  {row.playbook.weightLabel}
+                </p>
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {row.score ?? "—"}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
                   {row.blurb}
+                </p>
+                <p className="mt-3 text-xs font-semibold text-slate-800">
+                  30-day move
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                  {row.score == null
+                    ? "Need more themed mentions this period to coach a specific move."
+                    : row.playbook.move}
                 </p>
               </div>
             ))}
@@ -1122,11 +1168,17 @@ export function RestaurantSnapshotTemplate({
             id="swot-heading"
             className="text-2xl font-semibold tracking-tight text-slate-900"
           >
-            SWOT preview
+            SWOT analysis
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Themes derived from review intelligence in your reporting payload.
+            Evidence-backed strengths, risks, and floor moves from guest language —
+            built for operators, not vanity dashboards.
           </p>
+          {swot.executive_summary ? (
+            <p className="mt-4 max-w-3xl rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-3 text-sm leading-relaxed text-slate-700">
+              {swot.executive_summary}
+            </p>
+          ) : null}
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             {(
               [

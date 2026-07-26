@@ -22,6 +22,14 @@ export const resourceArticles = [
     headline: "Restaurant reputation: reviews, themes, and weekly scorecards",
   },
   {
+    slug: "guest-signal-vs-review-tools",
+    title: "Guest Signal vs review tools",
+    description:
+      "How Guest Signal’s pillar scorecards and SWOT playbooks differ from Birdeye, Podium, and other review inbox platforms.",
+    headline: "Guest Signal vs Birdeye, Podium, and review inbox tools",
+  },
+
+  {
     slug: "cincinnati-restaurant-reputation",
     title: "Cincinnati restaurant reputation",
     description:

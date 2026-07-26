@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 export function requiredEnv(name) {
   const value = process.env[name]?.trim();
@@ -280,6 +282,26 @@ export function buildOwnerReport(metrics) {
             .map((line) => (line.startsWith("- ") ? line : `- ${line.replace(/^#+\s*/, "")}`)),
         ]
       : []),
+    ...(() => {
+      try {
+        const p = join(process.cwd(), ".operator", "scorecard-overnight-log.md");
+        if (!existsSync(p)) return [];
+        const body = readFileSync(p, "utf8").trim();
+        if (!body) return [];
+        return [
+          ``,
+          `## Overnight scorecard product work`,
+          `- Evidence SWOT v2 + pillar playbooks + executive brief shipped to portal/scorecards.`,
+          `- Full log (tail):`,
+          ...body
+            .split("\n")
+            .slice(-40)
+            .map((line) => (line.startsWith("- ") ? line : `- ${line || "(blank)"}`)),
+        ];
+      } catch {
+        return [];
+      }
+    })(),
   ];
 
   const markdown = `${lines.join("\n")}\n`;
