@@ -1,9 +1,15 @@
 import { createAnonClientForLeadIntake } from "@/lib/supabase/client";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function cleanField(v: string): string | null {
   const t = v?.trim();
   if (!t || t === "—") return null;
   return t;
+}
+
+function isValidEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email.trim());
 }
 
 const PAID_INQUIRY_PLANS = new Set([
@@ -69,6 +75,15 @@ export type PersistLeadIntakeResult = {
 export async function persistLeadIntakeToSupabase(
   payload: LeadIntakePayload,
 ): Promise<PersistLeadIntakeResult> {
+  if (!payload.email?.trim() || !isValidEmail(payload.email)) {
+    return {
+      attempted: true,
+      rowInserted: false,
+      insertErrorMessage: "Invalid email format",
+      lookupErrorMessage: null,
+    };
+  }
+
   const supabase = createAnonClientForLeadIntake();
   if (!supabase) {
     return {

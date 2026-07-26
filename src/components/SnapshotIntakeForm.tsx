@@ -301,6 +301,7 @@ export function SnapshotIntakeForm() {
               <input
                 name="business"
                 required
+                maxLength={200}
                 autoComplete="organization"
                 className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
               />
@@ -312,6 +313,7 @@ export function SnapshotIntakeForm() {
                 <input
                   name="name"
                   required
+                  maxLength={100}
                   autoComplete="name"
                   className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
                 />
@@ -322,6 +324,7 @@ export function SnapshotIntakeForm() {
                   name="email"
                   type="email"
                   required
+                  maxLength={255}
                   autoComplete="email"
                   className="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
                 />

@@ -4,6 +4,8 @@ const SITE_ORIGIN =
   Deno.env.get("SITE_ORIGIN")?.replace(/\/+$/, "") ||
   "https://guestsignalhospitality.com";
 
+const IS_PRODUCTION = SITE_ORIGIN.includes("guestsignalhospitality.com");
+
 /** Stripe promotion codes cannot include "#". Market as GUEST#1; code is GUEST1. */
 const FOUNDING_PROMO_CODE = "GUEST1";
 const FOUNDING_MAX_REDEMPTIONS = 100;
@@ -26,10 +28,13 @@ const PLAN_PRICES: Record<string, { envKey: string; name: string; amount: number
   },
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function corsHeaders(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   const allowed =
-    origin === SITE_ORIGIN || /^http:\/\/localhost:\d+$/.test(origin)
+    origin === SITE_ORIGIN ||
+    (!IS_PRODUCTION && /^http:\/\/localhost:\d+$/.test(origin))
       ? origin
       : SITE_ORIGIN;
   return {
@@ -149,11 +154,18 @@ async function ensureFoundingPromoId(
   return { promoId: String(promo.payload.id), couponId };
 }
 
+const MAX_REQUEST_SIZE = 65536; // 64KB
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(req) });
   }
   if (req.method !== "POST") return json(req, { error: "method_not_allowed" }, 405);
+
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > MAX_REQUEST_SIZE) {
+    return json(req, { error: "payload_too_large" }, 413);
+  }
 
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
   if (!stripeKey) return json(req, { error: "stripe_not_configured" }, 503);
@@ -170,7 +182,13 @@ Deno.serve(async (req) => {
   if (!plan) return json(req, { error: "invalid_plan" }, 400);
 
   const email = String(body.email ?? "").trim().toLowerCase();
-  const restaurantName = String(body.restaurantName ?? "").trim().slice(0, 200);
+  if (email && !EMAIL_REGEX.test(email)) {
+    return json(req, { error: "invalid_email" }, 400);
+  }
+  const restaurantName = String(body.restaurantName ?? "")
+    .trim()
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .slice(0, 200);
   const priceId = Deno.env.get(plan.envKey)?.trim();
   const wantFounding =
     planKey === "signal_monitor" &&
@@ -247,14 +265,8 @@ Deno.serve(async (req) => {
   });
   const payload = await response.json();
   if (!response.ok) {
-    return json(
-      req,
-      {
-        error: "stripe_session_failed",
-        detail: String(payload?.error?.message ?? "unknown"),
-      },
-      502,
-    );
+    console.error("[create-checkout-session] Stripe error:", payload?.error?.message ?? "unknown");
+    return json(req, { error: "stripe_session_failed" }, 502);
   }
 
   return json(req, {

@@ -6,10 +6,23 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 
+function isValidInternalPath(path: string): boolean {
+  if (!path || typeof path !== "string") return false;
+  if (path.startsWith("//")) return false;
+  if (!path.startsWith("/")) return false;
+  try {
+    const url = new URL(path, "https://placeholder.local");
+    return url.pathname.startsWith("/portal/") || url.pathname.startsWith("/snapshot/");
+  } catch {
+    return false;
+  }
+}
+
 export function PortalLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/portal/dashboard/";
+  const rawNextPath = searchParams.get("next");
+  const nextPath = rawNextPath && isValidInternalPath(rawNextPath) ? rawNextPath : "/portal/dashboard/";
   const { supabase, configured } = usePortalSession();
 
   const [email, setEmail] = useState("");
@@ -34,10 +47,11 @@ export function PortalLoginForm() {
     });
     setPending(false);
     if (err) {
-      setError(err.message);
+      console.error("[PortalLoginForm] Login error:", err.message);
+      setError("Invalid email or password. Please try again.");
       return;
     }
-    router.push(nextPath.startsWith("/") ? nextPath : `/${nextPath}`);
+    router.push(nextPath);
     router.refresh();
   }
 
@@ -56,7 +70,7 @@ export function PortalLoginForm() {
     const { error: err } = await client.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${origin}${nextPath.startsWith("/") ? nextPath : `/${nextPath}`}`,
+        emailRedirectTo: `${origin}${nextPath}`,
       },
     });
     setPending(false);

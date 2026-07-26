@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function sanitize(input: string | null): string {
   if (!input) return "";
-  return input.toString().trim().slice(0, 5000);
+  return escapeHtml(input.toString().trim().slice(0, 5000));
 }
 
 export async function POST(req: Request) {

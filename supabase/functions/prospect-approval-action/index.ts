@@ -35,8 +35,15 @@ async function notifyNtfy(message: string, title: string) {
   }).catch(() => {});
 }
 
+const MAX_REQUEST_SIZE = 8192; // 8KB - smaller for action endpoints
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+
+  const contentLength = parseInt(req.headers.get("content-length") ?? "0", 10);
+  if (contentLength > MAX_REQUEST_SIZE) {
+    return json({ error: "payload_too_large" }, 413);
+  }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");

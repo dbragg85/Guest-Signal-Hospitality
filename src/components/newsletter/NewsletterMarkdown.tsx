@@ -2,9 +2,34 @@ type Props = {
   markdown: string;
 };
 
-function renderInline(text: string): string {
+function escapeHtml(text: string): string {
   return text
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function isValidHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function renderInline(text: string): string {
+  const escaped = escapeHtml(text);
+  return escaped
+    .replace(
+      /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+      (_match, linkText, url) => {
+        if (!isValidHttpUrl(url)) return escapeHtml(linkText);
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+      }
+    )
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 }
 
