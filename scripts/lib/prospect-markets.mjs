@@ -7,6 +7,14 @@ export const prospectMarkets = [
     locationQuery: "Cincinnati, Ohio, USA",
     searchPhrase: "independent restaurants in Cincinnati Ohio",
   },
+  // Priority home market — keep early so daily rotation hits it often.
+  {
+    slug: "florence-sc",
+    city: "Florence",
+    stateCode: "SC",
+    locationQuery: "Florence, South Carolina, USA",
+    searchPhrase: "restaurants in Florence South Carolina",
+  },
   {
     slug: "columbus-oh",
     city: "Columbus",
@@ -111,13 +119,6 @@ export const prospectMarkets = [
     stateCode: "MO",
     locationQuery: "St. Louis, Missouri, USA",
     searchPhrase: "independent restaurants in St Louis Missouri",
-  },
-  {
-    slug: "florence-sc",
-    city: "Florence",
-    stateCode: "SC",
-    locationQuery: "Florence, South Carolina, USA",
-    searchPhrase: "family restaurants steakhouses in Florence South Carolina",
   },
 ];
 

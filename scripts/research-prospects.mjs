@@ -37,7 +37,7 @@ const requireNtfy = ["1", "true", "yes"].includes(
 );
 // Daily target: 10 total prospects across markets (not 10 per market).
 const maxProspects = Math.max(1, Math.min(Number(process.env.PROSPECT_MAX_RESULTS) || 10, 50));
-const perMarketLimit = Math.max(1, Math.min(Number(process.env.PROSPECT_PER_MARKET) || 1, 10));
+const perMarketLimit = Math.max(1, Math.min(Number(process.env.PROSPECT_PER_MARKET) || 1, 25));
 const apifyTimeoutMs = Math.max(
   60_000,
   Math.min(Number(process.env.APIFY_PROSPECT_TIMEOUT_MS) || 180_000, 600_000),
@@ -513,14 +513,18 @@ async function notifyPendingApprovals(supabase, { force = false } = {}) {
       "id,business_name,fit_score,rationale,draft_subject,draft_body,contact_email",
     )
     .eq("status", "approval_required")
+    .not("contact_email", "is", null)
     .order("fit_score", { ascending: false })
-    .limit(20);
+    .limit(40);
   if (!force) query = query.is("approval_notified_at", null);
-  const { data: pending, error: pendingError } = await query;
+  const { data: pendingRaw, error: pendingError } = await query;
   if (pendingError) throw pendingError;
+  const pending = (pendingRaw ?? []).filter((p) =>
+    String(p.contact_email || "").includes("@"),
+  );
 
   let sent = 0;
-  for (const prospect of pending ?? []) {
+  for (const prospect of pending) {
     if (force) {
       await supabase
         .from("prospect_approval_actions")
@@ -717,8 +721,14 @@ try {
     ? prospectsWithEmails
     : await enhanceProspectsWithAI(prospectsWithEmails);
 
-  // Combine all for storage: contactable + high-fit-no-email + low-fit
-  const prospects = [...aiEnhancedProspects, ...prospectsWithoutEmails, ...lowFitProspects];
+  // Only store contactable prospects — drafts without email clutter the queue.
+  const prospects = aiEnhancedProspects;
+  if (prospectsWithoutEmails.length || lowFitProspects.length) {
+    console.log(
+      `Skipping upsert for ${prospectsWithoutEmails.length} high-fit/no-email + ` +
+        `${lowFitProspects.length} low-fit (email-required queue policy).`,
+    );
+  }
 
   const rowsForUpsert = prospects.map(({ _place_emails, ...row }) => row);
 

@@ -176,9 +176,9 @@ export const markets: Market[] = [
     state: "South Carolina",
     stateCode: "SC",
     regionLabel: "South",
-    searchPhrase: "family restaurants steakhouses in Florence South Carolina",
+    searchPhrase: "restaurants in Florence South Carolina",
     blurb:
-      "Southern hospitality meets family dining. Steakhouses and local favorites where consistent guest experience drives repeat visits.",
+      "Southern hospitality meets family dining. Local favorites where consistent guest experience drives repeat visits.",
   },
 ];
 
