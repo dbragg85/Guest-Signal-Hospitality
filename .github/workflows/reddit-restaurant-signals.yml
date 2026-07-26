@@ -45,14 +45,24 @@ jobs:
           APIFY_REDDIT_MODE: ${{ github.event.inputs.mode || 'both' }}
           APIFY_REDDIT_MAX_ITEMS: ${{ github.event.inputs.max_items || '40' }}
           REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
-          # Password kept in secrets for ownership / future first-party use — never passed to Apify.
+          # Password kept in secrets for ownership / official API — never passed to Apify.
           REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
         run: npm run growth:reddit-signals
 
-      - name: Upload signal artifact
+      - name: Draft engagement (approval required — does not publish)
+        env:
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_DRAFT_LIMIT: "3"
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC || 'Guest_Signal' }}
+          NTFY_ACCESS_TOKEN: ${{ secrets.NTFY_ACCESS_TOKEN }}
+        run: npm run growth:reddit-draft
+
+      - name: Upload signal + draft artifacts
         uses: actions/upload-artifact@v4
         with:
           name: reddit-restaurant-signals
-          path: .operator/reddit-signals/
+          path: |
+            .operator/reddit-signals/
+            .operator/reddit-drafts/
           if-no-files-found: warn
           retention-days: 30

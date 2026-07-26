@@ -52,6 +52,8 @@ Encrypted secrets:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `APIFY_TOKEN`
 - `RESEND_API_KEY`
+- `REDDIT_USERNAME` / `REDDIT_PASSWORD`
+- `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` (script app — required to post/comment)
 
 Repository variables:
 
@@ -72,6 +74,7 @@ Never store API keys in repository variables.
 - `.github/workflows/lead-intake-snapshot.yml`: immediate webhook/repository dispatch plus an hourly fallback.
 - `.github/workflows/growth-goal-eval.yml`: every 12 hours, evaluate the active 3 paid conversions / 7 days goal. If unattainable, propose interventions and ask for Approve/Deny on ntfy.
 - `.github/workflows/reddit-restaurant-signals.yml`: Mon/Thu Apify pull of restaurant community + local-market Reddit signals (`npm run growth:reddit-signals`). Uses public scraper; `REDDIT_USERNAME`/`REDDIT_PASSWORD` stay in secrets and are never sent to Apify.
+- Reddit post/comment (manual publish): `npm run growth:reddit-draft` → ntfy review → `growth:reddit-approve` → `growth:reddit-publish`. Official Reddit API only (never Apify login). Default publish limit is 1; value-first comments, no coupon spam.
 
 ## Stripe checkout
 

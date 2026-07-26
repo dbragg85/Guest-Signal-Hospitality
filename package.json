@@ -48,7 +48,11 @@
     "growth:evaluate-goal": "node scripts/evaluate-growth-goal.mjs",
     "growth:cleanup-no-email": "node scripts/cleanup-prospects-without-email.mjs",
     "seo:indexnow": "node scripts/ping-indexnow.mjs",
-    "growth:reddit-signals": "node scripts/collect-reddit-restaurant-signals.mjs"
+    "growth:reddit-signals": "node scripts/collect-reddit-restaurant-signals.mjs",
+    "growth:reddit-draft": "node scripts/draft-reddit-engagement.mjs",
+    "growth:reddit-approve": "node scripts/approve-reddit-engagement.mjs",
+    "growth:reddit-deny": "node scripts/deny-reddit-engagement.mjs",
+    "growth:reddit-publish": "node scripts/publish-reddit-engagement.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
