@@ -33,6 +33,8 @@ const urls = [
   `https://${host}/resources/restaurant-review-scorecard/`,
   `https://${host}/resources/guest-recovery-solutions/`,
   `https://${host}/resources/respond-to-restaurant-reviews/`,
+  `https://${host}/resources/yelp-reviews-for-restaurants/`,
+  `https://${host}/resources/google-reviews-for-restaurants/`,
   `https://${host}/resources/restaurant-reputation/`,
   `https://${host}/resources/guest-signal-vs-review-tools/`,
   `https://${host}/resources/cincinnati-restaurant-reputation/`,

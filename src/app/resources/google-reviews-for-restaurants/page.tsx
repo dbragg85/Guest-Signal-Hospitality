@@ -76,8 +76,59 @@ export default function GoogleReviewsForRestaurantsPage() {
               Guest Signal Score
             </Link>
             , theme breakdowns, and owner-ready summaries—so you spend less time scrolling and more
-            time improving the experience.
+            time improving the experience. Pair Google with{" "}
+            <Link
+              href="/resources/yelp-reviews-for-restaurants/"
+              className="font-semibold text-amber-900 underline underline-offset-2"
+            >
+              Yelp reviews for restaurants
+            </Link>{" "}
+            in one{" "}
+            <Link
+              href="/resources/restaurant-review-scorecard/"
+              className="font-semibold text-amber-900 underline underline-offset-2"
+            >
+              restaurant review scorecard
+            </Link>
+            .
           </p>
+
+          <h2 className="text-xl font-semibold text-slate-900">FAQ</h2>
+          <div className="mt-4 divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                Why do Google Reviews matter for restaurants?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Google is the default discovery layer. Ratings, recent reviews, and response quality
+                shape Maps shortlists before guests open your site.
+              </p>
+            </div>
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                What should operators extract from Google Reviews?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Theme clusters—wait time, accuracy, hospitality, food consistency, value,
+                cleanliness—plus unanswered negatives and review velocity.
+              </p>
+            </div>
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                How do Google Reviews connect to weekly ops?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Rank themes by frequency, assign three floor moves, and{" "}
+                <Link
+                  href="/resources/respond-to-restaurant-reviews/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  respond to restaurant reviews
+                </Link>{" "}
+                within 48 hours for under 3★.
+              </p>
+            </div>
+          </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <ServicesIntakeLink href="/snapshot/" className="btn-primary">

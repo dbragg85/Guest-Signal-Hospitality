@@ -36,6 +36,13 @@ export const resourceArticles = [
     headline: "Google Reviews for restaurants: from noise to a clear plan",
   },
   {
+    slug: "yelp-reviews-for-restaurants",
+    title: "Yelp reviews for restaurants",
+    description:
+      "How Yelp reviews affect restaurants alongside Google: themes to track, reply discipline, and dual-source scorecards.",
+    headline: "Yelp reviews for restaurants: themes, replies, and scorecards",
+  },
+  {
     slug: "restaurant-reputation",
     title: "Restaurant reputation",
     description:
