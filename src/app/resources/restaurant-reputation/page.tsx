@@ -125,14 +125,21 @@ export default function RestaurantReputationPage() {
               <li>Pick the top two negative themes by frequency—not volume of emotion.</li>
               <li>Clear unanswered negatives older than 48 hours in one sitting.</li>
               <li>
-                Write three floor-facing priorities for the week. Use{" "}
+                Write three floor-facing priorities for the week. Use a{" "}
+                <Link
+                  href="/resources/restaurant-review-scorecard/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  restaurant review scorecard
+                </Link>{" "}
+                for pillars and theme impact,{" "}
                 <Link
                   href="/resources/restaurant-review-monitoring/"
                   className="font-semibold text-amber-900 underline underline-offset-2"
                 >
                   restaurant review monitoring
                 </Link>{" "}
-                as the system, and{" "}
+                as the weekly system, and{" "}
                 <Link
                   href="/resources/improve-google-restaurant-rating/"
                   className="font-semibold text-amber-900 underline underline-offset-2"

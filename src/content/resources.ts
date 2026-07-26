@@ -1,6 +1,13 @@
 /** SEO resource hub: URLs use trailing slash (static export). */
 export const resourceArticles = [
   {
+    slug: "restaurant-review-scorecard",
+    title: "Restaurant review scorecard",
+    description:
+      "What a restaurant review scorecard should measure: weighted pillars, theme friction, SWOT, and three floor moves—not a vanity star average.",
+    headline: "Restaurant review scorecard: pillars, themes, and weekly moves",
+  },
+  {
     slug: "restaurant-review-monitoring",
     title: "Restaurant review monitoring",
     description:
