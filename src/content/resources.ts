@@ -100,6 +100,13 @@ export const resourceArticles = [
       "A practical operator playbook to improve your Google restaurant rating: response speed, recurring themes, review velocity, and a weekly cadence that sticks.",
     headline: "How to improve your Google restaurant rating (operator playbook)",
   },
+  {
+    slug: "get-more-restaurant-reviews",
+    title: "Get more restaurant reviews",
+    description:
+      "How to get more restaurant reviews on Google and Yelp ethically: ask timing, QR habits, response discipline, and quality over star-chasing.",
+    headline: "How to get more restaurant reviews without star-chasing",
+  },
 ] as const;
 
 export type ResourceSlug = (typeof resourceArticles)[number]["slug"];

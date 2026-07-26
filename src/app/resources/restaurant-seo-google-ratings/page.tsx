@@ -84,8 +84,46 @@ export default function RestaurantSeoGoogleRatingsPage() {
             >
               Google restaurant ratings
             </Link>
+            . For volume without gimmicks, see{" "}
+            <Link
+              href="/resources/get-more-restaurant-reviews/"
+              className="font-semibold text-amber-900 underline underline-offset-2"
+            >
+              how to get more restaurant reviews
+            </Link>
             .
           </p>
+
+          <h2 className="text-xl font-semibold text-slate-900">FAQ</h2>
+          <div className="mt-4 divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                How do restaurant SEO and Google ratings connect?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Local pack visibility depends on proximity, categories, and trust signals—ratings
+                and recent reviews sit beside your SEO content, not behind it.
+              </p>
+            </div>
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                Can SEO fix a soft Google rating?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Not alone. Content helps discovery; recurring guest themes and reply quality move
+                the rating that guests filter on.
+              </p>
+            </div>
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                What should operators do weekly?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Scan themes, reply to negatives, keep the Business Profile accurate, and assign one
+                floor fix—tracked on a single scorecard.
+              </p>
+            </div>
+          </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <ServicesIntakeLink href="/snapshot/" className="btn-primary">

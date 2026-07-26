@@ -208,6 +208,21 @@ export default function ImproveGoogleRestaurantRatingPage() {
                 </p>
               </div>
               <div className="p-5">
+                <h3 className="font-semibold text-slate-950">
+                  How do I get more reviews while improving my rating?
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Grow velocity ethically after strong visits—see{" "}
+                  <Link
+                    href="/resources/get-more-restaurant-reviews/"
+                    className="font-semibold text-amber-900 underline underline-offset-2"
+                  >
+                    how to get more restaurant reviews
+                  </Link>
+                  —while fixing the themes that keep showing up.
+                </p>
+              </div>
+              <div className="p-5">
                 <h3 className="font-semibold text-slate-950">Should I try to remove negative reviews?</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                   Report only clear policy violations. For real misses, respond, fix the cause, and let
