@@ -1,6 +1,7 @@
 /**
  * Called by Supabase Database Webhooks on INSERT into public.lead_intake_submissions.
  * Dispatches GitHub repository_dispatch so "Process lead intake snapshots" runs for that lead_id.
+ * Also alerts the owner via ntfy (+ optional Resend email) that a scorecard request arrived.
  *
  * Secrets (supabase secrets set --project-ref ...):
  *   GITHUB_DISPATCH_TOKEN — classic PAT with `repo` scope, or fine-grained with Contents: Read/Write
@@ -8,12 +9,15 @@
  *
  * Optional:
  *   GITHUB_DISPATCH_REPOSITORY — default dbragg85/Guest-Signal-Hospitality
+ *   NTFY_TOPIC — default Guest_Signal
+ *   NTFY_SERVER_URL — default https://ntfy.sh
+ *   NTFY_ACCESS_TOKEN — if topic is protected
+ *   RESEND_API_KEY + RESEND_FROM + OWNER_REPORT_EMAIL_TO — owner email on new request
  *
  * Webhook (Dashboard → Database → Webhooks):
  *   Table: public.lead_intake_submissions, Events: INSERT
  *   HTTP POST URL: https://<project-ref>.supabase.co/functions/v1/github-dispatch-lead-intake
  *   Headers:
- *     Authorization: Bearer <anon or service_role key>  (only if verify_jwt true; we use verify_jwt false + custom header)
  *     x-lead-intake-dispatch-secret: <same as LEAD_INTAKE_DISPATCH_WEBHOOK_SECRET>
  *     Content-Type: application/json
  *
@@ -48,6 +52,83 @@ function json(res: Record<string, unknown>, status = 200) {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+async function alertOwnerNewLead(record: Record<string, unknown>, leadId: string) {
+  const business = String(record.business ?? "Unknown business");
+  const email = String(record.email ?? "—");
+  const name = String(record.name ?? "—");
+  const plan = String(record.inquiry_plan ?? "—");
+  const city = [record.city, record.state].filter(Boolean).join(", ") || "—";
+  const message = [
+    `New scorecard request received`,
+    `Plan: ${plan}`,
+    `Business: ${business}`,
+    `Contact: ${name} <${email}>`,
+    `Location: ${city}`,
+    `Lead ID: ${leadId}`,
+    "",
+    "GitHub Actions will build the scorecard, create portal login, and email the guest.",
+  ].join("\n");
+
+  const topic = (Deno.env.get("NTFY_TOPIC") || "Guest_Signal").trim();
+  const server = (Deno.env.get("NTFY_SERVER_URL") || "https://ntfy.sh").replace(/\/+$/, "");
+  try {
+    const headers: Record<string, string> = {
+      Title: `New scorecard request: ${business}`.slice(0, 120),
+      Priority: "4",
+      Tags: "inbox_tray,scorecard",
+      "Content-Type": "text/plain",
+    };
+    const ntfyToken = Deno.env.get("NTFY_ACCESS_TOKEN")?.trim();
+    if (ntfyToken) headers.Authorization = `Bearer ${ntfyToken}`;
+    const ntfyRes = await fetch(`${server}/${topic}`, {
+      method: "POST",
+      headers,
+      body: message,
+    });
+    if (!ntfyRes.ok) {
+      console.warn("[github-dispatch-lead-intake] ntfy failed", ntfyRes.status, await ntfyRes.text());
+    }
+  } catch (err) {
+    console.warn("[github-dispatch-lead-intake] ntfy error", err);
+  }
+
+  const resendKey = Deno.env.get("RESEND_API_KEY")?.trim();
+  const ownerTo = (
+    Deno.env.get("OWNER_REPORT_EMAIL_TO") ||
+    Deno.env.get("LEAD_INTAKE_OWNER_EMAIL") ||
+    "audit@guestsignalhospitality.com"
+  ).trim();
+  const from =
+    Deno.env.get("RESEND_FROM")?.trim() ||
+    "Guest Signal <audit@guestsignalhospitality.com>";
+  if (resendKey && ownerTo) {
+    try {
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: ownerTo.split(",").map((s) => s.trim()).filter(Boolean),
+          subject: `[Guest Signal] New scorecard request — ${business}`,
+          text: message,
+        }),
+      });
+      if (!emailRes.ok) {
+        console.warn(
+          "[github-dispatch-lead-intake] owner email failed",
+          emailRes.status,
+          await emailRes.text(),
+        );
+      }
+    } catch (err) {
+      console.warn("[github-dispatch-lead-intake] owner email error", err);
+    }
+  }
 }
 
 Deno.serve(async (req) => {
@@ -123,6 +204,9 @@ Deno.serve(async (req) => {
       200,
     );
   }
+
+  // Alert owner immediately (before GitHub) so a dispatch failure still surfaces the lead.
+  await alertOwnerNewLead(record, leadId);
 
   console.info("[github-dispatch-lead-intake] dispatching to GitHub", {
     lead_id: leadId,

@@ -93,10 +93,16 @@ jobs:
           LEAD_INTAKE_SUCCESS_WEBHOOK_URL: ${{ secrets.LEAD_INTAKE_SUCCESS_WEBHOOK_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM: ${{ vars.RESEND_FROM }}
+          OWNER_REPORT_EMAIL_TO: ${{ vars.OWNER_REPORT_EMAIL_TO || 'audit@guestsignalhospitality.com' }}
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC || 'Guest_Signal' }}
+          NTFY_SERVER_URL: ${{ vars.NTFY_SERVER_URL || 'https://ntfy.sh' }}
+          NTFY_ACCESS_TOKEN: ${{ secrets.NTFY_ACCESS_TOKEN }}
           LEAD_INTAKE_ID: ${{ github.event.inputs.lead_id || github.event.client_payload.lead_id }}
+          # Always invite portal login for free/paid scorecard requests unless explicitly disabled.
           LEAD_INTAKE_INVITE_PORTAL_USERS: ${{ vars.LEAD_INTAKE_INVITE_PORTAL_USERS || '1' }}
+          LEAD_INTAKE_REQUIRE_PORTAL_PROVISIONING: ${{ vars.LEAD_INTAKE_REQUIRE_PORTAL_PROVISIONING || '1' }}
           LEAD_INTAKE_REQUIRE_APIFY: ${{ vars.LEAD_INTAKE_REQUIRE_APIFY || '1' }}
-          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://guestsignalhospitality.com' }}
           LEAD_INTAKE_PORTAL_BASE_URL: ${{ vars.LEAD_INTAKE_PORTAL_BASE_URL }}
           LEAD_INTAKE_INVITE_REDIRECT_URL: ${{ vars.LEAD_INTAKE_INVITE_REDIRECT_URL }}
           FORCE_REPROCESS: ${{ vars.FORCE_REPROCESS || '0' }}

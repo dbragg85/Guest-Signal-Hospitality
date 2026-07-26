@@ -30,6 +30,8 @@
  *     (portal URLs + optional one-click magic link). See https://resend.com — verify sending domain in Resend.
  *   LEAD_INTAKE_WELCOME_EMAIL_DELAY_MS — optional wait (ms) after DB conversion + portal membership before the
  *     welcome email (default 0 locally; GitHub Actions defaults 300000 = 5m). Max 2h.
+ *   NTFY_TOPIC (+ optional NTFY_ACCESS_TOKEN) — owner push when a scorecard starts / converts / fails
+ *   OWNER_REPORT_EMAIL_TO — owner email for the same lifecycle alerts (via Resend)
  */
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -57,6 +59,7 @@ import {
   extractGooglePlaceProfileFromApifyItems,
   restaurantPatchFromGooglePlaceProfile,
 } from "./lib/google-place-profile-from-apify.mjs";
+import { alertOwner } from "./lib/owner-alert.mjs";
 
 function siteOrigin() {
   return getEnv("NEXT_PUBLIC_SITE_URL", { fallback: "https://guestsignalhospitality.com" }).replace(/\/+$/, "");
@@ -748,6 +751,22 @@ async function main() {
       if (stErr) {
         console.warn("Could not mark lead processing (migration 017 applied?):", stErr.message);
       }
+      await alertOwner({
+        title: `Scorecard building: ${lead.business || "lead"}`,
+        emailSubject: `[Guest Signal] Building scorecard — ${lead.business || "lead"}`,
+        tags: ["hourglass_flowing_sand", "scorecard"],
+        priority: 4,
+        message: [
+          `Plan: ${lead.inquiry_plan}`,
+          `Business: ${lead.business}`,
+          `Contact: ${lead.name || "—"} <${lead.email || "—"}>`,
+          `City: ${[lead.city, lead.state].filter(Boolean).join(", ") || "—"}`,
+          `Lead ID: ${lead.id}`,
+          `Period: ${periodLabel}`,
+          "",
+          "Pipeline: pull reviews → scorecard → portal invite → welcome email.",
+        ].join("\n"),
+      });
     }
 
     try {
@@ -892,6 +911,19 @@ async function main() {
         console.warn(
           `Lead ${lead.id} marked failed (strict portal provisioning): ${strictPortalError}`,
         );
+        await alertOwner({
+          title: `Scorecard portal failed: ${lead.business || "lead"}`,
+          emailSubject: `[Guest Signal] Portal login FAILED — ${lead.business || "lead"}`,
+          tags: ["x", "key", "scorecard"],
+          priority: 5,
+          message: [
+            `Scorecard may have been built, but portal invite/login failed (strict mode).`,
+            `Business: ${lead.business}`,
+            `Email: ${lead.email}`,
+            `Lead ID: ${lead.id}`,
+            `Error: ${strictPortalError}`,
+          ].join("\n"),
+        });
         continue;
       }
 
@@ -946,6 +978,25 @@ async function main() {
           magicLink,
         });
       }
+
+      await alertOwner({
+        title: `Scorecard ready: ${restaurant.name}`,
+        emailSubject: `[Guest Signal] Scorecard ready — ${restaurant.name}`,
+        tags: ["white_check_mark", "scorecard"],
+        priority: 4,
+        message: [
+          `Converted ${lead.inquiry_plan}`,
+          `Restaurant: ${restaurant.name} (${restaurant.slug})`,
+          `Contact: ${lead.name || "—"} <${lead.email || "—"}>`,
+          `Portal membership: ${portalMembershipOk ? "yes (invite/login created)" : invitePortalUsers ? "FAILED" : "disabled"}`,
+          portalProvisionError ? `Portal note: ${portalProvisionError}` : null,
+          `Dashboard: ${portalBaseUrl()}/dashboard/${restaurant.slug}/`,
+          `Lead ID: ${lead.id}`,
+          `Period: ${periodLabel}`,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      });
     } else if (!dryRun && !persisted) {
       await supabase
         .from("lead_intake_submissions")
@@ -954,6 +1005,18 @@ async function main() {
           pipeline_last_error: "Snapshot not persisted (no score derived or dry run path).",
         })
         .eq("id", lead.id);
+      await alertOwner({
+        title: `Scorecard failed: ${lead.business || "lead"}`,
+        emailSubject: `[Guest Signal] Scorecard FAILED — ${lead.business || "lead"}`,
+        tags: ["x", "scorecard"],
+        priority: 5,
+        message: [
+          `Lead ID: ${lead.id}`,
+          `Business: ${lead.business}`,
+          `Email: ${lead.email}`,
+          "Error: Snapshot not persisted (no score derived).",
+        ].join("\n"),
+      });
     }
     } catch (err) {
       console.error(`Lead ${lead.id} failed:`, err);
@@ -963,6 +1026,19 @@ async function main() {
           .from("lead_intake_submissions")
           .update({ processing_status: "failed", pipeline_last_error: msg })
           .eq("id", lead.id);
+        await alertOwner({
+          title: `Scorecard failed: ${lead.business || "lead"}`,
+          emailSubject: `[Guest Signal] Scorecard FAILED — ${lead.business || "lead"}`,
+          tags: ["x", "scorecard"],
+          priority: 5,
+          message: [
+            `Lead ID: ${lead.id}`,
+            `Business: ${lead.business}`,
+            `Email: ${lead.email}`,
+            `Plan: ${lead.inquiry_plan}`,
+            `Error: ${msg}`,
+          ].join("\n"),
+        });
       }
     }
   }
