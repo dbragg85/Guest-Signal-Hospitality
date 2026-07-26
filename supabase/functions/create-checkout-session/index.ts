@@ -131,15 +131,18 @@ async function ensureFoundingPromoId(
     }
   }
 
+  // Newer Stripe API versions expect promotion[type]/promotion[coupon]
+  // instead of a top-level `coupon` field.
   const promo = await stripeForm(stripeKey, "POST", "/promotion_codes", {
-    coupon: couponId,
+    "promotion[type]": "coupon",
+    "promotion[coupon]": couponId,
     code: FOUNDING_PROMO_CODE,
     max_redemptions: String(FOUNDING_MAX_REDEMPTIONS),
     "metadata[campaign]": "GUEST1_founding",
     "metadata[brand_code]": "GUEST1",
   });
   if (!promo.ok || !promo.payload?.id) {
-    // If promo create fails, still apply coupon directly
+    // Fallback: apply coupon id directly at checkout even if code creation fails
     const err = String(promo.payload?.error?.message || promo.status);
     return { promoId: null, couponId, error: `promo_create: ${err}` };
   }
