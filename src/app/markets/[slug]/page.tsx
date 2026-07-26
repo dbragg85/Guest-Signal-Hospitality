@@ -112,6 +112,30 @@ export default function MarketPage({ params }: { params: Params }) {
               conversion both suffer.
             </p>
             <p className="mt-3 text-slate-700 leading-7">{market.blurb}</p>
+            {market.slug === "florence-sc" ? (
+              <p className="mt-3 text-slate-700 leading-7">
+                For a Florence-specific reputation playbook, see{" "}
+                <Link
+                  href="/resources/florence-sc-restaurant-reputation/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  Florence SC restaurant reputation
+                </Link>
+                .
+              </p>
+            ) : null}
+            {market.slug === "cincinnati-oh" ? (
+              <p className="mt-3 text-slate-700 leading-7">
+                For the home-market playbook, see{" "}
+                <Link
+                  href="/resources/cincinnati-restaurant-reputation/"
+                  className="font-semibold text-amber-900 underline underline-offset-2"
+                >
+                  Cincinnati restaurant reputation
+                </Link>
+                .
+              </p>
+            ) : null}
           </div>
 
           <div>

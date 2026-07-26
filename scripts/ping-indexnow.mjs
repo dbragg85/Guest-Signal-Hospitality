@@ -39,6 +39,7 @@ const urls = [
   `https://${host}/resources/restaurant-reputation/`,
   `https://${host}/resources/guest-signal-vs-review-tools/`,
   `https://${host}/resources/cincinnati-restaurant-reputation/`,
+  `https://${host}/resources/florence-sc-restaurant-reputation/`,
   `https://${host}/insights/guest-recovery-playbooks/`,
   `https://${host}/insights/review-response-speed/`,
   `https://${host}/markets/cincinnati-oh/`,

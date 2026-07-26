@@ -72,13 +72,51 @@ export default function GoogleRestaurantRatingsPage() {
               className="font-semibold text-amber-900 underline underline-offset-2"
             >
               Google Reviews guidance
-            </Link>{" "}
-            and city pages under{" "}
+            </Link>
+            , a{" "}
+            <Link
+              href="/resources/restaurant-review-scorecard/"
+              className="font-semibold text-amber-900 underline underline-offset-2"
+            >
+              restaurant review scorecard
+            </Link>
+            , and city pages under{" "}
             <Link href="/markets/" className="font-semibold text-amber-900 underline underline-offset-2">
               Markets
             </Link>
             .
           </p>
+
+          <h2 className="text-xl font-semibold text-slate-900">FAQ</h2>
+          <div className="mt-4 divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                How do Google restaurant ratings affect demand?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Guests use ratings to filter Maps results and decide first visits. Soft recent
+                reviews cut shortlists even when the long-run average looks fine.
+              </p>
+            </div>
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                What moves a Google restaurant rating?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Recurring themes, response quality, and review velocity—more than one-off star
+                asks. Fix the pattern guests keep naming.
+              </p>
+            </div>
+            <div className="p-5">
+              <h3 className="font-semibold text-slate-950">
+                How often should operators check ratings?
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Weekly theme review is enough for most independents; daily only when volume spikes
+                or a risk review is open.
+              </p>
+            </div>
+          </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
             <ServicesIntakeLink href="/snapshot/" className="btn-primary">

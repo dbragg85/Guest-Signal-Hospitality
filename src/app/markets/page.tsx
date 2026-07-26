@@ -56,6 +56,41 @@ export default function MarketsHubPage() {
         </div>
       </section>
 
+      <section className="border-b border-stone-200 bg-white py-10">
+        <div className="mx-auto max-w-5xl px-4 sm:px-5">
+          <p className="text-sm font-semibold text-amber-800">Operator guides</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+            Pair every market page with a review system.
+          </h2>
+          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
+            <Link
+              href="/resources/restaurant-review-management/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Review management
+            </Link>
+            <Link
+              href="/resources/restaurant-review-scorecard/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Review scorecard
+            </Link>
+            <Link
+              href="/resources/florence-sc-restaurant-reputation/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Florence SC reputation
+            </Link>
+            <Link
+              href="/resources/improve-google-restaurant-rating/"
+              className="text-amber-900 underline underline-offset-2"
+            >
+              Improve Google rating
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="py-14">
         <div className="mx-auto grid max-w-5xl gap-10 px-4 sm:px-5">
           {Object.entries(byRegion).map(([region, rows]) => (

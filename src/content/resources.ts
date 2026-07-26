@@ -71,6 +71,13 @@ export const resourceArticles = [
       "How Cincinnati-area restaurants can protect and improve guest perception with structured review intelligence and scorecards.",
     headline: "Cincinnati restaurant reputation and guest experience",
   },
+  {
+    slug: "florence-sc-restaurant-reputation",
+    title: "Florence SC restaurant reputation",
+    description:
+      "Restaurant reputation for Florence, South Carolina: Google and Yelp themes, response discipline, and weekly scorecards for local demand.",
+    headline: "Florence SC restaurant reputation: reviews, themes, and scorecards",
+  },
 
   {
     slug: "google-restaurant-ratings",
