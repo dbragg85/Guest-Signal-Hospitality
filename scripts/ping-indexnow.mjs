@@ -26,6 +26,7 @@ const urls = [
   `https://${host}/snapshot/`,
   `https://${host}/markets/`,
   `https://${host}/resources/`,
+  `https://${host}/resources/restaurant-review-management/`,
   `https://${host}/resources/improve-google-restaurant-rating/`,
   `https://${host}/resources/google-restaurant-ratings/`,
   `https://${host}/resources/restaurant-seo-google-ratings/`,

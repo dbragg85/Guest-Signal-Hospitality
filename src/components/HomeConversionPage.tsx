@@ -252,6 +252,59 @@ export function HomeConversionPage() {
         </div>
       </section>
 
+      <section className="border-t border-stone-200 bg-white py-14 md:py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-5">
+          <div className="flex items-end justify-between gap-5">
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Operator guides</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+                Practical restaurant review management.
+              </h2>
+              <p className="mt-3 max-w-2xl text-slate-600">
+                Scorecards, replies, and recovery playbooks—linked from the pages guests already find.
+              </p>
+            </div>
+            <Link
+              href="/resources/"
+              className="hidden text-sm font-semibold underline underline-offset-4 sm:block"
+            >
+              All guides
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {[
+              {
+                href: "/resources/restaurant-review-management/",
+                title: "Restaurant review management",
+                body: "The weekly loop: monitor, respond, score, recover.",
+              },
+              {
+                href: "/resources/restaurant-review-scorecard/",
+                title: "Restaurant review scorecard",
+                body: "Pillars, theme impact, and three floor moves.",
+              },
+              {
+                href: "/resources/respond-to-restaurant-reviews/",
+                title: "How to respond to reviews",
+                body: "48-hour SLAs and reply shapes for Google and Yelp.",
+              },
+            ].map((guide) => (
+              <Link
+                key={guide.href}
+                href={guide.href}
+                className="group rounded-2xl border border-stone-200 bg-stone-50/60 p-6 transition-colors hover:border-amber-400 hover:bg-white"
+              >
+                <h3 className="font-semibold leading-6 text-slate-950 group-hover:text-amber-900">
+                  {guide.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{guide.body}</p>
+                <p className="mt-4 text-sm font-semibold text-slate-700">Read guide →</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {insights.length ? (
         <section className="border-y border-stone-200 bg-stone-50 py-14 md:py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-5">

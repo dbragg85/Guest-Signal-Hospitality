@@ -1,6 +1,13 @@
 /** SEO resource hub: URLs use trailing slash (static export). */
 export const resourceArticles = [
   {
+    slug: "restaurant-review-management",
+    title: "Restaurant review management",
+    description:
+      "Restaurant review management for operators: monitoring, response SLAs, theme scorecards, and weekly floor moves—beyond inbox tools.",
+    headline: "Restaurant review management: scorecards, not just inboxes",
+  },
+  {
     slug: "restaurant-review-scorecard",
     title: "Restaurant review scorecard",
     description:
