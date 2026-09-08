@@ -13,7 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return entries.map((entry) => ({
     url: pathToUrl(origin, entry.path),
-    lastModified: new Date(),
+    lastModified: entry.lastModified,
     changeFrequency: entry.changeFrequency,
     priority: entry.priority,
   }));

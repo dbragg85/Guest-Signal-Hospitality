@@ -1,4 +1,5 @@
 import { createAnonClientForLeadIntake } from "@/lib/supabase/client";
+import { getFirstTouchAttribution } from "@/lib/attribution";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -172,6 +173,7 @@ export async function persistLeadIntakeToSupabase(
     menu_source_url: cleanField(payload.menuSourceUrl ?? ""),
     message: cleanField(payload.message),
     submission_client_key: submissionClientKey,
+    first_touch_attribution: getFirstTouchAttribution(),
   };
 
   if (payload.gbpUrl) insertRow.gbp_url = cleanField(payload.gbpUrl);

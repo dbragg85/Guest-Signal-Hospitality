@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { PlanInquiryKey } from "@/content/site";
 import { foundingPromo } from "@/content/founding-promo";
 import { trackEvent } from "@/lib/tracking";
+import { getFirstTouchAttribution } from "@/lib/attribution";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "") || "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -25,8 +26,7 @@ export function StripeCheckoutButton({ planKey, label, className, showTrust = tr
   async function startCheckout() {
     setError(null);
     setLoading(true);
-    trackEvent("cta_click", {
-      action: `checkout_${planKey}`,
+    trackEvent("checkout_start", {
       plan_key: planKey,
       founding_promo: showFounding ? foundingPromo.stripeCode : "",
     });
@@ -46,6 +46,7 @@ export function StripeCheckoutButton({ planKey, label, className, showTrust = tr
           body: JSON.stringify({
             planKey,
             applyFoundingPromo: showFounding,
+            attribution: getFirstTouchAttribution(),
           }),
         },
       );
@@ -56,8 +57,10 @@ export function StripeCheckoutButton({ planKey, label, className, showTrust = tr
         }
         throw new Error(payload.detail || payload.error || "Unable to start checkout.");
       }
+      trackEvent("checkout_created", { plan_key: planKey });
       window.location.href = payload.url;
     } catch (err) {
+      trackEvent("checkout_fail", { plan_key: planKey });
       setError(err instanceof Error ? err.message : "Checkout failed.");
       setLoading(false);
     }
@@ -70,7 +73,6 @@ export function StripeCheckoutButton({ planKey, label, className, showTrust = tr
         onClick={() => void startCheckout()}
         disabled={loading}
         className={className}
-        data-track={`checkout_${planKey}`}
       >
         {loading ? "Starting checkout…" : label}
       </button>
