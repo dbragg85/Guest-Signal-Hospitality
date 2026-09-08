@@ -189,6 +189,17 @@ Deno.serve(async (req) => {
     .trim()
     .replace(/[\x00-\x1F\x7F]/g, "")
     .slice(0, 200);
+  const attribution = body.attribution && typeof body.attribution === "object"
+    ? body.attribution as Record<string, unknown>
+    : {};
+  const safeAttribution: Record<string, string> = {};
+  for (const [key, max] of Object.entries({
+    session_id: 36, landing_path: 300, ref_host: 120, utm_source: 80,
+    utm_medium: 80, utm_campaign: 80, utm_content: 80,
+  })) {
+    const value = String(attribution[key] ?? "").trim();
+    if (value) safeAttribution[key] = value.replace(/[\x00-\x1F\x7F]/g, "").slice(0, max);
+  }
   const priceId = Deno.env.get(plan.envKey)?.trim();
   const wantFounding =
     planKey === "signal_monitor" &&
@@ -203,6 +214,9 @@ Deno.serve(async (req) => {
   params.set("managed_payments[enabled]", "false");
   params.set("client_reference_id", planKey);
   params.set("metadata[plan_key]", planKey);
+  for (const [key, value] of Object.entries(safeAttribution)) {
+    params.set(`metadata[${key}]`, value);
+  }
   if (restaurantName) params.set("metadata[restaurant_name]", restaurantName);
   if (email) {
     params.set("customer_email", email);

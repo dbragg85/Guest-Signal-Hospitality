@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   title: "Start Your Free Snapshot",
   description:
     "Start your Guest Signal Hospitality plan intake to receive a restaurant guest experience snapshot with review sentiment themes, strengths, and risk areas.",
+  alternates: { canonical: "/services/inquiry/" },
+  robots: { index: false, follow: true },
 };
 
 export default function ServicesInquiryPage() {

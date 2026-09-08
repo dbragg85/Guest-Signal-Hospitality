@@ -21,8 +21,7 @@ export function CheckoutReturnBanner() {
     if (tracked.current) return;
     if (status !== "success" && status !== "cancelled") return;
     tracked.current = true;
-    trackEvent("cta_click", {
-      action: status === "success" ? "checkout_return_success" : "checkout_return_cancelled",
+    trackEvent(status === "success" ? "checkout_returned" : "checkout_cancelled", {
       plan_key: planKey,
     });
   }, [status, planKey]);

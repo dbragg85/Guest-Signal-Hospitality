@@ -68,6 +68,7 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const formStartTracked = useRef(false);
+  const validationBatchTracked = useRef(false);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -515,6 +516,17 @@ export function LeadIntakeForm({ mode }: { mode: LeadIntakeMode }) {
           <form
             className="mt-10 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
             onSubmit={handleSubmit}
+            onInvalidCapture={(event) => {
+              if (validationBatchTracked.current) return;
+              validationBatchTracked.current = true;
+              const field = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+              trackEvent("form_validation_fail", {
+                form: mode === "service" ? "service_intake" : "contact",
+                field: field.name || "unknown",
+                reason: field.validity.valueMissing ? "required" : field.validity.typeMismatch ? "type" : "invalid",
+              });
+              window.setTimeout(() => { validationBatchTracked.current = false; }, 0);
+            }}
             onFocusCapture={() => {
               if (formStartTracked.current) return;
               formStartTracked.current = true;

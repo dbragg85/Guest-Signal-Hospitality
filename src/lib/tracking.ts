@@ -1,25 +1,5 @@
-const ALLOWED_EVENTS = new Set([
-  "page_view",
-  "cta_click",
-  "form_start",
-  "snapshot_intake_success",
-  "snapshot_intake_fail",
-  "contact_submit_success",
-  "contact_submit_fail",
-  "portal_upgrade_click",
-  "newsletter_submit_success",
-  "newsletter_submit_fail",
-]);
-
-const SESSION_KEY = "guest_signal_session_id";
-
-function sessionId(): string {
-  const existing = window.sessionStorage.getItem(SESSION_KEY);
-  if (existing) return existing;
-  const created = crypto.randomUUID();
-  window.sessionStorage.setItem(SESSION_KEY, created);
-  return created;
-}
+import { ANALYTICS_EVENT_SET, type AnalyticsEventName } from "@/lib/analytics-events";
+import { getFirstTouchAttribution, getSessionId } from "@/lib/attribution";
 
 function safeProperties(payload: Record<string, unknown>): Record<string, string | number | boolean | null> {
   const safe: Record<string, string | number | boolean | null> = {};
@@ -33,18 +13,19 @@ function safeProperties(payload: Record<string, unknown>): Record<string, string
   return safe;
 }
 
-export function trackEvent(name: string, payload: Record<string, unknown> = {}) {
+export function trackEvent(name: AnalyticsEventName, payload: Record<string, unknown> = {}) {
   if (typeof window === "undefined") {
     return;
   }
 
-  const normalizedName = ALLOWED_EVENTS.has(name) ? name : null;
+  const normalizedName = ANALYTICS_EVENT_SET.has(name) ? name : null;
   if (!normalizedName) {
     console.warn("[tracking:event] ignored unsupported event", name);
     return;
   }
 
   const properties = safeProperties(payload);
+  if (normalizedName === "page_view") Object.assign(properties, getFirstTouchAttribution());
   const eventPayload = {
     event: normalizedName,
     source: "guest_signal_site",
@@ -67,7 +48,7 @@ export function trackEvent(name: string, payload: Record<string, unknown> = {}) 
         .insert({
           event_name: normalizedName,
           path: window.location.pathname.slice(0, 300) || "/",
-          session_id: sessionId(),
+          session_id: getSessionId(),
           properties,
         })
         .then(({ error }) => {
@@ -75,23 +56,6 @@ export function trackEvent(name: string, payload: Record<string, unknown> = {}) 
         });
     });
   };
-
-  // Attribution for acquisition (host only — never full URLs or free text).
-  if (normalizedName === "page_view") {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content"] as const) {
-        const value = params.get(key)?.trim();
-        if (value) properties[key] = value.slice(0, 80);
-      }
-      const ref = document.referrer ? new URL(document.referrer).hostname : "";
-      if (ref && ref !== window.location.hostname) {
-        properties.ref_host = ref.slice(0, 120);
-      }
-    } catch {
-      /* ignore malformed referrer */
-    }
-  }
 
   if (normalizedName === "page_view") {
     window.setTimeout(persist, 1200);

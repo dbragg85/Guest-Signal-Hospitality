@@ -90,11 +90,20 @@ const hooks = await stripe("GET", "/webhook_endpoints?limit=100");
 let webhookSecret = null;
 const existingHook = (hooks.data || []).find((hook) => hook.url === webhookUrl);
 if (existingHook) {
-  console.log("Webhook endpoint already exists");
+  await stripe("POST", `/webhook_endpoints/${existingHook.id}`, [
+    ["enabled_events[]", "checkout.session.completed"],
+    ["enabled_events[]", "customer.subscription.deleted"],
+    ["enabled_events[]", "invoice.payment_failed"],
+    ["enabled_events[]", "charge.refunded"],
+  ]);
+  console.log("Webhook endpoint lifecycle events updated");
 } else {
   const created = await stripe("POST", "/webhook_endpoints", [
     ["url", webhookUrl],
     ["enabled_events[]", "checkout.session.completed"],
+    ["enabled_events[]", "customer.subscription.deleted"],
+    ["enabled_events[]", "invoice.payment_failed"],
+    ["enabled_events[]", "charge.refunded"],
     ["description", "Guest Signal paid plan conversions"],
   ]);
   // URLSearchParams from array of pairs
