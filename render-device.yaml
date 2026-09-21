@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: guest-signal-device-api
+    runtime: node
+    plan: free
+    rootDir: services/device-api
+    buildCommand: npm ci && npm test
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: "off"
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: DEVICE_TOKEN_SHA256
+        sync: false
